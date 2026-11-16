@@ -327,12 +327,12 @@ function CodeBlock({
           <span className="text-[11px] text-[#64748B]">{highlighted.length} líneas</span>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           {isHtml && onOpenPreview && (
             <button
               type="button"
               onClick={() => onOpenPreview(code)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#38BDF8] px-3 py-1 text-xs font-semibold text-[#061019] transition-colors hover:bg-[#7DD3FC]"
+              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-[#38BDF8] px-2.5 py-1 text-xs font-semibold text-[#061019] transition-colors hover:bg-[#7DD3FC]"
             >
               <Play className="h-3 w-3 fill-current" />
               Vista previa
@@ -341,7 +341,7 @@ function CodeBlock({
           <button
             type="button"
             onClick={() => downloadTextFile(isHtml ? 'index.html' : `elara-snippet.${ext}`, code)}
-            className="inline-flex items-center gap-1 rounded-lg border border-[#222E46] bg-[#141C2E] px-2.5 py-1 text-xs text-[#CBD5E1] transition-colors hover:border-[#38BDF8]/40 hover:text-white"
+            className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[#222E46] bg-[#141C2E] px-2 py-1 text-xs text-[#CBD5E1] transition-colors hover:border-[#38BDF8]/40 hover:text-white"
             title="Descargar archivo"
           >
             <Download className="h-3.5 w-3.5" />
@@ -349,7 +349,7 @@ function CodeBlock({
           <button
             type="button"
             onClick={handleCopy}
-            className="inline-flex items-center gap-1 rounded-lg border border-[#222E46] bg-[#141C2E] px-2.5 py-1 text-xs font-medium text-[#CBD5E1] transition-colors hover:border-[#38BDF8]/40 hover:text-white"
+            className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg border border-[#222E46] bg-[#141C2E] px-2.5 py-1 text-xs font-medium text-[#CBD5E1] transition-colors hover:border-[#38BDF8]/40 hover:text-white"
           >
             {copied ? <Check className="h-3.5 w-3.5 text-[#34D399]" /> : <Copy className="h-3.5 w-3.5" />}
             {copied ? 'Copiado' : 'Copiar'}
@@ -358,7 +358,7 @@ function CodeBlock({
             <button
               type="button"
               onClick={() => setCollapsed((v) => !v)}
-              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-[#94A3B8] hover:bg-[#192236] hover:text-white"
+              className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-2 py-1 text-xs text-[#94A3B8] hover:bg-[#192236] hover:text-white"
             >
               {collapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
               {collapsed ? 'Expandir' : 'Contraer'}

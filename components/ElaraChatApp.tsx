@@ -528,7 +528,7 @@ function ElaraWorkspace() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-30 flex w-[272px] shrink-0 flex-col border-r border-[#1B2436] bg-[#0B0F18]/95 backdrop-blur-md transition-transform duration-200 lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-30 flex w-[252px] xl:w-[268px] shrink-0 flex-col border-r border-[#1B2436] bg-[#0B0F18]/95 backdrop-blur-md transition-transform duration-200 lg:static lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -708,8 +708,8 @@ function ElaraWorkspace() {
 
       {/* Main Conversation Column */}
       <div className="relative flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-[#1B2436] bg-[#06080E]/85 px-4 py-3 backdrop-blur-md">
-          <div className="flex items-center gap-3">
+        <header className="flex items-center justify-between gap-2 border-b border-[#1B2436] bg-[#06080E]/85 px-4 py-3 backdrop-blur-md">
+          <div className="flex min-w-0 items-center gap-2.5">
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
@@ -720,23 +720,23 @@ function ElaraWorkspace() {
             </button>
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold tracking-wider text-white lg:hidden">ELARA</span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#222E46] bg-[#0F1522] px-3 py-1 text-xs text-[#CBD5E1]">
+              <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[#222E46] bg-[#0F1522] px-3 py-1 text-xs text-[#CBD5E1]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#38BDF8]" />
                 {health.label}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             {messages.length > 0 && (
               <button
                 type="button"
                 onClick={exportConversationMarkdown}
                 title="Exportar conversación (.md)"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-[#1E2A42] bg-[#0F1522] px-2.5 py-1.5 text-xs text-[#94A3B8] transition-colors hover:border-[#38BDF8]/50 hover:text-white"
+                className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-[#1E2A42] bg-[#0F1522] px-2.5 py-1.5 text-xs text-[#94A3B8] transition-colors hover:border-[#38BDF8]/50 hover:text-white"
               >
                 <Download className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Exportar .md</span>
+                <span className="hidden xl:inline">Exportar .md</span>
               </button>
             )}
             {latestArtifact && (
@@ -745,10 +745,10 @@ function ElaraWorkspace() {
                 onClick={() =>
                   setPreviewState(previewState ? null : { id: latestArtifact.id, html: latestArtifact.html })
                 }
-                className="inline-flex items-center gap-1.5 rounded-xl border border-[#284261] bg-[#101C2E] px-3 py-1.5 text-xs font-medium text-[#7DD3FC] transition-colors hover:border-[#38BDF8] hover:text-white"
+                className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-[#284261] bg-[#101C2E] px-2.5 py-1.5 text-xs font-medium text-[#7DD3FC] transition-colors hover:border-[#38BDF8] hover:text-white"
               >
                 <Code2 className="h-3.5 w-3.5" />
-                {previewState ? 'Ocultar visor' : `Abrir visor (${htmlArtifacts.length})`}
+                {previewState ? 'Ocultar visor' : `Visor (${htmlArtifacts.length})`}
               </button>
             )}
           </div>
@@ -982,7 +982,7 @@ function ElaraWorkspace() {
                       }
                     }}
                     rows={1}
-                    placeholder="Pide una web, ejemplo de código o pega un error..."
+                    placeholder="Pide una web, código o consulta..."
                     className="max-h-40 min-h-[44px] flex-1 resize-none overflow-y-auto bg-transparent px-2.5 py-2.5 text-[15px] leading-5 text-white placeholder-[#64748B] focus:outline-none"
                   />
                   {speechSupported && !busy && (

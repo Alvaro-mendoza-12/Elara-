@@ -107,7 +107,7 @@ export function CodePreviewDrawer({
       className={
         expanded
           ? 'fixed inset-0 z-40 flex flex-col bg-[#080B12]'
-          : 'fixed inset-0 z-40 flex flex-col bg-[#080B12] lg:static lg:inset-auto lg:h-full lg:w-[48%] lg:min-w-[420px] lg:max-w-[740px] lg:border-l lg:border-[#1D263A]'
+          : 'fixed inset-0 z-40 flex flex-col bg-[#080B12] lg:static lg:inset-auto lg:h-full lg:w-[45%] lg:min-w-[380px] xl:w-[47%] lg:max-w-[740px] lg:border-l lg:border-[#1D263A]'
       }
     >
       {/* Top Toolbar */}
