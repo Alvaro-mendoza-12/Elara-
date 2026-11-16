@@ -115,7 +115,7 @@ export async function POST(req: Request) {
       });
       const result = streamText({
         model: customProvider.chatModel(config.model),
-        instructions: conversationInstructions(preferences.detail),
+        instructions: conversationInstructions(preferences.detail,turns),
         messages,
         abortSignal: signal,
         timeout: {totalMs:38_000,firstChunkMs:30_000,chunkMs:10_000},

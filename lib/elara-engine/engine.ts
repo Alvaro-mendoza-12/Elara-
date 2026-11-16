@@ -17,6 +17,7 @@ import { buildTrainedIntentNetwork, type ElaraIntentNetwork } from './neural-net
 import { detectCrisisHelpResponse } from './safety';
 import { polynomialIntegral } from './math';
 import { integralHelp } from './integral-help';
+import { normalizeRequestSpelling, requestMeaning } from './request-meaning';
 import { extractFencedCodeBlocks, extractPromptParams, tokenize } from './text';
 import {
   buildBlogHtml,
@@ -69,6 +70,11 @@ ${html}
 \`\`\`
 
 Pulsa **Vista previa** en el bloque superior (o **Abrir visor index** arriba) para probarlo en vivo en escritorio, tablet o móvil.`;
+}
+
+function languageFallback(text:string):EngineResult {
+  const preview=text.replace(/[`*_<>\[\]]/g,'').slice(0,150);
+  return {reply:`Sobre «${preview}${text.length>150?'…':''}»: no tengo una respuesta fiable con el motor básico actual. Puedes usar Conversación para trabajar esta petición con lenguaje general.`,intent:'__fallback_honest__',confidence:0};
 }
 
 function findPreviousHtml(turns: SimpleTurn[]): { prompt: string; html: string } | null {
@@ -189,7 +195,7 @@ function buildContextualFollowUp(userText: string, prevHtml: { prompt: string; h
 }
 
 export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
-  const latestUser = [...turns].reverse().find((t) => t.role === 'user')?.text.trim() ?? '';
+  let latestUser = [...turns].reverse().find((t) => t.role === 'user')?.text.trim() ?? '';
   if (!latestUser) {
     return {
       reply: 'Escribe tu consulta o dime qué página o código necesitas.',
@@ -209,9 +215,16 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
   }
 
   turns = activeConversationTurns(turns);
+  const normalizedRequest=normalizeRequestSpelling(latestUser);
+  if(normalizedRequest!==latestUser){latestUser=normalizedRequest;turns=[...turns.slice(0,-1),{...turns.at(-1)!,text:latestUser}];}
 
   const contextResponse = contextualReply(turns);
   if (contextResponse) return contextResponse;
+
+  const meaning=requestMeaning(latestUser);
+  const textOnly=meaning==='explain'||meaning==='write';
+  if(meaning==='web-capability') return {reply:'Puedo ayudarte a explicar temas, trabajar textos y crear prototipos web con Core. Para una web, dime de qué tratará y qué debe permitir hacer. La conversación general utiliza el modelo del servidor al iniciar sesión con Novvin.',intent:'capability_web',confidence:1};
+  if(meaning==='write' && !isConversationFollowUp(latestUser)) return languageFallback(latestUser);
 
   const integralSupport = integralHelp(turns);
   if (integralSupport) return integralSupport;
@@ -234,6 +247,8 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
         return { reply: formattedConv.reply, intent: formattedConv.intent, confidence: 0.96 };
       }
     }
+    if(textOnly || /\b(?:explica|explicame|traduce|resume|que hace|como funciona|ortografia)\b/.test(norm)) return languageFallback(latestUser);
+    if(params.codeBlocks.every(block=>['text','txt','md','markdown',''].includes(block.lang)) && !/\b(?:revisa|error|codigo|script)\b/.test(norm)) return languageFallback(latestUser);
     return {
       reply: formatStaticReview(latestUser, params.codeBlocks),
       intent: 'code_inspect_user_snippet',
@@ -254,7 +269,7 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
   }
 
   // 4. Follow-up tweaks to previously generated HTML in the conversation
-  const previousHtml = findPreviousHtml(turns);
+  const previousHtml = textOnly ? null : findPreviousHtml(turns);
   if (previousHtml) {
     const followUp = buildContextualFollowUp(shortArtifactEdit(latestUser) || latestUser, previousHtml);
     if (followUp) {
@@ -282,7 +297,7 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
     };
   }
 
-  const commerce = commerceRequest(turns);
+  const commerce = textOnly ? null : commerceRequest(turns);
   if (commerce?.kind === 'clarify') return { reply: COMMERCE_QUESTION, intent: 'clarify_commerce', confidence: 1 };
   if (commerce?.kind === 'create') {
     params = extractPromptParams(commerce.brief);
@@ -298,7 +313,7 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
       norm,
     );
   const creationRequest = /\b(crea|creame|crear|genera|generame|generar|haz|hazme|dame|construye|arma|quiero|necesito|disena|disename|organiza)\b/.test(norm);
-  if (wantsWeb && creationRequest) {
+  if (!textOnly && wantsWeb && creationRequest) {
     if (/\b(login|iniciar\s+sesion|acceso|registro)\b/.test(norm)) {
       return {
         reply: buildHtmlResponse('Aquí tienes el `index.html` de inicio de sesión listo para copiar y previsualizar:', buildLoginIndexHtml(params), params.wantsCodeOnly),

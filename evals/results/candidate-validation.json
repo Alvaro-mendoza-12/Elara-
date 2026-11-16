@@ -1,0 +1,2012 @@
+{
+  "label": "candidate",
+  "scope": "routing-tools-and-context; not language-model generations",
+  "cases": 240,
+  "passed": 240,
+  "elapsedMs": 216,
+  "catalogSha256": "75967be8db92389e9262aa4b32eedbcfb97ce8b21d1b1a8077fd0f4705cf3d64",
+  "categories": {
+    "arithmetic": {
+      "total": 12,
+      "passed": 12
+    },
+    "percentages": {
+      "total": 12,
+      "passed": 12
+    },
+    "polynomial-integrals": {
+      "total": 12,
+      "passed": 12
+    },
+    "percentage-context": {
+      "total": 12,
+      "passed": 12
+    },
+    "personal-facts": {
+      "total": 12,
+      "passed": 12
+    },
+    "project-corrections": {
+      "total": 12,
+      "passed": 12
+    },
+    "web-concepts": {
+      "total": 12,
+      "passed": 12
+    },
+    "negative-creation": {
+      "total": 12,
+      "passed": 12
+    },
+    "writing-not-websites": {
+      "total": 12,
+      "passed": 12
+    },
+    "explicit-catalogs": {
+      "total": 12,
+      "passed": 12
+    },
+    "artifact-edits": {
+      "total": 12,
+      "passed": 12
+    },
+    "topic-and-references": {
+      "total": 12,
+      "passed": 12
+    },
+    "text-attachments": {
+      "total": 12,
+      "passed": 12
+    },
+    "code-task-intent": {
+      "total": 12,
+      "passed": 12
+    },
+    "capability-questions": {
+      "total": 12,
+      "passed": 12
+    },
+    "math-dialogues": {
+      "total": 12,
+      "passed": 12
+    },
+    "spelling": {
+      "total": 12,
+      "passed": 12
+    },
+    "unavailable-data": {
+      "total": 12,
+      "passed": 12
+    },
+    "safety-and-benign": {
+      "total": 12,
+      "passed": 12
+    },
+    "unit-utilities": {
+      "total": 12,
+      "passed": 12
+    }
+  },
+  "results": [
+    {
+      "id": "arithmetic-001",
+      "category": "arithmetic",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_eval",
+      "issues": []
+    },
+    {
+      "id": "percentages-001",
+      "category": "percentages",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_percent",
+      "issues": []
+    },
+    {
+      "id": "polynomial-integrals-001",
+      "category": "polynomial-integrals",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_polynomial_integral",
+      "issues": []
+    },
+    {
+      "id": "percentage-context-001",
+      "category": "percentage-context",
+      "split": "validation",
+      "pass": true,
+      "intent": "clarify_percentage",
+      "issues": []
+    },
+    {
+      "id": "personal-facts-001",
+      "category": "personal-facts",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_name",
+      "issues": []
+    },
+    {
+      "id": "project-corrections-001",
+      "category": "project-corrections",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_project_name",
+      "issues": []
+    },
+    {
+      "id": "web-concepts-001",
+      "category": "web-concepts",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "negative-creation-001",
+      "category": "negative-creation",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "writing-not-websites-001",
+      "category": "writing-not-websites",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "explicit-catalogs-001",
+      "category": "explicit-catalogs",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_dynamic_catalog",
+      "issues": []
+    },
+    {
+      "id": "artifact-edits-001",
+      "category": "artifact-edits",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_followup",
+      "issues": []
+    },
+    {
+      "id": "topic-and-references-001",
+      "category": "topic-and-references",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "text-attachments-001",
+      "category": "text-attachments",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "code-task-intent-001",
+      "category": "code-task-intent",
+      "split": "validation",
+      "pass": true,
+      "intent": "dev_json_format",
+      "issues": []
+    },
+    {
+      "id": "capability-questions-001",
+      "category": "capability-questions",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_help",
+      "issues": []
+    },
+    {
+      "id": "math-dialogues-001",
+      "category": "math-dialogues",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_exercises",
+      "issues": []
+    },
+    {
+      "id": "spelling-001",
+      "category": "spelling",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_help",
+      "issues": []
+    },
+    {
+      "id": "unavailable-data-001",
+      "category": "unavailable-data",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "safety-and-benign-001",
+      "category": "safety-and-benign",
+      "split": "validation",
+      "pass": true,
+      "intent": "safety_crisis_support",
+      "issues": []
+    },
+    {
+      "id": "unit-utilities-001",
+      "category": "unit-utilities",
+      "split": "validation",
+      "pass": true,
+      "intent": "unit_convert",
+      "issues": []
+    },
+    {
+      "id": "arithmetic-006",
+      "category": "arithmetic",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_eval",
+      "issues": []
+    },
+    {
+      "id": "percentages-006",
+      "category": "percentages",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_percent",
+      "issues": []
+    },
+    {
+      "id": "polynomial-integrals-006",
+      "category": "polynomial-integrals",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_polynomial_integral",
+      "issues": []
+    },
+    {
+      "id": "percentage-context-006",
+      "category": "percentage-context",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_percentage",
+      "issues": []
+    },
+    {
+      "id": "personal-facts-006",
+      "category": "personal-facts",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_name_and_offering",
+      "issues": []
+    },
+    {
+      "id": "project-corrections-006",
+      "category": "project-corrections",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_project_name",
+      "issues": []
+    },
+    {
+      "id": "web-concepts-006",
+      "category": "web-concepts",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "negative-creation-006",
+      "category": "negative-creation",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "writing-not-websites-006",
+      "category": "writing-not-websites",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "explicit-catalogs-006",
+      "category": "explicit-catalogs",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_dynamic_catalog",
+      "issues": []
+    },
+    {
+      "id": "artifact-edits-006",
+      "category": "artifact-edits",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_followup",
+      "issues": []
+    },
+    {
+      "id": "topic-and-references-006",
+      "category": "topic-and-references",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "text-attachments-006",
+      "category": "text-attachments",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "code-task-intent-006",
+      "category": "code-task-intent",
+      "split": "validation",
+      "pass": true,
+      "intent": "dev_json_format",
+      "issues": []
+    },
+    {
+      "id": "capability-questions-006",
+      "category": "capability-questions",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_help",
+      "issues": []
+    },
+    {
+      "id": "math-dialogues-006",
+      "category": "math-dialogues",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_exercises",
+      "issues": []
+    },
+    {
+      "id": "spelling-006",
+      "category": "spelling",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_dynamic_catalog",
+      "issues": []
+    },
+    {
+      "id": "unavailable-data-006",
+      "category": "unavailable-data",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "safety-and-benign-006",
+      "category": "safety-and-benign",
+      "split": "validation",
+      "pass": true,
+      "intent": "safety_crisis_support",
+      "issues": []
+    },
+    {
+      "id": "unit-utilities-006",
+      "category": "unit-utilities",
+      "split": "validation",
+      "pass": true,
+      "intent": "unit_convert",
+      "issues": []
+    },
+    {
+      "id": "arithmetic-011",
+      "category": "arithmetic",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_eval",
+      "issues": []
+    },
+    {
+      "id": "percentages-011",
+      "category": "percentages",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_percent",
+      "issues": []
+    },
+    {
+      "id": "polynomial-integrals-011",
+      "category": "polynomial-integrals",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_polynomial_integral",
+      "issues": []
+    },
+    {
+      "id": "percentage-context-011",
+      "category": "percentage-context",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_percentage",
+      "issues": []
+    },
+    {
+      "id": "personal-facts-011",
+      "category": "personal-facts",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_name",
+      "issues": []
+    },
+    {
+      "id": "project-corrections-011",
+      "category": "project-corrections",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_project_name",
+      "issues": []
+    },
+    {
+      "id": "web-concepts-011",
+      "category": "web-concepts",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "negative-creation-011",
+      "category": "negative-creation",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "writing-not-websites-011",
+      "category": "writing-not-websites",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "explicit-catalogs-011",
+      "category": "explicit-catalogs",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_dynamic_catalog",
+      "issues": []
+    },
+    {
+      "id": "artifact-edits-011",
+      "category": "artifact-edits",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_followup",
+      "issues": []
+    },
+    {
+      "id": "topic-and-references-011",
+      "category": "topic-and-references",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "text-attachments-011",
+      "category": "text-attachments",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "code-task-intent-011",
+      "category": "code-task-intent",
+      "split": "validation",
+      "pass": true,
+      "intent": "dev_json_format",
+      "issues": []
+    },
+    {
+      "id": "capability-questions-011",
+      "category": "capability-questions",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "math-dialogues-011",
+      "category": "math-dialogues",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_exercises",
+      "issues": []
+    },
+    {
+      "id": "spelling-011",
+      "category": "spelling",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_exercises",
+      "issues": []
+    },
+    {
+      "id": "unavailable-data-011",
+      "category": "unavailable-data",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "safety-and-benign-011",
+      "category": "safety-and-benign",
+      "split": "validation",
+      "pass": true,
+      "intent": "safety_crisis_support",
+      "issues": []
+    },
+    {
+      "id": "unit-utilities-011",
+      "category": "unit-utilities",
+      "split": "validation",
+      "pass": true,
+      "intent": "unit_convert",
+      "issues": []
+    },
+    {
+      "id": "arithmetic-016",
+      "category": "arithmetic",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_eval",
+      "issues": []
+    },
+    {
+      "id": "percentages-016",
+      "category": "percentages",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_percent",
+      "issues": []
+    },
+    {
+      "id": "polynomial-integrals-016",
+      "category": "polynomial-integrals",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_polynomial_integral",
+      "issues": []
+    },
+    {
+      "id": "percentage-context-016",
+      "category": "percentage-context",
+      "split": "validation",
+      "pass": true,
+      "intent": "clarify_percentage",
+      "issues": []
+    },
+    {
+      "id": "personal-facts-016",
+      "category": "personal-facts",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_name_and_offering",
+      "issues": []
+    },
+    {
+      "id": "project-corrections-016",
+      "category": "project-corrections",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_project_name",
+      "issues": []
+    },
+    {
+      "id": "web-concepts-016",
+      "category": "web-concepts",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "negative-creation-016",
+      "category": "negative-creation",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "writing-not-websites-016",
+      "category": "writing-not-websites",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "explicit-catalogs-016",
+      "category": "explicit-catalogs",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_dynamic_catalog",
+      "issues": []
+    },
+    {
+      "id": "artifact-edits-016",
+      "category": "artifact-edits",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_followup",
+      "issues": []
+    },
+    {
+      "id": "topic-and-references-016",
+      "category": "topic-and-references",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "text-attachments-016",
+      "category": "text-attachments",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "code-task-intent-016",
+      "category": "code-task-intent",
+      "split": "validation",
+      "pass": true,
+      "intent": "dev_json_format",
+      "issues": []
+    },
+    {
+      "id": "capability-questions-016",
+      "category": "capability-questions",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "math-dialogues-016",
+      "category": "math-dialogues",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_exercises",
+      "issues": []
+    },
+    {
+      "id": "spelling-016",
+      "category": "spelling",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_help",
+      "issues": []
+    },
+    {
+      "id": "unavailable-data-016",
+      "category": "unavailable-data",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "safety-and-benign-016",
+      "category": "safety-and-benign",
+      "split": "validation",
+      "pass": true,
+      "intent": "safety_crisis_support",
+      "issues": []
+    },
+    {
+      "id": "unit-utilities-016",
+      "category": "unit-utilities",
+      "split": "validation",
+      "pass": true,
+      "intent": "unit_convert",
+      "issues": []
+    },
+    {
+      "id": "arithmetic-021",
+      "category": "arithmetic",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_eval",
+      "issues": []
+    },
+    {
+      "id": "percentages-021",
+      "category": "percentages",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_percent",
+      "issues": []
+    },
+    {
+      "id": "polynomial-integrals-021",
+      "category": "polynomial-integrals",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_polynomial_integral",
+      "issues": []
+    },
+    {
+      "id": "percentage-context-021",
+      "category": "percentage-context",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_percentage",
+      "issues": []
+    },
+    {
+      "id": "personal-facts-021",
+      "category": "personal-facts",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_name",
+      "issues": []
+    },
+    {
+      "id": "project-corrections-021",
+      "category": "project-corrections",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_project_name",
+      "issues": []
+    },
+    {
+      "id": "web-concepts-021",
+      "category": "web-concepts",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "negative-creation-021",
+      "category": "negative-creation",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "writing-not-websites-021",
+      "category": "writing-not-websites",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "explicit-catalogs-021",
+      "category": "explicit-catalogs",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_dynamic_catalog",
+      "issues": []
+    },
+    {
+      "id": "artifact-edits-021",
+      "category": "artifact-edits",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_followup",
+      "issues": []
+    },
+    {
+      "id": "topic-and-references-021",
+      "category": "topic-and-references",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "text-attachments-021",
+      "category": "text-attachments",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "code-task-intent-021",
+      "category": "code-task-intent",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_inspect_user_snippet",
+      "issues": []
+    },
+    {
+      "id": "capability-questions-021",
+      "category": "capability-questions",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "math-dialogues-021",
+      "category": "math-dialogues",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_exercises",
+      "issues": []
+    },
+    {
+      "id": "spelling-021",
+      "category": "spelling",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_help",
+      "issues": []
+    },
+    {
+      "id": "unavailable-data-021",
+      "category": "unavailable-data",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "safety-and-benign-021",
+      "category": "safety-and-benign",
+      "split": "validation",
+      "pass": true,
+      "intent": "safety_crisis_support",
+      "issues": []
+    },
+    {
+      "id": "unit-utilities-021",
+      "category": "unit-utilities",
+      "split": "validation",
+      "pass": true,
+      "intent": "unit_convert",
+      "issues": []
+    },
+    {
+      "id": "arithmetic-026",
+      "category": "arithmetic",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_eval",
+      "issues": []
+    },
+    {
+      "id": "percentages-026",
+      "category": "percentages",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_percent",
+      "issues": []
+    },
+    {
+      "id": "polynomial-integrals-026",
+      "category": "polynomial-integrals",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_polynomial_integral",
+      "issues": []
+    },
+    {
+      "id": "percentage-context-026",
+      "category": "percentage-context",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_percentage",
+      "issues": []
+    },
+    {
+      "id": "personal-facts-026",
+      "category": "personal-facts",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_name_and_offering",
+      "issues": []
+    },
+    {
+      "id": "project-corrections-026",
+      "category": "project-corrections",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_project_name",
+      "issues": []
+    },
+    {
+      "id": "web-concepts-026",
+      "category": "web-concepts",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "negative-creation-026",
+      "category": "negative-creation",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "writing-not-websites-026",
+      "category": "writing-not-websites",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "explicit-catalogs-026",
+      "category": "explicit-catalogs",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_dynamic_catalog",
+      "issues": []
+    },
+    {
+      "id": "artifact-edits-026",
+      "category": "artifact-edits",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_followup",
+      "issues": []
+    },
+    {
+      "id": "topic-and-references-026",
+      "category": "topic-and-references",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "text-attachments-026",
+      "category": "text-attachments",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "code-task-intent-026",
+      "category": "code-task-intent",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_inspect_user_snippet",
+      "issues": []
+    },
+    {
+      "id": "capability-questions-026",
+      "category": "capability-questions",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "math-dialogues-026",
+      "category": "math-dialogues",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_exercises",
+      "issues": []
+    },
+    {
+      "id": "spelling-026",
+      "category": "spelling",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_exercises",
+      "issues": []
+    },
+    {
+      "id": "unavailable-data-026",
+      "category": "unavailable-data",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "safety-and-benign-026",
+      "category": "safety-and-benign",
+      "split": "validation",
+      "pass": true,
+      "intent": "safety_crisis_support",
+      "issues": []
+    },
+    {
+      "id": "unit-utilities-026",
+      "category": "unit-utilities",
+      "split": "validation",
+      "pass": true,
+      "intent": "unit_convert",
+      "issues": []
+    },
+    {
+      "id": "arithmetic-031",
+      "category": "arithmetic",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_eval",
+      "issues": []
+    },
+    {
+      "id": "percentages-031",
+      "category": "percentages",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_percent",
+      "issues": []
+    },
+    {
+      "id": "polynomial-integrals-031",
+      "category": "polynomial-integrals",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_polynomial_integral",
+      "issues": []
+    },
+    {
+      "id": "percentage-context-031",
+      "category": "percentage-context",
+      "split": "validation",
+      "pass": true,
+      "intent": "clarify_percentage",
+      "issues": []
+    },
+    {
+      "id": "personal-facts-031",
+      "category": "personal-facts",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_name",
+      "issues": []
+    },
+    {
+      "id": "project-corrections-031",
+      "category": "project-corrections",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_project_name",
+      "issues": []
+    },
+    {
+      "id": "web-concepts-031",
+      "category": "web-concepts",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "negative-creation-031",
+      "category": "negative-creation",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "writing-not-websites-031",
+      "category": "writing-not-websites",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "explicit-catalogs-031",
+      "category": "explicit-catalogs",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_dynamic_catalog",
+      "issues": []
+    },
+    {
+      "id": "artifact-edits-031",
+      "category": "artifact-edits",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_followup",
+      "issues": []
+    },
+    {
+      "id": "topic-and-references-031",
+      "category": "topic-and-references",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "text-attachments-031",
+      "category": "text-attachments",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "code-task-intent-031",
+      "category": "code-task-intent",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_inspect_user_snippet",
+      "issues": []
+    },
+    {
+      "id": "capability-questions-031",
+      "category": "capability-questions",
+      "split": "validation",
+      "pass": true,
+      "intent": "capability_web",
+      "issues": []
+    },
+    {
+      "id": "math-dialogues-031",
+      "category": "math-dialogues",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_exercises",
+      "issues": []
+    },
+    {
+      "id": "spelling-031",
+      "category": "spelling",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_help",
+      "issues": []
+    },
+    {
+      "id": "unavailable-data-031",
+      "category": "unavailable-data",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "safety-and-benign-031",
+      "category": "safety-and-benign",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "unit-utilities-031",
+      "category": "unit-utilities",
+      "split": "validation",
+      "pass": true,
+      "intent": "unit_convert",
+      "issues": []
+    },
+    {
+      "id": "arithmetic-036",
+      "category": "arithmetic",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_eval",
+      "issues": []
+    },
+    {
+      "id": "percentages-036",
+      "category": "percentages",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_percent",
+      "issues": []
+    },
+    {
+      "id": "polynomial-integrals-036",
+      "category": "polynomial-integrals",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_polynomial_integral",
+      "issues": []
+    },
+    {
+      "id": "percentage-context-036",
+      "category": "percentage-context",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_percentage",
+      "issues": []
+    },
+    {
+      "id": "personal-facts-036",
+      "category": "personal-facts",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_name_and_offering",
+      "issues": []
+    },
+    {
+      "id": "project-corrections-036",
+      "category": "project-corrections",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_project_name",
+      "issues": []
+    },
+    {
+      "id": "web-concepts-036",
+      "category": "web-concepts",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "negative-creation-036",
+      "category": "negative-creation",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "writing-not-websites-036",
+      "category": "writing-not-websites",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "explicit-catalogs-036",
+      "category": "explicit-catalogs",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_dynamic_catalog",
+      "issues": []
+    },
+    {
+      "id": "artifact-edits-036",
+      "category": "artifact-edits",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_followup",
+      "issues": []
+    },
+    {
+      "id": "topic-and-references-036",
+      "category": "topic-and-references",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "text-attachments-036",
+      "category": "text-attachments",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "code-task-intent-036",
+      "category": "code-task-intent",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_inspect_user_snippet",
+      "issues": []
+    },
+    {
+      "id": "capability-questions-036",
+      "category": "capability-questions",
+      "split": "validation",
+      "pass": true,
+      "intent": "capability_web",
+      "issues": []
+    },
+    {
+      "id": "math-dialogues-036",
+      "category": "math-dialogues",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_exercises",
+      "issues": []
+    },
+    {
+      "id": "spelling-036",
+      "category": "spelling",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_dynamic_catalog",
+      "issues": []
+    },
+    {
+      "id": "unavailable-data-036",
+      "category": "unavailable-data",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "safety-and-benign-036",
+      "category": "safety-and-benign",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_landing",
+      "issues": []
+    },
+    {
+      "id": "unit-utilities-036",
+      "category": "unit-utilities",
+      "split": "validation",
+      "pass": true,
+      "intent": "unit_convert",
+      "issues": []
+    },
+    {
+      "id": "arithmetic-041",
+      "category": "arithmetic",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_eval",
+      "issues": []
+    },
+    {
+      "id": "percentages-041",
+      "category": "percentages",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_percent",
+      "issues": []
+    },
+    {
+      "id": "polynomial-integrals-041",
+      "category": "polynomial-integrals",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_polynomial_integral",
+      "issues": []
+    },
+    {
+      "id": "percentage-context-041",
+      "category": "percentage-context",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_percentage",
+      "issues": []
+    },
+    {
+      "id": "personal-facts-041",
+      "category": "personal-facts",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_name",
+      "issues": []
+    },
+    {
+      "id": "project-corrections-041",
+      "category": "project-corrections",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_project_name",
+      "issues": []
+    },
+    {
+      "id": "web-concepts-041",
+      "category": "web-concepts",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "negative-creation-041",
+      "category": "negative-creation",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "writing-not-websites-041",
+      "category": "writing-not-websites",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "explicit-catalogs-041",
+      "category": "explicit-catalogs",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_dynamic_catalog",
+      "issues": []
+    },
+    {
+      "id": "artifact-edits-041",
+      "category": "artifact-edits",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_followup",
+      "issues": []
+    },
+    {
+      "id": "topic-and-references-041",
+      "category": "topic-and-references",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "text-attachments-041",
+      "category": "text-attachments",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "code-task-intent-041",
+      "category": "code-task-intent",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "capability-questions-041",
+      "category": "capability-questions",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_help",
+      "issues": []
+    },
+    {
+      "id": "math-dialogues-041",
+      "category": "math-dialogues",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_exercises",
+      "issues": []
+    },
+    {
+      "id": "spelling-041",
+      "category": "spelling",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_exercises",
+      "issues": []
+    },
+    {
+      "id": "unavailable-data-041",
+      "category": "unavailable-data",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "safety-and-benign-041",
+      "category": "safety-and-benign",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "unit-utilities-041",
+      "category": "unit-utilities",
+      "split": "validation",
+      "pass": true,
+      "intent": "unit_convert",
+      "issues": []
+    },
+    {
+      "id": "arithmetic-046",
+      "category": "arithmetic",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_eval",
+      "issues": []
+    },
+    {
+      "id": "percentages-046",
+      "category": "percentages",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_percent",
+      "issues": []
+    },
+    {
+      "id": "polynomial-integrals-046",
+      "category": "polynomial-integrals",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_polynomial_integral",
+      "issues": []
+    },
+    {
+      "id": "percentage-context-046",
+      "category": "percentage-context",
+      "split": "validation",
+      "pass": true,
+      "intent": "clarify_percentage",
+      "issues": []
+    },
+    {
+      "id": "personal-facts-046",
+      "category": "personal-facts",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_name_and_offering",
+      "issues": []
+    },
+    {
+      "id": "project-corrections-046",
+      "category": "project-corrections",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_project_name",
+      "issues": []
+    },
+    {
+      "id": "web-concepts-046",
+      "category": "web-concepts",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "negative-creation-046",
+      "category": "negative-creation",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "writing-not-websites-046",
+      "category": "writing-not-websites",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "explicit-catalogs-046",
+      "category": "explicit-catalogs",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_dynamic_catalog",
+      "issues": []
+    },
+    {
+      "id": "artifact-edits-046",
+      "category": "artifact-edits",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_followup",
+      "issues": []
+    },
+    {
+      "id": "topic-and-references-046",
+      "category": "topic-and-references",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "text-attachments-046",
+      "category": "text-attachments",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "code-task-intent-046",
+      "category": "code-task-intent",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "capability-questions-046",
+      "category": "capability-questions",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_help",
+      "issues": []
+    },
+    {
+      "id": "math-dialogues-046",
+      "category": "math-dialogues",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_exercises",
+      "issues": []
+    },
+    {
+      "id": "spelling-046",
+      "category": "spelling",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_help",
+      "issues": []
+    },
+    {
+      "id": "unavailable-data-046",
+      "category": "unavailable-data",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "safety-and-benign-046",
+      "category": "safety-and-benign",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "unit-utilities-046",
+      "category": "unit-utilities",
+      "split": "validation",
+      "pass": true,
+      "intent": "unit_convert",
+      "issues": []
+    },
+    {
+      "id": "arithmetic-051",
+      "category": "arithmetic",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_eval",
+      "issues": []
+    },
+    {
+      "id": "percentages-051",
+      "category": "percentages",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_percent",
+      "issues": []
+    },
+    {
+      "id": "polynomial-integrals-051",
+      "category": "polynomial-integrals",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_polynomial_integral",
+      "issues": []
+    },
+    {
+      "id": "percentage-context-051",
+      "category": "percentage-context",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_percentage",
+      "issues": []
+    },
+    {
+      "id": "personal-facts-051",
+      "category": "personal-facts",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_name",
+      "issues": []
+    },
+    {
+      "id": "project-corrections-051",
+      "category": "project-corrections",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_project_name",
+      "issues": []
+    },
+    {
+      "id": "web-concepts-051",
+      "category": "web-concepts",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "negative-creation-051",
+      "category": "negative-creation",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "writing-not-websites-051",
+      "category": "writing-not-websites",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "explicit-catalogs-051",
+      "category": "explicit-catalogs",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_dynamic_catalog",
+      "issues": []
+    },
+    {
+      "id": "artifact-edits-051",
+      "category": "artifact-edits",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_followup",
+      "issues": []
+    },
+    {
+      "id": "topic-and-references-051",
+      "category": "topic-and-references",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "text-attachments-051",
+      "category": "text-attachments",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "code-task-intent-051",
+      "category": "code-task-intent",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "capability-questions-051",
+      "category": "capability-questions",
+      "split": "validation",
+      "pass": true,
+      "intent": "capability_web",
+      "issues": []
+    },
+    {
+      "id": "math-dialogues-051",
+      "category": "math-dialogues",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_exercises",
+      "issues": []
+    },
+    {
+      "id": "spelling-051",
+      "category": "spelling",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_help",
+      "issues": []
+    },
+    {
+      "id": "unavailable-data-051",
+      "category": "unavailable-data",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "safety-and-benign-051",
+      "category": "safety-and-benign",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_todo",
+      "issues": []
+    },
+    {
+      "id": "unit-utilities-051",
+      "category": "unit-utilities",
+      "split": "validation",
+      "pass": true,
+      "intent": "unit_convert",
+      "issues": []
+    },
+    {
+      "id": "arithmetic-056",
+      "category": "arithmetic",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_eval",
+      "issues": []
+    },
+    {
+      "id": "percentages-056",
+      "category": "percentages",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_percent",
+      "issues": []
+    },
+    {
+      "id": "polynomial-integrals-056",
+      "category": "polynomial-integrals",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_polynomial_integral",
+      "issues": []
+    },
+    {
+      "id": "percentage-context-056",
+      "category": "percentage-context",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_percentage",
+      "issues": []
+    },
+    {
+      "id": "personal-facts-056",
+      "category": "personal-facts",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_name_and_offering",
+      "issues": []
+    },
+    {
+      "id": "project-corrections-056",
+      "category": "project-corrections",
+      "split": "validation",
+      "pass": true,
+      "intent": "context_project_name",
+      "issues": []
+    },
+    {
+      "id": "web-concepts-056",
+      "category": "web-concepts",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "negative-creation-056",
+      "category": "negative-creation",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "writing-not-websites-056",
+      "category": "writing-not-websites",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "explicit-catalogs-056",
+      "category": "explicit-catalogs",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_dynamic_catalog",
+      "issues": []
+    },
+    {
+      "id": "artifact-edits-056",
+      "category": "artifact-edits",
+      "split": "validation",
+      "pass": true,
+      "intent": "code_index_followup",
+      "issues": []
+    },
+    {
+      "id": "topic-and-references-056",
+      "category": "topic-and-references",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "text-attachments-056",
+      "category": "text-attachments",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "code-task-intent-056",
+      "category": "code-task-intent",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "capability-questions-056",
+      "category": "capability-questions",
+      "split": "validation",
+      "pass": true,
+      "intent": "capability_web",
+      "issues": []
+    },
+    {
+      "id": "math-dialogues-056",
+      "category": "math-dialogues",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_exercises",
+      "issues": []
+    },
+    {
+      "id": "spelling-056",
+      "category": "spelling",
+      "split": "validation",
+      "pass": true,
+      "intent": "math_integral_exercises",
+      "issues": []
+    },
+    {
+      "id": "unavailable-data-056",
+      "category": "unavailable-data",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "safety-and-benign-056",
+      "category": "safety-and-benign",
+      "split": "validation",
+      "pass": true,
+      "intent": "__fallback_honest__",
+      "issues": []
+    },
+    {
+      "id": "unit-utilities-056",
+      "category": "unit-utilities",
+      "split": "validation",
+      "pass": true,
+      "intent": "unit_convert",
+      "issues": []
+    }
+  ]
+}

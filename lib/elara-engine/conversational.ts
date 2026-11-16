@@ -300,7 +300,7 @@ export function tryConversationalResponse(raw: string): { reply: string; intent:
   if (unitConv) return unitConv;
 
   // Percentage queries: "15% de 800" or "15 por ciento de 800"
-  const pctMatch = raw.toLowerCase().match(/(\d+(?:[.,]\d+)?)\s*(?:%|por\s*ciento)\s*de\s*(\d+(?:[.,]\d+)?)/);
+  const pctMatch = raw.toLowerCase().match(/(-?\d+(?:[.,]\d+)?)\s*(?:%|por\s*ciento)\s*de\s*(-?\d+(?:[.,]\d+)?)/);
   if (pctMatch) {
     const pct = Number(pctMatch[1].replace(',', '.'));
     const base = Number(pctMatch[2].replace(',', '.'));
@@ -322,7 +322,7 @@ export function tryConversationalResponse(raw: string): { reply: string; intent:
   }
 
   // Direct math expressions
-  const mathExprMatch = raw.match(/(?:cu[aá]nto\s+es|calcula|resuelve)?\s*([0-9+\-*/().×÷,\s]{3,60})/i);
+  const mathExprMatch = raw.trim().match(/^(?:[¿]?\s*(?:cu[aá]nto\s+es|calcula|resuelve)\s+)?([0-9+\-*/().×÷,\s]{3,60})[?!]?$/i);
   if (mathExprMatch?.[1] && /\d/.test(mathExprMatch[1]) && /[+\-*/×÷]/.test(mathExprMatch[1])) {
     const value = evaluateSafeArithmetic(mathExprMatch[1]);
     if (value !== null) {
@@ -355,13 +355,13 @@ export function tryConversationalResponse(raw: string): { reply: string; intent:
   // Polite conversational turns
   if (/^(gracias|muchas gracias|excelente|genial|perfecto|buen trabajo|ok gracias)[.! ]*$/.test(norm)) {
     return {
-      reply: 'Con gusto. Si quieres ajustar algún código, probar otra web `index.html` o revisar un error, dime y lo hacemos.',
+      reply: 'Con gusto. ¿Seguimos con este tema o hay algo más que quieras resolver?',
       intent: 'thanks',
     };
   }
   if (/^(como estas|todo bien|que haces|estas ahi|sigues ahi)[.!? ]*$/.test(norm)) {
     return {
-      reply: 'Aquí estoy, lista para ayudarte. ¿Quieres que armemos un `index.html`, revisar un código o resolver alguna duda técnica?',
+      reply: 'Aquí estoy, lista para ayudarte. Cuéntame qué necesitas.',
       intent: 'smalltalk_status',
     };
   }

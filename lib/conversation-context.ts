@@ -1,5 +1,6 @@
 import type { SimpleTurn } from './elara-engine/engine';
 import { extractBrandName, normalizeText } from './elara-engine/text';
+import { normalizeRequestSpelling } from './elara-engine/request-meaning';
 
 function prose(text: string): string {
   return text.replace(/```[\s\S]*?(?:```|$)/g, '').trim();
@@ -58,6 +59,11 @@ export function conversationFacts(turns: SimpleTurn[]): Record<string, string> {
 }
 
 export function isConversationFollowUp(text: string): boolean {
-  const norm = normalizeText(text);
-  return /^(?:(?:y|ahora|por favor)\s+)*(?:resum(?:e|elo|emelo|eme eso)|sintetiza(?:lo)?|hazl[oa] mas (?:breve|cort[oa]|sencill[oa]|clar[oa]|simple|detallad[oa])|explica(?:lo|melo)(?:\b|$)|explica(?:me)? (?:eso|lo anterior)|(?:dame|ponme|pon) (?:otro |un )?ejemplo|continua(?: con eso)?|sigue con eso|traducelo|en (?:ingles|espanol|portugues|frances)|(?:dilo|escribelo) (?:en|con|mas)|por que(?: eso)?$)/.test(norm);
+  const norm = normalizeText(normalizeRequestSpelling(text));
+  return /^(?:(?:y|ahora|por favor)\s+)*(?:resum(?:e|elo|emelo|eme eso)|sintetiza(?:lo)?|hazl[oa]s? mas (?:breves?|cort[oa]s?|sencill[oa]s?|clar[oa]s?|simples?|detallad[oa]s?)|explica(?:lo|melo)(?:\b|$)|explica(?:me)? (?:eso|lo anterior)|(?:dame|ponme|pon) (?:otro |un )?ejemplo|continua(?: con eso)?|sigue con eso|traducelo|en (?:ingles|espanol|portugues|frances)|(?:dilo|escribelo) (?:en|con|mas)|por que(?: eso)?$)/.test(norm);
+}
+
+export function isRewriteRequest(text:string):boolean {
+  const norm=normalizeText(normalizeRequestSpelling(text)).replace(/^(?:(?:y|ahora|por favor)\s+)*/,'');
+  return isConversationFollowUp(text) && !/^(?:por que|dame|ponme|pon|continua|sigue)\b/.test(norm);
 }

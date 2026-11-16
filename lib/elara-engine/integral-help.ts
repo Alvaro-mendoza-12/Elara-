@@ -28,8 +28,9 @@ export function integralHelp(turns: SimpleTurn[]): EngineResult | null {
     return expression ? result(polynomialIntegral('∫ '+expression+' dx paso a paso')!, 'math_integral_exercise') : result('No encuentro ese ejercicio en la lista anterior. Indica un número de la lista o pega la integral.');
   }
 
-  const countMatch = norm.match(/\b(\d{1,3}|un|uno|dos|tres|cuatro|cinco)\s+(?:ejercicios?|ejemplos?|integrales)\b/);
-  const asksExercises = /\b(?:dame|darme|ponme|propon|proponme|genera|generame|prepara|quiero|necesito|desarrolla|resuelve|haz|hazme)\b/.test(norm) && /\b(?:ejercicios?|ejemplos?)\b/.test(norm);
+  const contextualCount=continuing && norm.match(/^(?:si\s+)?(?:dame|ponme|prepara|quiero|necesito|hazme)\s+(\d{1,3}|un|uno|dos|tres|cuatro|cinco)(?:\s+(?:resueltos?|con pasos|paso a paso))?[.! ]*$/);
+  const countMatch = norm.match(/\b(\d{1,3}|un|uno|dos|tres|cuatro|cinco)\s+(?:ejercicios?|ejemplos?|integrales)\b/) || contextualCount;
+  const asksExercises = !!contextualCount || (/\b(?:dame|darme|ponme|propon|proponme|genera|generame|prepara|quiero|necesito|desarrolla|resuelve|haz|hazme)\b/.test(norm) && /\b(?:ejercicios?|ejemplos?)\b/.test(norm));
   if (asksExercises) {
     const requested = countMatch ? COUNTS[countMatch[1]] || Number(countMatch[1]) : 3;
     if (requested < 1) return result('Elige entre uno y cinco ejercicios para empezar.');

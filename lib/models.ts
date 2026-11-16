@@ -1,5 +1,5 @@
 import type { SimpleTurn } from './elara-engine/engine';
-import { activeConversationTurns, conversationFacts, isConversationFollowUp } from './conversation-context';
+import { activeConversationTurns, conversationFacts, isRewriteRequest } from './conversation-context';
 import { readWebSpec } from './elara-engine/web-spec';
 
 export type ModelChoice = 'auto' | 'core' | 'conversation';
@@ -32,10 +32,10 @@ export function boundedModelContext(turns: SimpleTurn[]): Array<{ role: 'user' |
   const priorAnswer = active.slice(0, -1).reverse().find(turn => turn.role === 'assistant')?.text;
   let source = priorAnswer?.slice(0, 1600) || '';
   while (JSON.stringify(source).length > 2000) source = source.slice(0, Math.floor(source.length * 0.75));
-  const rewrite = latest.text.length <= 2000 && isConversationFollowUp(latest.text) && priorAnswer && !/```html\b/i.test(priorAnswer)
-    ? `Reformula este texto según mi petición. Conserva su tema, propósito y datos; no lo sustituyas por consejos nuevos.\nTexto anterior: ${JSON.stringify(source)}${priorAnswer.length > source.length ? '\n[Texto anterior abreviado.]' : ''}\nMi petición: ${latest.text}`
+  const rewrite = latest.text.length <= 2000 && isRewriteRequest(latest.text) && priorAnswer && !/```html\b/i.test(priorAnswer)
+    ? `Aplica mi petición al texto anterior. Conserva los datos y lo que no he pedido cambiar; entrega el texto resultante.\nTexto anterior: ${JSON.stringify(source)}${priorAnswer.length > source.length ? '\n[Texto anterior abreviado.]' : ''}\nMi petición: ${latest.text}`
     : null;
-  const facts = conversationFacts(active.slice(0, -1));
+  const facts = conversationFacts(active);
   const compactFacts: Record<string, string> = {};
   for (const key of ['nombre','proyecto','oferta','publico','preferencia']) {
     let value = facts[key];

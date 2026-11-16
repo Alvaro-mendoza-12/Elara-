@@ -80,7 +80,7 @@ export function extractRequestedCount(raw: string): number | null {
   const match = raw.match(/\b(\d{1,2})\s+(?!px\b|em\b|rem\b|ms\b|s\b|%\b)[a-záéíóúñ]{3,}/i);
   if (!match?.[1]) return null;
   const parsed = Number(match[1]);
-  if (!Number.isFinite(parsed) || parsed < 2 || parsed > 40) return null;
+  if (!Number.isFinite(parsed) || parsed < 1 || parsed > 40) return null;
   return parsed;
 }
 
@@ -128,13 +128,14 @@ const COLOR_KEYWORDS: Array<[RegExp, string]> = [
 ];
 
 export function extractAccentColor(raw: string): string | null {
-  const hex = raw.match(/#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/);
-  if (hex?.[0]) return hex[0];
   const norm = normalizeText(raw);
+  const matches:Array<{index:number;color:string}>=[];
+  const rejected=(index:number)=>/\b(?:no|sin|excepto)(?:\s+(?:a|en|el|color|uses|pongas|quiero|sea|ser|lo|de)){0,4}\s*$/.test(norm.slice(Math.max(0,index-65),index));
+  for(const match of norm.matchAll(/#(?:[0-9a-f]{6}|[0-9a-f]{3})\b/g))if(!rejected(match.index))matches.push({index:match.index,color:match[0]});
   for (const [pattern, color] of COLOR_KEYWORDS) {
-    if (pattern.test(norm)) return color;
+    for(const match of norm.matchAll(new RegExp(pattern.source,'g')))if(!rejected(match.index))matches.push({index:match.index,color});
   }
-  return null;
+  return matches.sort((a,b)=>a.index-b.index).at(-1)?.color || null;
 }
 
 export function extractCurrencySymbol(raw: string): string {

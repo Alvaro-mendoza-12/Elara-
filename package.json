@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "eval:responses": "npm test && node scripts/evaluate-responses.mjs --label=current --split=all",
     "test": "tsc -p tsconfig.test.json && node --test .test-dist/tests/*.test.js && node --check server/index.js"
   },
   "dependencies": {
