@@ -1,6 +1,9 @@
 export interface PromptParams {
+  raw: string;
   normalized: string;
   brandName: string | null;
+  requestedCount: number | null;
+  topicSubject: string | null;
   preferredTheme: 'dark' | 'light';
   codeBlocks: Array<{ lang: string; code: string }>;
   wantsCodeOnly: boolean;
@@ -47,9 +50,7 @@ export function vectorize(tokens: string[], vocabularyIndex: Map<string, number>
   const vec = new Array<number>(vocabularyIndex.size).fill(0);
   for (const token of tokens) {
     const idx = vocabularyIndex.get(token);
-    if (idx !== undefined) {
-      vec[idx] += 1;
-    }
+    if (idx !== undefined) vec[idx] += 1;
   }
   const norm = Math.sqrt(vec.reduce((acc, v) => acc + v * v, 0));
   if (norm > 0) {
@@ -71,12 +72,32 @@ export function extractFencedCodeBlocks(raw: string): Array<{ lang: string; code
   return blocks;
 }
 
+export function extractRequestedCount(raw: string): number | null {
+  const match = raw.match(/\b(\d{1,2})\s+(?!px\b|em\b|rem\b|ms\b|s\b|%\b)[a-záéíóúñ]{3,}/i);
+  if (!match?.[1]) return null;
+  const parsed = Number(match[1]);
+  if (!Number.isFinite(parsed) || parsed < 2 || parsed > 40) return null;
+  return parsed;
+}
+
+export function extractTopicSubject(raw: string): string | null {
+  const match = raw.match(
+    /(?:web|pagina|página|sitio|index(?:\.html)?|tienda|catalogo|catálogo|galeria|galería|landing|app)\s+(?:sobre|acerca de|para|de)\s+(?:\d{1,2}\s+)?([^.,;!?]{3,70})/i,
+  );
+  if (match?.[1]) {
+    return match[1]
+      .replace(/\b(en\s+html.*|con\s+carrito.*|tema\s+(?:claro|oscuro).*|modo\s+(?:claro|oscuro).*)$/i, '')
+      .trim();
+  }
+  return null;
+}
+
 export function extractBrandName(raw: string): string | null {
   const quoted = raw.match(/["“]([^"”]{2,40})["”]/);
   if (quoted?.[1]) return quoted[1].trim();
 
   const called = raw.match(
-    /(?:llamad[ao]|nombre|titulo|título|para|marca|empresa|tienda|app|web|pagina|página|proyecto)\s+(?:de\s+|la\s+|el\s+|mi\s+)?([A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑáéíóúñ0-9_-]{2,28}(?:\s+[A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑáéíóúñ0-9_-]{2,20})?)/,
+    /(?:llamad[ao]|nombre|titulo|título|marca|empresa)\s+(?:de\s+|la\s+|el\s+)?([A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑáéíóúñ0-9_-]{2,28}(?:\s+[A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑáéíóúñ0-9_-]{2,20})?)/,
   );
   if (called?.[1]) {
     const candidate = called[1].trim();
@@ -92,11 +113,14 @@ export function extractBrandName(raw: string): string | null {
 export function extractPromptParams(raw: string): PromptParams {
   const normalized = normalizeText(raw);
   const preferredTheme: 'dark' | 'light' =
-    /\b(clar[ao]|blanc[ao]|light|minimalista blanco)\b/.test(normalized) ? 'light' : 'dark';
+    /\b(clar[ao]|blanc[ao]|light|dia)\b/.test(normalized) ? 'light' : 'dark';
   const wantsCodeOnly = /\b(solo\s+(?:el\s+)?codigo|sin\s+explicacion|only\s+code)\b/.test(normalized);
   return {
+    raw,
     normalized,
     brandName: extractBrandName(raw),
+    requestedCount: extractRequestedCount(raw),
+    topicSubject: extractTopicSubject(raw),
     preferredTheme,
     codeBlocks: extractFencedCodeBlocks(raw),
     wantsCodeOnly,

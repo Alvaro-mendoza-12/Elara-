@@ -1,7 +1,8 @@
 'use client';
 
-import { Check, Copy, Download, Play } from 'lucide-react';
-import { Fragment, useState, type ReactNode } from 'react';
+import { tokenClassName, tokenizeHighlightedLines } from '@/lib/syntax-highlight';
+import { Check, ChevronDown, ChevronUp, Copy, Download, Play } from 'lucide-react';
+import { Fragment, useMemo, useState, type ReactNode } from 'react';
 
 type Segment =
   | { kind: 'text'; value: string }
@@ -37,38 +38,65 @@ function splitCodeSegments(raw: string): Segment[] {
   }
 
   if (buffer.length > 0) {
-    segments.push(inCode ? { kind: 'code', lang, value: buffer.join('\n') } : { kind: 'text', value: buffer.join('\n') });
+    segments.push(
+      inCode
+        ? { kind: 'code', lang, value: buffer.join('\n') }
+        : { kind: 'text', value: buffer.join('\n') },
+    );
   }
   return segments;
 }
 
-function renderInline(line: string): ReactNode[] {
+/**
+ * Recursively parses inline formatting (**bold**, `code`, [label](https://url))
+ * so nested combinations like **`index.html`** never leak raw backticks.
+ */
+function renderInline(line: string, keyPrefix = 'in'): ReactNode[] {
   const nodes: ReactNode[] = [];
-  const pattern = /(\*\*[^*]+\*\*|`[^`]+`)/g;
+  const pattern = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\(https:\/\/[^)\s]+\))/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
-  let keyIdx = 0;
+  let idx = 0;
 
   while ((match = pattern.exec(line)) !== null) {
     if (match.index > lastIndex) {
       nodes.push(line.slice(lastIndex, match.index));
     }
     const token = match[0];
+    const key = `${keyPrefix}-${idx++}`;
+
     if (token.startsWith('**') && token.endsWith('**')) {
       nodes.push(
-        <strong key={keyIdx++} className="font-semibold text-white">
-          {token.slice(2, -2)}
+        <strong key={key} className="font-semibold text-white">
+          {renderInline(token.slice(2, -2), key)}
         </strong>,
       );
     } else if (token.startsWith('`') && token.endsWith('`')) {
       nodes.push(
         <code
-          key={keyIdx++}
-          className="rounded border border-[#253047] bg-[#161D2C] px-1.5 py-0.5 font-mono text-[0.85em] text-[#7DD3FC]"
+          key={key}
+          className="rounded-md border border-[#26324B] bg-[#131B2A] px-1.5 py-0.5 font-mono text-[0.84em] text-[#7DD3FC]"
         >
           {token.slice(1, -1)}
         </code>,
       );
+    } else {
+      const linkMatch = token.match(/^\[([^\]]+)\]\((https:\/\/[^)\s]+)\)$/);
+      if (linkMatch) {
+        nodes.push(
+          <a
+            key={key}
+            href={linkMatch[2]}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#38BDF8] underline decoration-[#38BDF8]/40 underline-offset-4 hover:text-[#7DD3FC]"
+          >
+            {linkMatch[1]}
+          </a>,
+        );
+      } else {
+        nodes.push(token);
+      }
     }
     lastIndex = match.index + token.length;
   }
@@ -90,20 +118,20 @@ function ProseBlock({ text }: { text: string }) {
     if (listItems.length === 0) return;
     if (listOrdered) {
       elements.push(
-        <ol key={keyCounter++} className="my-2 list-decimal space-y-1.5 pl-5 text-[#E2E8F0]">
+        <ol key={keyCounter++} className="my-2.5 list-decimal space-y-1.5 pl-5 text-[#E2E8F0]">
           {listItems.map((item, i) => (
             <li key={i} className="leading-relaxed">
-              {renderInline(item)}
+              {renderInline(item, `ol-${keyCounter}-${i}`)}
             </li>
           ))}
         </ol>,
       );
     } else {
       elements.push(
-        <ul key={keyCounter++} className="my-2 list-disc space-y-1.5 pl-5 text-[#E2E8F0]">
+        <ul key={keyCounter++} className="my-2.5 list-disc space-y-1.5 pl-5 text-[#E2E8F0]">
           {listItems.map((item, i) => (
             <li key={i} className="leading-relaxed">
-              {renderInline(item)}
+              {renderInline(item, `ul-${keyCounter}-${i}`)}
             </li>
           ))}
         </ul>,
@@ -116,6 +144,12 @@ function ProseBlock({ text }: { text: string }) {
     const trimmed = rawLine.trim();
     if (!trimmed) {
       flushList();
+      continue;
+    }
+
+    if (/^---+$/.test(trimmed)) {
+      flushList();
+      elements.push(<hr key={keyCounter++} className="my-4 border-[#1F293D]" />);
       continue;
     }
 
@@ -137,20 +171,29 @@ function ProseBlock({ text }: { text: string }) {
     flushList();
     if (trimmed.startsWith('### ')) {
       elements.push(
-        <h3 key={keyCounter++} className="mt-3 mb-1 text-base font-semibold text-white">
-          {renderInline(trimmed.slice(4))}
+        <h3 key={keyCounter++} className="mt-4 mb-1 text-base font-semibold text-white">
+          {renderInline(trimmed.slice(4), `h3-${keyCounter}`)}
         </h3>,
       );
     } else if (trimmed.startsWith('## ')) {
       elements.push(
         <h2 key={keyCounter++} className="mt-4 mb-1.5 text-lg font-semibold text-white">
-          {renderInline(trimmed.slice(3))}
+          {renderInline(trimmed.slice(3), `h2-${keyCounter}`)}
         </h2>,
+      );
+    } else if (trimmed.startsWith('> ')) {
+      elements.push(
+        <blockquote
+          key={keyCounter++}
+          className="my-2.5 border-l-2 border-[#38BDF8]/60 bg-[#101724] px-3.5 py-2 text-sm text-[#CBD5E1]"
+        >
+          {renderInline(trimmed.slice(2), `bq-${keyCounter}`)}
+        </blockquote>,
       );
     } else {
       elements.push(
         <p key={keyCounter++} className="my-1.5 leading-relaxed text-[#E2E8F0]">
-          {renderInline(trimmed)}
+          {renderInline(trimmed, `p-${keyCounter}`)}
         </p>,
       );
     }
@@ -182,7 +225,11 @@ function CodeBlock({
   onOpenPreview?: (code: string) => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
   const isHtml = lang === 'html' || /^\s*<(?:!doctype\s+html|html)\b/i.test(code);
+  const highlighted = useMemo(() => tokenizeHighlightedLines(code, lang), [code, lang]);
+  const isLong = highlighted.length > 22;
 
   const handleCopy = async () => {
     try {
@@ -190,7 +237,7 @@ function CodeBlock({
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
-      // Clipboard API may fail in restricted frames; ignore gracefully.
+      // Clipboard may fail in unprivileged contexts.
     }
   };
 
@@ -206,24 +253,30 @@ function CodeBlock({
             : 'txt';
 
   return (
-    <div className="my-3 overflow-hidden rounded-xl border border-[#242F44] bg-[#090C12]">
-      <div className="flex items-center justify-between border-b border-[#1E2738] bg-[#131926] px-3.5 py-2 text-xs text-[#94A3B8]">
-        <span className="font-mono font-medium text-[#CBD5E1]">{lang || 'código'}</span>
+    <div className="my-3.5 overflow-hidden rounded-2xl border border-[#233049] bg-[#070A10] shadow-lg shadow-black/30">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1A2438] bg-[#101624] px-3.5 py-2.5 text-xs text-[#94A3B8]">
+        <div className="flex items-center gap-2">
+          <span className="rounded-md border border-[#25334D] bg-[#161F33] px-2 py-0.5 font-mono text-[11px] font-medium text-[#7DD3FC]">
+            {lang || 'código'}
+          </span>
+          <span className="text-[11px] text-[#64748B]">{highlighted.length} líneas</span>
+        </div>
+
         <div className="flex items-center gap-1.5">
           {isHtml && onOpenPreview && (
             <button
               type="button"
               onClick={() => onOpenPreview(code)}
-              className="inline-flex items-center gap-1 rounded-md bg-[#38BDF8]/15 px-2.5 py-1 text-xs font-medium text-[#38BDF8] transition-colors hover:bg-[#38BDF8]/25"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#38BDF8] px-3 py-1 text-xs font-semibold text-[#061019] transition-colors hover:bg-[#7DD3FC]"
             >
-              <Play className="h-3 w-3" />
+              <Play className="h-3 w-3 fill-current" />
               Vista previa
             </button>
           )}
           <button
             type="button"
             onClick={() => downloadTextFile(isHtml ? 'index.html' : `elara-snippet.${ext}`, code)}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-[#94A3B8] transition-colors hover:bg-[#1E2738] hover:text-white"
+            className="inline-flex items-center gap-1 rounded-lg border border-[#222E46] bg-[#141C2E] px-2.5 py-1 text-xs text-[#CBD5E1] transition-colors hover:border-[#38BDF8]/40 hover:text-white"
             title="Descargar archivo"
           >
             <Download className="h-3.5 w-3.5" />
@@ -231,16 +284,50 @@ function CodeBlock({
           <button
             type="button"
             onClick={handleCopy}
-            className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs text-[#CBD5E1] transition-colors hover:bg-[#1E2738] hover:text-white"
+            className="inline-flex items-center gap-1 rounded-lg border border-[#222E46] bg-[#141C2E] px-2.5 py-1 text-xs font-medium text-[#CBD5E1] transition-colors hover:border-[#38BDF8]/40 hover:text-white"
           >
-            {copied ? <Check className="h-3.5 w-3.5 text-[#22C55E]" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? <Check className="h-3.5 w-3.5 text-[#34D399]" /> : <Copy className="h-3.5 w-3.5" />}
             {copied ? 'Copiado' : 'Copiar'}
           </button>
+          {isLong && (
+            <button
+              type="button"
+              onClick={() => setCollapsed((v) => !v)}
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-[#94A3B8] hover:bg-[#192236] hover:text-white"
+            >
+              {collapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+              {collapsed ? 'Expandir' : 'Contraer'}
+            </button>
+          )}
         </div>
       </div>
-      <pre className="overflow-x-auto p-3.5 font-mono text-[13px] leading-6 text-[#E2E8F0]">
-        <code>{code}</code>
-      </pre>
+
+      {!collapsed ? (
+        <div className="max-h-[420px] overflow-auto px-2 py-3 font-mono text-[12.5px] leading-6">
+          <table className="w-full border-collapse">
+            <tbody>
+              {highlighted.map((tokens, lineIdx) => (
+                <tr key={lineIdx} className="hover:bg-[#101624]/60">
+                  <td className="w-10 select-none pr-3 text-right text-[11px] text-[#475569]">
+                    {lineIdx + 1}
+                  </td>
+                  <td className="whitespace-pre pr-3">
+                    {tokens.map((tok, tokIdx) => (
+                      <span key={tokIdx} className={tokenClassName(tok.kind)}>
+                        {tok.text}
+                      </span>
+                    ))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="px-4 py-2.5 text-xs text-[#64748B]">
+          Bloque contraído ({highlighted.length} líneas). Pulsa Expandir o Vista previa para verlo.
+        </div>
+      )}
     </div>
   );
 }
@@ -254,7 +341,7 @@ export function MessageMarkdown({
 }) {
   const segments = splitCodeSegments(content);
   return (
-    <div className="max-w-[74ch] text-[15px]">
+    <div className="max-w-[76ch] text-[15px]">
       {segments.map((segment, index) =>
         segment.kind === 'code' ? (
           <CodeBlock key={index} lang={segment.lang} code={segment.value} onOpenPreview={onOpenPreview} />

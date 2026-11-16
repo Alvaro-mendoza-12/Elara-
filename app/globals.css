@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: #0b0e14;
-  --color-surface: #121722;
-  --color-elevated: #171e2e;
-  --color-border: #222b3d;
+  --color-background: #06080e;
+  --color-surface: #0d121d;
+  --color-elevated: #141c2c;
+  --color-border: #1e2940;
   --color-foreground: #f1f5f9;
   --color-muted: #94a3b8;
   --color-accent: #38bdf8;
@@ -14,11 +14,17 @@
 
 html,
 body {
-  background-color: #0b0e14;
+  background-color: #06080e;
   color: #f1f5f9;
+}
+
+.elara-ambient {
+  background-image:
+    radial-gradient(ellipse 65% 40% at 50% -10%, rgba(56, 189, 248, 0.11), transparent 70%),
+    radial-gradient(ellipse 45% 30% at 85% 0%, rgba(129, 140, 248, 0.08), transparent 70%);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #253047 transparent;
+  scrollbar-color: #243047 transparent;
 }

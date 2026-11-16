@@ -30,7 +30,14 @@ function palette(theme: 'dark' | 'light') {
 }
 
 export function buildLandingIndexHtml(params: PromptParams): string {
-  const brand = escapeHtml(params.brandName || 'Elara Studio');
+  const subject = params.topicSubject ? params.topicSubject.trim() : null;
+  const brand = escapeHtml(params.brandName || (subject ? subject.charAt(0).toUpperCase() + subject.slice(1) : 'Mi Sitio Web'));
+  const headline = subject
+    ? escapeHtml(`Bienvenido a ${subject}`)
+    : `Construye tu proyecto web con ${brand}`;
+  const subtitle = subject
+    ? escapeHtml(`Página de inicio diseñada para presentar ${subject} de forma clara, moderna y adaptable a cualquier pantalla.`)
+    : `Plantilla index.html moderna, adaptable a móviles y lista para personalizar con tu contenido.`;
   const c = palette(params.preferredTheme);
   return `<!DOCTYPE html>
 <html lang="es">
@@ -66,34 +73,34 @@ export function buildLandingIndexHtml(params: PromptParams): string {
     <header>
       <span class="brand">${brand}</span>
       <nav>
-        <a href="#funciones">Funciones</a>
+        <a href="#funciones">Servicios</a>
         <a href="#contacto">Contacto</a>
         <button class="btn" id="ctaBtn" type="button">Empezar ahora</button>
       </nav>
     </header>
 
     <main class="hero">
-      <h1>Construye experiencias web rápidas con ${brand}</h1>
-      <p>Plantilla index.html limpia, adaptable a móviles y lista para editar, copiar o desplegar en producción.</p>
+      <h1>${headline}</h1>
+      <p>${subtitle}</p>
       <div class="actions">
-        <button class="btn" id="demoBtn" type="button">Probar acción</button>
-        <button class="ghost" id="toggleBtn" type="button">Ver detalles</button>
+        <button class="btn" id="demoBtn" type="button">Explorar ahora</button>
+        <button class="ghost" id="toggleBtn" type="button">Más información</button>
       </div>
       <div id="status" role="status"></div>
     </main>
 
     <section class="grid" id="funciones">
       <article class="card">
-        <h3>Arquitectura limpia</h3>
-        <p>Un único archivo HTML5 semántico con estilos CSS propios sin dependencias externas.</p>
+        <h3>Sección principal</h3>
+        <p>Presenta los puntos fuertes de ${brand} con jerarquía visual limpia.</p>
       </article>
       <article class="card">
-        <h3>Diseño responsivo</h3>
-        <p>Grilla flexible que se adapta a escritorio, tablet y pantallas móviles Android.</p>
+        <h3>Adaptable a móvil</h3>
+        <p>Se ajusta automáticamente a pantallas de escritorio, tablet y Android.</p>
       </article>
       <article class="card" id="contacto">
-        <h3>Interacción segura</h3>
-        <p>JavaScript nativo manejando eventos del DOM sin inyección insegura.</p>
+        <h3>Contacto directo</h3>
+        <p>Listo para conectar tus formularios, enlaces o redes sociales.</p>
       </article>
     </section>
   </div>
@@ -101,14 +108,14 @@ export function buildLandingIndexHtml(params: PromptParams): string {
     const statusEl = document.getElementById('status');
     let clicks = 0;
     document.getElementById('ctaBtn').addEventListener('click', () => {
-      statusEl.textContent = 'Acceso iniciado en ${brand}. Personaliza este flujo según tu app.';
+      statusEl.textContent = 'Bienvenido a ${brand}.';
     });
     document.getElementById('demoBtn').addEventListener('click', () => {
       clicks += 1;
-      statusEl.textContent = 'Acción ejecutada (' + clicks + ') correctamente.';
+      statusEl.textContent = 'Interacción registrada (' + clicks + ') en ${brand}.';
     });
     document.getElementById('toggleBtn').addEventListener('click', () => {
-      statusEl.textContent = 'Tip: edita las variables CSS en :root para cambiar colores en segundos.';
+      statusEl.textContent = 'Puedes editar textos y colores en el código index.html.';
     });
   </script>
 </body>

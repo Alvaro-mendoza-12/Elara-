@@ -61,11 +61,15 @@ export async function POST(req: Request) {
   }
 
   const messages = (rawBody as { messages?: unknown })?.messages;
-  if (!Array.isArray(messages) || messages.length === 0 || messages.length > 50) {
-    return Response.json({ error: 'La conversación debe incluir entre 1 y 50 mensajes.' }, { status: 400 });
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return Response.json(
+      { error: 'La solicitud no incluye mensajes válidos para procesar.', code: 'EMPTY_MESSAGES' },
+      { status: 400 },
+    );
   }
 
-  const uiMessages = messages as UIMessage[];
+  // Keep a bounded context window so long multi-turn conversations never hit HTTP 400.
+  const uiMessages = (messages as UIMessage[]).slice(-40);
   const engineInfo = resolveEngineInfo();
 
   try {
@@ -127,6 +131,10 @@ export async function POST(req: Request) {
     return createUIMessageStreamResponse({ stream });
   } catch (error) {
     console.error('[api/chat] Request failed:', error);
-    return Response.json({ error: 'No se pudo procesar la consulta en este momento.' }, { status: 500 });
+    const detail = error instanceof Error ? error.message.slice(0, 200) : 'Error interno inesperado';
+    return Response.json(
+      { error: `No se pudo procesar la consulta: ${detail}`, code: 'CHAT_ENGINE_ERROR' },
+      { status: 500 },
+    );
   }
 }
