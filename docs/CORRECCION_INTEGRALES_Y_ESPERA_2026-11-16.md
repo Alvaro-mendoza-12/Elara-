@@ -33,3 +33,15 @@ Pasaron 73 pruebas, lint y build. Doce casos nuevos cubren la consulta exacta, f
 Las pruebas de integración utilizan los SDK instalados de chat y de modelo: una respuesta con texto parcial seguida de error, una respuesta truncada por tokens frente a una completa y un proveedor que envía texto y después deja de responder. Se comprobó que la petición se aborta y que el aviso de timeout llega mediante el protocolo de la interfaz.
 
 El script scripts/check-integral-help.mjs comprueba el circuito HTTP público y registra el tiempo de ocho casos, incluida la consulta reportada en Automático y Conversación sin sesión. Solo utiliza entradas sintéticas y no imprime credenciales.
+
+## Publicación y resultados
+
+Código publicado: `aad71e1`, despliegue `dpl_A1HeULxFkRs15GDzGF8NTvCJ5eE6`, confirmado **Ready** en [Elara](https://elara-mu-mauve.vercel.app).
+
+Los ocho casos HTTP de integrales pasaron con respuestas completas y motor Core. En la primera publicación, la pregunta exacta tardó 1,3 segundos. Tras la publicación final, la primera solicitud tardó 5,1 segundos y las siguientes del conjunto entre 0,44 y 1,04 segundos. La misma pregunta en Conversación tardó 0,46 segundos; después de un catálogo anterior, 0,45 segundos. No se generó HTML. Son mediciones puntuales de solicitudes completas, no una garantía de latencia ni una identificación del origen de la demora histórica.
+
+La expresión `∫ (3x^2 + 2x - 5) dx paso a paso` devolvió `x^3 + x^2 - 5x + C`, con los tres términos desarrollados. La petición de tres ejercicios entregó exactamente tres; la referencia al segundo resolvió ese polinomio. La expresión no soportada recibió una explicación del alcance del calculador.
+
+También pasaron las 21 comprobaciones de acceso, perfil, persistencia, logout, revocación y validación. Después del ajuste final, los cuatro casos de continuidad se aprobaron en la dirección pública: las dos generaciones de Conversación tardaron 21,9 y 15,5 segundos; las respuestas deterministas, unos 0,44 segundos. Una prueba previa había agotado el primer margen de 22 segundos, por lo que se redujo el contexto reciente a ocho turnos y se dio un margen inicial de 30 segundos dentro de los límites totales de 42/45 segundos. No se amplió la capacidad de hardware.
+
+Al terminar se cerró la sesión sintética y se retiraron exactamente su cuenta, un registro de avatar y un archivo. La comprobación posterior confirmó cero cuentas restantes dentro de ese alcance. Novvin siguió respondiendo HTTP 200; el modelo estaba en reposo y consumía unos 1,37 GiB dentro de su límite de 3 GiB. No se utilizaron credenciales del propietario ni se cambiaron servicios de Novvin.
