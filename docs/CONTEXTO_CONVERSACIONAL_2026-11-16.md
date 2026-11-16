@@ -25,3 +25,18 @@ node --env-file=.env.local scripts/evaluate-conversation.mjs
 ```
 
 Para comprobar el circuito público completo, el mismo script admite ELARA_TEST_URL y ELARA_QA_FIXTURE con una cuenta sintética propia; cierra esa sesión al terminar. No imprime contraseñas, cookies ni la clave del runtime.
+
+## Comprobación pública final
+
+Publicado el commit `ca93e00` en [Elara](https://elara-mu-mauve.vercel.app), despliegue `dpl_2sC7w6zWaeRu3nZbSwQCzxnmRUjM`, estado **Ready**. Después de la corrección del resumen, el recorrido público completo con acceso real de una cuenta sintética aprobó los cuatro casos:
+
+| Caso | Motor | Tiempo de la muestra | Resultado |
+|---|---|---:|---|
+| Nombre corregido tras veinte turnos | Conversación | 5,1 s | Usó Nube, café y pasteles; no recuperó el nombre o los productos descartados. |
+| Aclaración después de una web antigua | Conversación | 16,0 s | Explicó cómo las plantas aprovechan la luz; no editó el catálogo anterior. |
+| Resumen de ideas de publicaciones | Core | 0,45 s | Conservó las ideas de publicar una guía de riego y mostrar una habitación con plantas. |
+| Nombre tras empezar de cero | Core | 0,42 s | Solicitó el nombre en lugar de inventarlo o recuperar el descartado. |
+
+La sesión de prueba se cerró. Se retiraron exactamente su cuenta sintética, un registro de almacenamiento y el archivo de avatar de prueba; la comprobación posterior devolvió cero cuentas restantes dentro de ese alcance. Novvin siguió respondiendo HTTP 200 y no se aumentaron los límites de los contenedores.
+
+Las 61 pruebas, lint y build corresponden al código publicado. Estos cuatro casos son una muestra controlada de continuidad; no garantizan que el modelo pequeño resuelva correctamente cualquier conversación ni que conserve información fuera de su ventana de contexto.
