@@ -12,6 +12,8 @@ Elara está conectado al Ubuntu existente mediante una ruta nueva y acotada, `/e
 
 El gateway admite **una tarea de inferencia a la vez**, compartida por conversación y voz. Devuelve HTTP 429 con Retry-After cuando está ocupado y limita a seis solicitudes por cuenta y minuto. Rechaza trabajo si MemAvailable es inferior a 2,5 GiB o la carga media de un minuto llega a 6. Core no utiliza este runtime.
 
+llama.cpp arranca con `--cache-ram 256 --ctx-checkpoints 2`. La versión fijada usa por defecto 8.192 MiB de caché RAM y 32 checkpoints, comprobados mediante su ayuda instalada y la [documentación oficial](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md). En la prueba prolongada, el contenedor se acercó a sus 3 GiB y registró presión de memoria sin OOM. Se acotaron las copias de estado para conservar margen; no se aumentaron CPU, RAM, ranuras, contexto ni tamaño del modelo. La caché no es un historial persistente ni entrenamiento.
+
 Cada contenedor se ejecuta como usuario sin privilegios, con límites de procesos, sistema de archivos de solo lectura, capacidades retiradas y no-new-privileges. Los modelos y secretos se montan de solo lectura. Solo el gateway publica un puerto en loopback; los servidores de inferencia están dentro de la red Docker. Todos usan restart unless-stopped. Esto reinicia los servicios cuando Docker vuelve a arrancar; no sustituye la disponibilidad eléctrica ni de red del servidor.
 
 La clave aleatoria se guarda en `/home/alvaro/elara-runtime/secrets/api-key`, con permisos privados, y como secreto de producción en Vercel. Nunca debe imprimirse en logs ni incluirse en Git. El gateway no admite carga de modelos, rutas de administración ni selección de servidores desde el cliente. Los IDs de cuenta enviados desde Vercel son HMAC; no se envían correos.
@@ -34,6 +36,8 @@ La carpeta instalada es `/home/alvaro/elara-runtime`. Los scripts de este direct
 - inference-gateway.mjs contiene las rutas permitidas, límites y proxy.
 
 Antes de una instalación nueva, prepara la red elara-runtime, las carpetas models/secrets, la clave privada y el modelo de conversación con el SHA-256 registrado. Estos scripts no sobrescriben contenedores existentes. Para aplicar otro límite a un contenedor existente, usa docker update sobre ese contenedor concreto; para aplicar un cambio al gateway, copia su archivo y reinicia solamente elara-inference-gateway. No borres ni recrees servicios de Novvin.
+
+Cambiar argumentos de llama.cpp requiere recrear únicamente `elara-model`: conserva antes su configuración y una copia del script, detén el contenedor anterior, déjalo renombrado y sin reinicio automático para permitir rollback, y crea el reemplazo con la misma imagen, montajes y límites. Comprueba disponibilidad y memoria bajo varias consultas antes de retirar ese respaldo. Al recrear el modelo se puede reiniciar solo el gateway de Elara para renovar sus conexiones internas.
 
 No hay registro de contenido de consultas en el gateway. Voz usa tmpfs para conversiones y logs de contenedor desactivados. La prueba verificó que no quedan archivos de audio tras la transcripción. Qwen usa contexto de 4096 tokens, una ranura, razonamiento interno desactivado y salidas acotadas a 192/256 tokens. La calidad y la velocidad dependen del tamaño pequeño y la CPU disponible.
 

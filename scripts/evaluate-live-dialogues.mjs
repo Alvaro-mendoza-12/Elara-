@@ -19,9 +19,21 @@ const interrupted=new AbortController();process.once('SIGINT',()=>interrupted.ab
 const clientFetch=createChatFetch();
 const sourceCommit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
 const catalogSha256=createHash('sha256').update(JSON.stringify(samples)).digest('hex');
+const runtimePolicySha256=createHash('sha256').update(fs.readFileSync('deployment/start-runtime.sh','utf8').replace(/\r\n/g,'\n')).digest('hex');
+const runtimeSamples=[];
+function sampleRuntime(){
+ if(!process.env.ELARA_RUNTIME_SSH_TARGET||!process.env.ELARA_RUNTIME_SSH_KEY)return;
+ try{
+  const output=execFileSync('ssh',['-i',process.env.ELARA_RUNTIME_SSH_KEY,'-o','BatchMode=yes',...(process.env.ELARA_RUNTIME_SSH_ALIAS?['-o','HostKeyAlias='+process.env.ELARA_RUNTIME_SSH_ALIAS]:[]),process.env.ELARA_RUNTIME_SSH_TARGET,'docker exec elara-model cat /sys/fs/cgroup/memory.current /sys/fs/cgroup/memory.peak /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory.events'],{encoding:'utf8',timeout:10000,stdio:['ignore','pipe','pipe']});
+  const [used,peak,limit,...events]=output.trim().split(/\r?\n/);
+  const counters=Object.fromEntries(events.map(line=>line.split(/\s+/)).map(([key,value])=>[key,Number(value)]));
+  assert.ok([used,peak,limit].every(value=>/^\d+$/.test(value)),'Unexpected memory counters');
+  runtimeSamples.push({afterRequests:results.length,usedBytes:Number(used),peakBytes:Number(peak),limitBytes:Number(limit),maxEvents:counters.max,oomEvents:counters.oom,oomKills:counters.oom_kill});
+ }catch{runtimeSamples.push({afterRequests:results.length,error:'runtime-sampling-failed'});}
+}
 let cookie='',lastStart=0;const results=[];
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-function save(){fs.writeFileSync(destination,JSON.stringify({label,base,sourceCommit,catalogSha256,scope:'actual HTTP conversations; includes Core and model turns',requests:results.length,modelTurns:results.filter(row=>row.engine==='conversation').length,rulePassed:results.filter(row=>row.rulePass).length,manualReview:'required; rule results alone are not semantic quality scores',results},null,2)+'\n');}
+function save(){fs.writeFileSync(destination,JSON.stringify({label,base,sourceCommit,catalogSha256,runtimePolicySha256,runtimeSamples,scope:'actual HTTP conversations; includes Core and model turns',requests:results.length,modelTurns:results.filter(row=>row.engine==='conversation').length,rulePassed:results.filter(row=>row.rulePass).length,manualReview:'required; rule results alone are not semantic quality scores',results},null,2)+'\n');}
 function grade(text,turn,html){
  const issues=[];
  if(html||/\b(?:generé|he creado|creé)\b.{0,60}(?:index\.html|archivo|una web)/i.test(text))issues.push('unsolicited-artifact');
@@ -60,7 +72,7 @@ try{
    }catch(caught){error=caught instanceof Error?caught.message:'request-failed';}
    const issues=error?['transport:'+error]:grade(text,turn,text.includes('```html'));
    const row={dialogue:sample.id,category:sample.category,turn:index+1,prompt:turn.text,rubric:turn.rubric,engine,status,finish,elapsedMs:Date.now()-started,firstByteMs,rulePass:!issues.length,issues,priorError,manual:'pending',text:text.slice(0,6000),truncated:text.length>6000,sha256:createHash('sha256').update(text).digest('hex')};
-   results.push(row);save();fs.appendFileSync(events,JSON.stringify({dialogue:row.dialogue,turn:row.turn,engine,elapsedMs:row.elapsedMs,rulePass:row.rulePass,issues})+'\n');
+   results.push(row);if(results.length%5===0)sampleRuntime();save();fs.appendFileSync(events,JSON.stringify({dialogue:row.dialogue,turn:row.turn,engine,elapsedMs:row.elapsedMs,rulePass:row.rulePass,issues})+'\n');
    console.log(JSON.stringify({dialogue:row.dialogue,turn:row.turn,engine,elapsedMs:row.elapsedMs,rulePass:row.rulePass,issues}));
    if(!error)history.push({id:crypto.randomUUID(),role:'assistant',parts:[{type:'text',text}]});
    else priorError=true;
@@ -70,6 +82,7 @@ try{
  }
  console.log(JSON.stringify({file:destination,requests:results.length,modelTurns:results.filter(row=>row.engine==='conversation').length,rulePassed:results.filter(row=>row.rulePass).length}));
 }finally{
+ sampleRuntime();
  save();
  if(cookie)await fetch(base+'/api/auth/logout',{method:'POST',headers:{Origin:base,'Content-Type':'application/json',Cookie:cookie},body:'{}',signal:AbortSignal.timeout(15000)}).catch(()=>{});
 }

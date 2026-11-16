@@ -1,0 +1,17 @@
+{
+  "scope": "Measured before limiting llama.cpp RAM cache; this is an observation, not proof of a memory leak",
+  "observedAt": "2026-11-16T16:58:26Z",
+  "modelMemoryGiB": 2.936,
+  "containerLimitGiB": 3,
+  "hostAvailableMiB": 8150,
+  "cgroupMemoryMaxEvents": 73853,
+  "oomEvents": 0,
+  "oomKills": 0,
+  "fullMemoryPressureAvg60": 2.22,
+  "cacheRamMiBDefaultConfirmedByInstalledHelp": 8192,
+  "contextCheckpointsDefaultConfirmedByInstalledHelp": 32,
+  "plannedCacheRamMiB": 256,
+  "plannedContextCheckpoints": 2,
+  "cpuLimitUnchanged": 2.5,
+  "parallelSlotsUnchanged": 1
+}

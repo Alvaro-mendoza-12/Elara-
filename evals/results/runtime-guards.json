@@ -1,0 +1,9 @@
+{
+  "publicAnonymous": 401,
+  "oneActiveGeneration": true,
+  "secondRequest": 429,
+  "retryAfter": 8,
+  "speechReady": true,
+  "elapsedMs": 8425,
+  "runtimePolicySha256": "a729c317f5f34f2bb7e58408ad1c5201fc63e0c02307452dd371e82bf0720ff8"
+}
