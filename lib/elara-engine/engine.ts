@@ -104,6 +104,10 @@ function buildContextualFollowUp(userText: string, prevHtml: { prompt: string; h
     return 'El `index.html` anterior está organizado en tres bloques autocontenidos:\n\n1. **`<style>` con variables `:root`**: centraliza fondo, bordes y color principal.\n2. **HTML5 semántico**: diseño adaptable a escritorio y móvil sin librerías externas.\n3. **`<script>` seguro**: conecta los eventos con `addEventListener` y actualiza textos con `textContent`.';
   }
 
+  const supportedEdit = params.accentColor || params.brandName || params.requestedCount ||
+    /\b(claro|clara|oscuro|oscura|blanco|blanca|light|dark|soles|euros?|dolares)\b/.test(norm);
+  if (!supportedEdit) return 'Con el motor básico puedo cambiar el color, el tema claro u oscuro, la marca, la moneda y la cantidad de productos del prototipo anterior. No puedo aplicar ese cambio concreto con fiabilidad. Indica uno de esos ajustes o comparte el fragmento de código que necesitas revisar.';
+
   const prevParams = extractPromptParams(prevHtml.prompt);
   prevParams.accentColor = prevHtml.html.match(/--accent:\s*(#[a-fA-F0-9]{3,6})/)?.[1] || prevParams.accentColor;
   prevParams.preferredTheme = /--bg:\s*#(?:f8fafc|f7f8fc)/i.test(prevHtml.html) ? 'light' : 'dark';

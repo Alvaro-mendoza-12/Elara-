@@ -287,6 +287,7 @@ function ElaraWorkspace() {
   const recognitionRef = useRef<InstanceType<SpeechRecognitionCtor> | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
   const autoFollowRef = useRef(true);
+  const authEpochRef = useRef(0);
 
   const transport = useMemo(() => new DefaultChatTransport({ api: '/api/chat' }), []);
   const initialMessages = useMemo(
@@ -330,11 +331,13 @@ function ElaraWorkspace() {
     let active = true;
     const controller = new AbortController();
     const refresh = async () => {
+      const authEpoch = authEpochRef.current;
       try {
         const response = await fetch('/api/auth/session', { cache: 'no-store', signal: controller.signal });
         const data = await response.json();
-        if (active && response.ok) setUserProfile(data.profile ?? null);
-        else if (active) setToast('No se pudo verificar tu sesión. Puedes seguir en acceso libre.');
+        if (!active || authEpoch !== authEpochRef.current) return;
+        if (response.ok) setUserProfile(data.profile ?? null);
+        else setToast('No se pudo verificar tu sesión. Puedes seguir en acceso libre.');
       } catch { /* Retry on the next focus after a temporary network error. */ }
     };
     void refresh(); window.addEventListener('focus', refresh);
@@ -579,9 +582,11 @@ function ElaraWorkspace() {
   }
 
   function handleSaveProfile(profile: ElaraUserProfile) {
+    authEpochRef.current += 1;
     setUserProfile(profile); showToast('Sesión de Novvin iniciada');
   }
   function handleSignOut() {
+    authEpochRef.current += 1;
     if (busy) stop(); setUserProfile(null); showToast('Sesión cerrada en Novvin');
   }
 

@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 const base = process.env.ELARA_TEST_URL || 'http://127.0.0.1:3107';
 const origin = new URL(base).origin;
-const fixturePath = '.vercel/qa-account.json';
+const fixturePath = process.env.ELARA_QA_FIXTURE || '.vercel/qa-account.json';
 const fixture = fs.existsSync(fixturePath) ? JSON.parse(fs.readFileSync(fixturePath, 'utf8')) : {
  email: `elara.qa.${crypto.randomBytes(8).toString('hex')}@example.invalid`,
  password: crypto.randomBytes(24).toString('base64url'),

@@ -43,7 +43,7 @@ npm run build
 npm run dev
 ```
 
-Para la comprobación HTTP, `node scripts/smoke.mjs` usa por defecto `http://127.0.0.1:3107`. `ELARA_TEST_URL` permite seleccionar el despliegue. **Esta comprobación crea una cuenta sintética real** con dominio `example.invalid`, almacena su fixture privado en `.vercel/qa-account.json` y comprueba acceso, revocación y streaming. No usarla contra servicios ajenos. El fixture debe retirarse del servidor al terminar la validación.
+Para la comprobación HTTP, `node scripts/smoke.mjs` usa por defecto `http://127.0.0.1:3107`. `ELARA_TEST_URL` permite seleccionar el despliegue y `ELARA_QA_FIXTURE` seleccionar un fixture independiente. **Esta comprobación crea una cuenta sintética real** con dominio `example.invalid`, almacena su fixture privado en `.vercel/qa-account.json` y comprueba acceso, revocación y streaming. No usarla contra servicios ajenos. El fixture debe retirarse del servidor al terminar la validación.
 
 ## Documentación
 

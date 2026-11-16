@@ -81,3 +81,9 @@ test('new artifact topic never inherits an older catalog topic',()=> {
   assert.ok(items(c.reply).every(item=>item.category==='Laptops'));
   assert.doesNotMatch(c.reply,/Hueso Dental/);
 });
+
+test('unsupported artifact changes are acknowledged without pretending to edit HTML',()=> {
+  const q='Crea una web de 6 laptops';const a=run([user(q)]);
+  const result=run([user(q),assistant(a.reply),user('Agrega un sistema de pagos real')]);
+  assert.match(result.reply,/No puedo aplicar ese cambio/);assert.doesNotMatch(result.reply,/```html|Actualicé/);
+});

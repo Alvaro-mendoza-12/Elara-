@@ -53,7 +53,7 @@ export function NovvinAuthModal({ open, existingProfile, onSaveProfile, onSignOu
     finally { setBusy(false); }
   }
   return (
-    <dialog ref={dialog} onCancel={onClose} onClick={(e) => { if (e.target === dialog.current && !busy) onClose(); }} className="auth-dialog">
+    <dialog ref={dialog} onCancel={(e) => { if (busy) e.preventDefault(); else onClose(); }} onClick={(e) => { if (e.target === dialog.current && !busy) onClose(); }} className="auth-dialog">
       <div className="auth-content">
         <button type="button" onClick={onClose} aria-label="Cerrar ventana" className="auth-close" disabled={busy}><X size={20} /></button>
         <ElaraLogo size={48} />

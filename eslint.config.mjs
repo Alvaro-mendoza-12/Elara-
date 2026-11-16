@@ -12,6 +12,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     ".test-dist/**",
+    ".vercel/**",
     "next-env.d.ts",
   ]),
 ]);
