@@ -16,6 +16,7 @@ import { upstreamConfiguration } from '@/lib/model-runtime';
 import { unavailableDataReply } from '@/lib/elara-engine/data-boundaries';
 import { conversationInstructions } from '@/lib/conversation-instructions';
 import { activeConversationTurns } from '@/lib/conversation-context';
+import { verifiedKnowledgeReply } from '@/lib/verified-knowledge';
 import { CHAT_TIMEOUT_MESSAGE, conversationErrorMessage, modelResponseStream } from '@/lib/chat-reliability';
 
 export const maxDuration = 60;
@@ -89,6 +90,8 @@ export async function POST(req: Request) {
   if (computed.intent === 'safety_crisis_support') return coreStreamResponse(req, computed.reply, 'safety');
   // Public exact math tools use only this request's data and need no remote session.
   if (computed.intent.startsWith('math_')) return coreStreamResponse(req,computed.reply);
+  const verifiedAnswer=verifiedKnowledgeReply(turns);
+  if(verifiedAnswer)return coreStreamResponse(req,verifiedAnswer);
   let verifiedUser: Awaited<ReturnType<typeof verifiedNovvinUser>> = null;
   if (await readNovvinSession()) {
     try {

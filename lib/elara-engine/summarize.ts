@@ -5,7 +5,7 @@ import { normalizeText } from './text';
 export function extractiveSummary(turns: SimpleTurn[]): string | null {
   const request = normalizeText(turns.at(-1)?.text || '');
   if (!/^(?:por favor )?(?:resumelo|resumemelo|resume eso|resume lo anterior)(?: en una(?: sola)? frase)?(?: (?:y )?sin lista)?[.! ]*$/.test(request)) return null;
-  const source = turns.slice(0, -1).reverse().find(turn => turn.role === 'assistant')?.text.trim();
+  const source = turns.slice(0, -1).reverse().find(turn => turn.role === 'assistant')?.text.trim().replace(/\n+\[Fuente\]\(https:\/\/(?:openstax\.org|spaceplace\.nasa\.gov)\/[^\s)]+\)\s*$/, '').trim();
   if (!source || source.length > 1600 || /```|^\s*(?:[-*#]|\d+\.)\s|\[[^\]]+\]\(/m.test(source)) return null;
   const sentences = source.replace(/\*\*|`/g, '').split(/(?<=[.!?])\s+/u).filter(Boolean);
   if (sentences.length < 2) return null;

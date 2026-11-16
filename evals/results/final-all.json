@@ -3,7 +3,7 @@
   "scope": "routing-tools-and-context; not language-model generations",
   "cases": 1200,
   "passed": 1200,
-  "elapsedMs": 472,
+  "elapsedMs": 633,
   "catalogSha256": "75967be8db92389e9262aa4b32eedbcfb97ce8b21d1b1a8077fd0f4705cf3d64",
   "graderSha256": "be853ddd4e3a32c1974e00351c9e136131cd411305bb4694a74b1b0a9608ac5f",
   "categories": {

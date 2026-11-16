@@ -3,6 +3,57 @@
 // or has ambiguous wording; fail = wrong, off-topic or violates a key instruction;
 // transport = no complete answer. The recorder binds every grade to its output hash.
 export const reviews={
+ 'prompt-probe':{
+  'biology-and-reference':[
+   ['partial','Contenido correcto, pero entrega una frase en lugar de las dos pedidas.'],
+   ['pass','Explica la referencia causal de fotosíntesis y mantiene el tema.'],
+   ['partial','La densidad se explica correctamente, pero entrega JSON con metadatos inventados que nadie pidió.'],
+  ],
+  'ship-example':[
+   ['fail','Empieza con el equilibrio correcto pero luego afirma que el casco reduce el peso y desplaza menos peso que el barco.'],
+   ['partial','Apunta al aire desplazado, pero compara cantidad de aire con peso sin precisar unidades ni el empuje.'],
+   ['partial','Conserva la idea del ejemplo, pero sigue una formulación física imprecisa y entrega JSON no solicitado.'],
+  ],
+  'business-ideas-not-html':[
+   ['partial','Tres ideas pertinentes para plantas, presentadas en JSON no solicitado.'],
+   ['partial','Reformula las tres ideas con Brisa, pero entrega JSON no solicitado y mal formado.'],
+   ['transport','La entrada con borradores anteriores supera el plazo; no entrega la frase.'],
+  ],
+  'negative-web-request':[
+   ['pass','Explica la landing sin generar una web.'],
+   ['pass','Tres consejos pertinentes para la misma landing.'],
+   ['partial','El consejo sobre apuntes es pertinente, pero aparece en JSON no solicitado.'],
+  ],
+  'text-summary-and-translation':[
+   ['partial','Conserva cooperativa, vivero, plantas y martes, pero atribuye un propósito de entrega a Elena que el original no especifica.'],
+   ['fail','Cambia el nombre Faro por Farco y añade JSON no solicitado.'],
+   ['pass','Recupera correctamente el martes del documento original.'],
+  ],
+  'code-explanation':[
+   ['partial','La descripción básica de sumar es pertinente, pero el resultado aparece en JSON no solicitado.'],
+  ],
+ },
+ 'latency-probe':{
+  'biology-and-reference':[
+   ['partial','Explicación causal correcta basada en la nota, pero entrega una frase en lugar de dos.'],
+   ['pass','Mantiene la referencia a las plantas y explica la captura de luz y la producción de azúcares.'],
+   ['transport','La entrada incluye notas redundantes y contexto anterior; vence el plazo sin texto.'],
+  ],
+  'ship-example':[
+   ['pass','Explica correctamente el equilibrio entre empuje del agua y peso, y la densidad media del casco con aire.'],
+   ['pass','Da globo de helio y submarino como ejemplos pertinentes de Arquímedes.'],
+   ['pass','Resume su explicación anterior sin añadir otro tema ni repetir los errores físicos de la línea base.'],
+  ],
+  'business-ideas-not-html':[
+   ['transport','La verificación remota de Novvin supera los siete segundos de la primera versión.'],
+   ['partial','Pide el texto que debe abreviar, lo cual es coherente tras el error anterior; la conversación no completa el objetivo.'],
+   ['pass','Escribe una frase con el nombre corregido Nube y el producto plantas.'],
+  ],
+  'negative-web-request':[
+   ['pass','Explica el propósito de una landing sin generar HTML.'],
+   ['pass','Da tres consejos pertinentes sin convertirlos en una web.'],
+  ],
+ },
  baseline:{
   'biology-and-reference':[
    ['partial','Explicación útil, pero confunde la energía captada con los productos materiales y llama al oxígeno vital para el crecimiento sin precisar su función.'],

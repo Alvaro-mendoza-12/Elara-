@@ -1,0 +1,90 @@
+{
+  "label": "latency-probe",
+  "method": "Qualitative review of saved outputs by the implementing coding assistant against declared rubrics; truncated unsolicited HTML rejected only for that diversion; not independent human validation or a self-score from the tested model; grades bound to output hashes",
+  "requests": 11,
+  "grades": {
+    "pass": 7,
+    "partial": 2,
+    "fail": 0,
+    "transport": 2
+  },
+  "results": [
+    {
+      "dialogue": "biology-and-reference",
+      "turn": 1,
+      "sha256": "75077a9512fd983b7510e20e09bbdb0858b1377bcad3fd195520ecc0a9f6847d",
+      "grade": "partial",
+      "reason": "Explicación causal correcta basada en la nota, pero entrega una frase en lugar de dos."
+    },
+    {
+      "dialogue": "biology-and-reference",
+      "turn": 2,
+      "sha256": "1651155dc4d39d7f5a692f853c8597f13257975b7d17b8ae327bd238703719fe",
+      "grade": "pass",
+      "reason": "Mantiene la referencia a las plantas y explica la captura de luz y la producción de azúcares."
+    },
+    {
+      "dialogue": "biology-and-reference",
+      "turn": 3,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "grade": "transport",
+      "reason": "La entrada incluye notas redundantes y contexto anterior; vence el plazo sin texto."
+    },
+    {
+      "dialogue": "ship-example",
+      "turn": 1,
+      "sha256": "81c4c95715a0ff3af3a75103b8c4e086232a4531c4f010d95f03140a01098bfe",
+      "grade": "pass",
+      "reason": "Explica correctamente el equilibrio entre empuje del agua y peso, y la densidad media del casco con aire."
+    },
+    {
+      "dialogue": "ship-example",
+      "turn": 2,
+      "sha256": "b50e8edef1d9f9a90c06fbccf40ce2e1f781d01324d78c60fc95018b661e0e7f",
+      "grade": "pass",
+      "reason": "Da globo de helio y submarino como ejemplos pertinentes de Arquímedes."
+    },
+    {
+      "dialogue": "ship-example",
+      "turn": 3,
+      "sha256": "7d874c46f9f2e71f352c30f71af1ef20e86237ff58a5fea6de33525864e5d2e3",
+      "grade": "pass",
+      "reason": "Resume su explicación anterior sin añadir otro tema ni repetir los errores físicos de la línea base."
+    },
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 1,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "grade": "transport",
+      "reason": "La verificación remota de Novvin supera los siete segundos de la primera versión."
+    },
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 2,
+      "sha256": "23a7e7ce59e58265298b36e74dda2eb566963ff2186bda9b54923307e0e585a1",
+      "grade": "partial",
+      "reason": "Pide el texto que debe abreviar, lo cual es coherente tras el error anterior; la conversación no completa el objetivo."
+    },
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 3,
+      "sha256": "23b4c9bfd0b6473f864954899e3c13f652efe7f4b201cbaa2169905355d84c4a",
+      "grade": "pass",
+      "reason": "Escribe una frase con el nombre corregido Nube y el producto plantas."
+    },
+    {
+      "dialogue": "negative-web-request",
+      "turn": 1,
+      "sha256": "32aa2177586d9c557465dbdc16cb1c249d5c274c41816da837863b2d01a5af4a",
+      "grade": "pass",
+      "reason": "Explica el propósito de una landing sin generar HTML."
+    },
+    {
+      "dialogue": "negative-web-request",
+      "turn": 2,
+      "sha256": "c5e461bb42752343ec673b9f1c57816788555781e01e5ee6d43e13ddef85493b",
+      "grade": "pass",
+      "reason": "Da tres consejos pertinentes sin convertirlos en una web."
+    }
+  ]
+}

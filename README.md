@@ -9,6 +9,7 @@ Asistente independiente en `D:\Elara`. [Sitio público](https://elara-mu-mauve.v
 - El acceso real de **Novvin** verifica correo, contraseña, sesión y segundo factor cuando corresponde. La creación de cuentas abre el formulario oficial de Novvin. El perfil muestra imagen, GIF o video; los videos se reproducen sin sonido y limitan el bucle a doce segundos.
 - El historial de cada cuenta y el del invitado se guardan por separado en el navegador. Al volver a la misma cuenta se recupera su historial local. **Todavía no hay sincronización entre dispositivos.** El antiguo historial compartido se conserva sin asignarlo automáticamente a una cuenta.
 - El contexto del chat conserva datos explícitos del usuario y las correcciones más recientes dentro de la ventana disponible. Peticiones como «resúmelo» usan el texto anterior; cambiar de tema deja de editar una web antigua. «Olvida lo anterior» reinicia el contexto sin borrar el historial. No es aprendizaje de pesos ni memoria ilimitada.
+- El enrutamiento distingue explicaciones, ideas y traducciones de la creación de webs. Se comprueban 1.200 escenarios de herramientas y contexto, además de conversaciones reales evaluadas por separado. Algunos temas educativos reciben notas breves de fuentes primarias; eso no añade navegación ni garantiza todas las respuestas.
 - Las consultas de integrales y ejercicios polinómicos compatibles usan el calculador de Core sin esperar al modelo general. Puede ofrecer de uno a cinco ejercicios y resolver el que indiques. Las respuestas interrumpidas se marcan como incompletas y no se reutilizan como contexto; el cliente limita la espera de una petición completa a 45 segundos.
 - Dictado con micrófono y transcripción de audio en el servidor propio con Whisper base. Máximo treinta segundos por grabación; el texto se coloca en el editor para revisarlo antes de enviarlo. Requiere Novvin y permiso del micrófono.
 - Modo claro, oscuro, dispositivo y mayor contraste; preferencia de animación de avatares; logo de tres pliegues, carga inicial y estados de escritura.
@@ -36,9 +37,12 @@ npm run build
 npm run dev -- --port 3107
 node scripts/check-contrast.mjs
 node scripts/evaluate-core.mjs
+npm run eval:responses
 ```
 
 `node scripts/smoke.mjs` prueba el BFF contra `http://127.0.0.1:3107`. `ELARA_TEST_URL` permite probar producción. **Crea una cuenta sintética real en Novvin**, con correo `example.invalid`, y conserva un fixture privado en `.vercel/`. Retira únicamente esos datos de prueba al terminar. Los scripts `check-model.mjs`, `check-avatar-video.mjs` y `check-dictation.mjs` reutilizan un fixture; no contienen contraseñas. Las pruebas de dictado emplean una grabación sintética, no el micrófono personal.
+
+`scripts/evaluate-responses.mjs` registra los casos de enrutamiento sin generar 1.200 respuestas del modelo. `scripts/evaluate-live-dialogues.mjs` utiliza el fixture sintético mediante `ELARA_QA_FIXTURE` y realiza conversaciones reales de forma secuencial, con pausas y límites. Su criterio automático no equivale a exactitud semántica: [método, catálogo y revisiones](evals/RESPONSE_QUALITY.md).
 
 ## Documentación
 

@@ -1,0 +1,125 @@
+{
+  "label": "prompt-probe",
+  "method": "Qualitative review of saved outputs by the implementing coding assistant against declared rubrics; truncated unsolicited HTML rejected only for that diversion; not independent human validation or a self-score from the tested model; grades bound to output hashes",
+  "requests": 16,
+  "grades": {
+    "pass": 4,
+    "partial": 9,
+    "fail": 2,
+    "transport": 1
+  },
+  "results": [
+    {
+      "dialogue": "biology-and-reference",
+      "turn": 1,
+      "sha256": "62be282db41b2f467a70eefcf3dc0258f446abf9846be4290a31259402775dec",
+      "grade": "partial",
+      "reason": "Contenido correcto, pero entrega una frase en lugar de las dos pedidas."
+    },
+    {
+      "dialogue": "biology-and-reference",
+      "turn": 2,
+      "sha256": "a48fdb095ff5a2f3386cee818ae99112dc71d1579a4cb5d29f730c86ba0744c9",
+      "grade": "pass",
+      "reason": "Explica la referencia causal de fotosíntesis y mantiene el tema."
+    },
+    {
+      "dialogue": "biology-and-reference",
+      "turn": 3,
+      "sha256": "b48cf081ce7ba4fa41aba24e6ece15beaed88d3f039c9cc292acd280d3b36682",
+      "grade": "partial",
+      "reason": "La densidad se explica correctamente, pero entrega JSON con metadatos inventados que nadie pidió."
+    },
+    {
+      "dialogue": "ship-example",
+      "turn": 1,
+      "sha256": "4ef398eae732d3e169393a1af9f5f39de36149c9903b63730f5af94ac68e85e7",
+      "grade": "fail",
+      "reason": "Empieza con el equilibrio correcto pero luego afirma que el casco reduce el peso y desplaza menos peso que el barco."
+    },
+    {
+      "dialogue": "ship-example",
+      "turn": 2,
+      "sha256": "5d5a2aa50bb48054012f81c4e0b3b376c98454e12190423a34f7af0112454656",
+      "grade": "partial",
+      "reason": "Apunta al aire desplazado, pero compara cantidad de aire con peso sin precisar unidades ni el empuje."
+    },
+    {
+      "dialogue": "ship-example",
+      "turn": 3,
+      "sha256": "b1b74e109aac10827db95e9ba542de3cf026e9478d749c8be0e7d5a7657340a8",
+      "grade": "partial",
+      "reason": "Conserva la idea del ejemplo, pero sigue una formulación física imprecisa y entrega JSON no solicitado."
+    },
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 1,
+      "sha256": "dbf7c972b694c49c5ab10490ee155b273a9ec110e21eb07e2be2552c596c8371",
+      "grade": "partial",
+      "reason": "Tres ideas pertinentes para plantas, presentadas en JSON no solicitado."
+    },
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 2,
+      "sha256": "bb09a219005eaa432cc0841247c405182b00770570a32cc1243159b138a860eb",
+      "grade": "partial",
+      "reason": "Reformula las tres ideas con Brisa, pero entrega JSON no solicitado y mal formado."
+    },
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 3,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "grade": "transport",
+      "reason": "La entrada con borradores anteriores supera el plazo; no entrega la frase."
+    },
+    {
+      "dialogue": "negative-web-request",
+      "turn": 1,
+      "sha256": "840788151bb26e0a28962c75f0a46b857558edfb768cc5b63ff075d9555fb83e",
+      "grade": "pass",
+      "reason": "Explica la landing sin generar una web."
+    },
+    {
+      "dialogue": "negative-web-request",
+      "turn": 2,
+      "sha256": "50406ac6b87e1515c50a5fd0fa13159805ae12c1c16b3834fdb015c3231ab7e7",
+      "grade": "pass",
+      "reason": "Tres consejos pertinentes para la misma landing."
+    },
+    {
+      "dialogue": "negative-web-request",
+      "turn": 3,
+      "sha256": "f92a2a274f536c87e8c0897d0ac865da0f3f55fe72d4ac3db333fcd475be8b73",
+      "grade": "partial",
+      "reason": "El consejo sobre apuntes es pertinente, pero aparece en JSON no solicitado."
+    },
+    {
+      "dialogue": "text-summary-and-translation",
+      "turn": 1,
+      "sha256": "5150a8806b91413cd1c8ebcce5310a7a7e2d968b4894677d14738741beff2d65",
+      "grade": "partial",
+      "reason": "Conserva cooperativa, vivero, plantas y martes, pero atribuye un propósito de entrega a Elena que el original no especifica."
+    },
+    {
+      "dialogue": "text-summary-and-translation",
+      "turn": 2,
+      "sha256": "5d2eda05efafbde60281151f67bd2e4f106269c6fa5c573af41d4f1d12a1b412",
+      "grade": "fail",
+      "reason": "Cambia el nombre Faro por Farco y añade JSON no solicitado."
+    },
+    {
+      "dialogue": "text-summary-and-translation",
+      "turn": 3,
+      "sha256": "90b873587737b94c3b9b87741e25135a3d804f13b56e1e6ffb057e53692ddc4e",
+      "grade": "pass",
+      "reason": "Recupera correctamente el martes del documento original."
+    },
+    {
+      "dialogue": "code-explanation",
+      "turn": 1,
+      "sha256": "0bf45b973a8cb6acf651c449d3dc3168fe7146ad6941933c0c2c892360d013ec",
+      "grade": "partial",
+      "reason": "La descripción básica de sumar es pertinente, pero el resultado aparece en JSON no solicitado."
+    }
+  ]
+}

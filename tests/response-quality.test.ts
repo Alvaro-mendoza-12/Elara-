@@ -5,6 +5,7 @@ import { boundedModelContext, shouldUseConversationModel } from '../lib/models';
 import { groundedKnowledge } from '../lib/grounded-knowledge';
 import { conversationInstructions } from '../lib/conversation-instructions';
 import { normalizeRequestSpelling } from '../lib/elara-engine/request-meaning';
+import { verifiedKnowledgeReply } from '../lib/verified-knowledge';
 
 const user=(text:string):SimpleTurn=>({role:'user',text});
 const assistant=(text:string):SimpleTurn=>({role:'assistant',text});
@@ -77,4 +78,40 @@ test('routing spelling corrections preserve attached text, quoted brands and int
  assert.equal(normalizeRequestSpelling('me esplicas las integales'),'me explicas las integrales');
  assert.equal(normalizeRequestSpelling('Crea una web llamada "Pajina". ```js\nconst aslo=1\n```'),'Crea una web llamada "Pajina". ```js\nconst aslo=1\n```');
  assert.equal(normalizeRequestSpelling('Me llamo Aslo'),'Me llamo Aslo');
+});
+
+test('the public reference tool answers supported basic questions directly and cites its source',()=>{
+ const requests=['Explica por qué las plantas necesitan luz, en dos frases.','¿Por qué flota el hielo?','¿Por qué flota un barco de acero?','¿Por qué sube un globo de helio?','¿Por qué un submarino puede subir?','me esplicas porke el cielo se ve azul?','¿Por qué al atardecer se ve rojo?'];
+ for(const request of requests){
+  const answer=verifiedKnowledgeReply([user(request)]);
+  assert.ok(answer,request);assert.match(answer,/\[Fuente\]\(https:\/\//);
+  assert.doesNotMatch(answer,/```|"formato"|"verificación"/);
+ }
+ assert.match(verifiedKnowledgeReply([user('¿Por qué flota el hielo?')])!,/menos denso/);
+ assert.match(verifiedKnowledgeReply([user('¿Por qué flota un barco de acero?')])!,/empuje del agua equilibra su peso/);
+ assert.doesNotMatch(verifiedKnowledgeReply([user('¿Por qué sube un globo de helio?')])!,/barco/);
+});
+
+test('verified explanations keep examples and summaries coherent without another generation',()=>{
+ const first=user('¿Por qué flota un barco de acero?');
+ const answer=verifiedKnowledgeReply([first])!;
+ const next=user('Dame otro ejemplo del mismo principio, sin usar barcos.');
+ const example=verifiedKnowledgeReply([first,assistant(answer),next])!;
+ assert.match(example,/globo de helio/);assert.doesNotMatch(example,/barco/);
+ const summary=run([first,assistant(answer),next,assistant(example),user('Resúmelo en una frase.')]);
+ assert.equal(summary.intent,'context_summary');assert.match(summary.reply,/globo de helio/);
+ assert.doesNotMatch(summary.reply,/barco|\{.*resumen/);
+});
+
+test('the reference tool leaves creative, procedural, complex and unsupported questions to the normal router',()=>{
+ for(const prompt of ['Crea una web que explique el hielo','Escribe un poema sobre el cielo azul','Explica el ciclo de Calvin de la fotosíntesis','Explica por qué el cielo se ve negro de noche','¿Por qué se derrite el hielo?','Explica el barco en JSON','Explica la fotosíntesis en inglés','Resume este texto: ```txt\nEl hielo flota\n```'])assert.equal(verifiedKnowledgeReply([user(prompt)]),null,prompt);
+ const unrelated=[user('¿Por qué flota un barco?'),assistant('El empuje del agua...'),user('Ahora dime la capital de Perú')];
+ assert.equal(verifiedKnowledgeReply(unrelated),null);
+});
+
+test('fresh writing for a corrected business uses current facts without the earlier drafts',()=>{
+ const context=boundedModelContext([user('Mi tienda se llama Brisa y vendo plantas.'),assistant('Texto antiguo de la tienda Brisa. '.repeat(30)),user('Mi tienda se llama Nube. Escribe una frase para anunciarla.')])!;
+ assert.match(JSON.stringify(context),/Nube|plantas/);
+ assert.doesNotMatch(JSON.stringify(context),/Brisa|Texto antiguo/);
+ assert.equal(context.at(-1)?.content,'Mi tienda se llama Nube. Escribe una frase para anunciarla.');
 });

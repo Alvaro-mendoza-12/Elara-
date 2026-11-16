@@ -54,6 +54,12 @@ export function boundedModelContext(turns: SimpleTurn[]): Array<{ role: 'user' |
     /\b(?:explicame|explica|dime|cual es|que es|por que|hablame)\b/.test(normalized)&&
     !/\b(?:eso|ese|esa|estos|estas|este|esta|anterior|mismo|misma|mi|mis|nuestro|nuestra|tu|tus|su|sus|lo que|texto|documento|codigo|funcion|poema|json|plan)\b/.test(normalized);
   if(independentTopic)return [...(memory?[{role:'user' as const,content:memory}]:[]),{role:'user',content:latest.text}];
+  // A new short piece for a known business needs its corrected facts, rather
+  // than all the earlier drafts. Referential edits still take the path above.
+  const freshBusinessText=compactFacts.proyecto&&compactFacts.oferta&&
+    /\b(?:escribe|redacta|dame)\s+(?:(?:una?|dos|tres|\d+)\s+)?(?:frase|eslogan|anuncio|ideas?|publicaciones|correo|titulo)\b/.test(normalized)&&
+    !/\b(?:anterior|mismo|misma|otro|otra|traducelo|resume|resumelo|conserva|hazlo|hazla|hazlas)\b/.test(normalized);
+  if(freshBusinessText)return [{role:'user',content:memory},{role:'user',content:latest.text}];
   const budget = Math.max(3600,latest.text.length+memory.length) - memory.length;
   let size = 0;
   for (const [index, turn] of active.slice(-8).reverse().entries()) {

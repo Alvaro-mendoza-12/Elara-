@@ -12,5 +12,5 @@ const results=report.results.map(row=>{
 });
 const grades={pass:0,partial:0,fail:0,transport:0};for(const row of results)grades[row.grade]++;
 fs.mkdirSync('evals/reviews',{recursive:true});
-fs.writeFileSync(`evals/reviews/${label}.json`,JSON.stringify({label,method:'Review of complete outputs against each declared rubric; no LLM judge; grades bound to saved output hashes',requests:results.length,grades,results},null,2)+'\n');
+fs.writeFileSync(`evals/reviews/${label}.json`,JSON.stringify({label,method:'Qualitative review of saved outputs by the implementing coding assistant against declared rubrics; truncated unsolicited HTML rejected only for that diversion; not independent human validation or a self-score from the tested model; grades bound to output hashes',requests:results.length,grades,results},null,2)+'\n');
 console.log(JSON.stringify({label,requests:results.length,grades}));
