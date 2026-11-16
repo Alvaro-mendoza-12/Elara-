@@ -8,12 +8,14 @@ El resumen se construye dentro de cada solicitud a partir de los mensajes dispon
 
 ## Validación local y del runtime
 
-- 60 pruebas de regresión, incluidas diecisiete sobre continuidad, correcciones, reinicio, referencias, nombres, porcentajes y límites de entrada.
+- 61 pruebas de regresión, incluidas dieciocho sobre continuidad, correcciones, reinicio, referencias, nombres, porcentajes y límites de entrada.
 - Lint y build aprobados.
-- Evaluación real del motor híbrido en Ubuntu: cuatro casos aprobados, con tres generaciones del modelo y una respuesta determinista de Core. La muestra comprueba el nombre corregido tras veinte turnos, una explicación posterior a una web antigua, un resumen de ideas de publicaciones y la ausencia de un nombre después de reiniciar el contexto.
+- Evaluación del motor híbrido: cuatro casos sobre el nombre corregido tras veinte turnos, una explicación posterior a una web antigua, un resumen de ideas de publicaciones y la ausencia de un nombre después de reiniciar el contexto. Las reformulaciones generales usan el modelo de Ubuntu; las preguntas directas de nombres y los resúmenes simples compatibles usan Core.
 - Las generaciones de la muestra ajustada tardaron aproximadamente trece a dieciséis segundos. Son mediciones puntuales y una evaluación pequeña, no una garantía general de coherencia o latencia.
 
 La primera ejecución reveló un resumen que cambiaba el propósito del texto y un nombre inventado; esos resultados motivaron incluir la fuente concreta para reformular y resolver nombres mediante datos explícitos. No se consideran respuestas correctas solo por contener una palabra del tema.
+
+Una repetición pública mostró otra variación: el modelo podía explicar la tarea de resumir en vez de realizarla. Para respuestas breves de prosa y solicitudes simples de resumen, Core selecciona hasta dos oraciones originales y las reúne en una sola frase, con un máximo de cuarenta palabras. Es un resumen extractivo acotado; no se presenta como comprensión semántica de documentos largos, traducción ni una capacidad nueva de los pesos del modelo.
 
 Prueba reproducible, después de compilar los tests, con las variables privadas existentes:
 

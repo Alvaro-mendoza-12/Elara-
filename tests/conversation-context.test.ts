@@ -143,6 +143,19 @@ test('a name explicitly provided in a website brief is available for recall', ()
   assert.match(result.reply,/Luna/);
 });
 
+test('a short summary preserves actual publication ideas instead of restating the editing task', () => {
+  const turns = [user('Dame ideas de publicaciones para una tienda de plantas.'),assistant('Publica una guía breve sobre el riego. Muestra cómo cambia una habitación al agregar plantas. Presenta una planta fácil de cuidar cada semana.'),user('Resúmelo en una sola frase, sin lista.')];
+  const result = run(turns);
+  assert.equal(result.intent, 'context_summary');
+  assert.match(result.reply, /Publica.*riego/);
+  assert.match(result.reply, /plantas/);
+  assert.doesNotMatch(result.reply, /Reformula|Reforma|Resumido a|resume tu/);
+  assert.equal(result.reply.split(/(?<=[.!?])\s+/).length, 1);
+  assert.ok(result.reply.split(/\s+/).length <= 40);
+  assert.equal(shouldUseConversationModel('auto',result.intent),false);
+  assert.equal(run([...turns.slice(0,-1),user('Resúmelo en inglés')]).intent,'__fallback_honest__');
+});
+
 test('request parsing retains user facts around a large older answer and never drops the latest request', () => {
   const message = (id: string, role: 'user' | 'assistant', parts: string[]) => ({id,role,parts:parts.map(text => ({type:'text',text}))});
   const parsed = parseChatInput({messages:[message('1','user',['Mi tienda se llama Faro.']),message('2','assistant',['x'.repeat(50000),'y'.repeat(50000)]),message('3','user',['Cómo se llama mi tienda'])]})!;

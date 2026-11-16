@@ -1,5 +1,6 @@
 import { readWebSpec } from './web-spec';
 import { activeConversationTurns, isConversationFollowUp } from '../conversation-context';
+import { extractiveSummary } from './summarize';
 import { commerceRequest, COMMERCE_QUESTION, shortArtifactEdit } from './request';
 import { contextualReply } from './context';
 import { inspectCodeSnippet } from './code-analyzer';
@@ -258,6 +259,8 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
   }
 
   if (isConversationFollowUp(latestUser)) {
+    const summary = extractiveSummary(turns);
+    if (summary) return { reply: summary, intent: 'context_summary', confidence: 1 };
     const previousAnswer = turns.slice(0, -1).some(turn => turn.role === 'assistant' && turn.text.trim());
     return previousAnswer
       ? { reply: 'Te refieres a la respuesta anterior. Para reformularla o ampliarla con flexibilidad, usa Automático o Conversación e inicia sesión con Novvin. Core rápido tiene respuestas y herramientas acotadas.', intent: '__fallback_honest__', confidence: 1 }
