@@ -278,15 +278,19 @@ export function buildCatalogStoreHtml(params: PromptParams): string {
     .sub { color: var(--muted); font-size: 0.94rem; margin-top: 4px; }
     .cart-pill { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 999px; padding: 10px 18px; font-weight: 700; cursor: pointer; font-size: 0.9rem; }
     .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin: 22px 0; }
+    .search-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .chips { display: flex; flex-wrap: wrap; gap: 8px; }
     .chip { background: var(--surface); color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 7px 14px; font-size: 0.85rem; cursor: pointer; }
     .chip.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
-    input[type="search"] { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 9px 14px; min-width: 240px; font-size: 0.92rem; }
+    input[type="search"], select { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; font-size: 0.9rem; }
+    input[type="search"] { min-width: 210px; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; transition: border-color 0.15s; }
-    .card:hover { border-color: var(--accent); }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; transition: border-color 0.15s, transform 0.15s; }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .card-art { height: 76px; border-radius: 10px; border: 1px solid var(--border); background: radial-gradient(circle at top right, rgba(148,163,184,0.2), transparent 65%), var(--surface); display: flex; align-items: center; justify-content: space-between; padding: 0 14px; margin-bottom: 10px; }
+    .mono { width: 38px; height: 38px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-weight: 800; display: grid; place-items: center; font-size: 0.9rem; letter-spacing: 0.04em; }
     .tag { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: rgba(148,163,184,0.14); color: var(--accent); width: fit-content; }
-    .card h3 { font-size: 1rem; margin-top: 6px; }
+    .card h3 { font-size: 1rem; margin-top: 4px; }
     .card p { font-size: 0.87rem; color: var(--muted); margin-top: 4px; }
     .card-foot { display: flex; align-items: center; justify-content: space-between; padding-top: 8px; border-top: 1px solid var(--border); }
     .price { font-weight: 700; font-size: 1.05rem; }
@@ -297,6 +301,8 @@ export function buildCatalogStoreHtml(params: PromptParams): string {
     .summary ul { list-style: none; margin: 12px 0; display: grid; gap: 8px; }
     .summary li { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 0.9rem; color: var(--muted); }
     .rm { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 2px 8px; cursor: pointer; font-size: 0.78rem; }
+    .checkout-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+    #orderFeedback { font-size: 0.85rem; color: var(--accent); font-weight: 600; }
   </style>
 </head>
 <body>
@@ -313,7 +319,14 @@ export function buildCatalogStoreHtml(params: PromptParams): string {
       <div class="chips" id="categoryBar">
         ${categories.map((cat, idx) => `<button type="button" class="chip${idx === 0 ? ' active' : ''}" data-cat="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`).join('')}
       </div>
-      <input id="searchInput" type="search" placeholder="Buscar entre ${items.length} opciones..." />
+      <div class="search-row">
+        <select id="sortSelect" aria-label="Ordenar productos">
+          <option value="default">Orden: Destacados</option>
+          <option value="asc">Precio: menor a mayor</option>
+          <option value="desc">Precio: mayor a menor</option>
+        </select>
+        <input id="searchInput" type="search" placeholder="Buscar entre ${items.length} opciones..." />
+      </div>
     </div>
 
     <main class="grid" id="catalogGrid"></main>
@@ -324,6 +337,10 @@ export function buildCatalogStoreHtml(params: PromptParams): string {
         <button type="button" class="chip" id="clearCart">Vaciar</button>
       </div>
       <ul id="cartItems"></ul>
+      <div class="checkout-row">
+        <span id="orderFeedback"></span>
+        <button type="button" class="cart-pill" id="checkoutBtn">Confirmar pedido</button>
+      </div>
     </section>
   </div>
 
@@ -332,6 +349,7 @@ export function buildCatalogStoreHtml(params: PromptParams): string {
     const CURRENCY = ${JSON.stringify(currency === 'S/' ? 'S/ ' : currency)};
     let activeCat = 'Todos';
     let query = '';
+    let sortMode = 'default';
     const cart = [];
     const grid = document.getElementById('catalogGrid');
 
@@ -365,24 +383,32 @@ export function buildCatalogStoreHtml(params: PromptParams): string {
 
     function renderGrid() {
       grid.replaceChildren();
-      const filtered = ITEMS.filter((item) => {
+      let filtered = ITEMS.filter((item) => {
         const matchCat = activeCat === 'Todos' || item.category === activeCat;
         const q = query.toLowerCase();
         const matchText = !q || item.name.toLowerCase().includes(q) || item.description.toLowerCase().includes(q);
         return matchCat && matchText;
       });
+      if (sortMode === 'asc') filtered = [...filtered].sort((a, b) => a.priceValue - b.priceValue);
+      if (sortMode === 'desc') filtered = [...filtered].sort((a, b) => b.priceValue - a.priceValue);
       filtered.forEach((item, index) => {
         const card = document.createElement('article');
         card.className = 'card';
         const top = document.createElement('div');
+        const art = document.createElement('div');
+        art.className = 'card-art';
+        const mono = document.createElement('span');
+        mono.className = 'mono';
+        mono.textContent = item.category.slice(0, 2).toUpperCase();
         const tag = document.createElement('span');
         tag.className = 'tag';
         tag.textContent = item.category + ' · ' + item.badge;
+        art.append(mono, tag);
         const h3 = document.createElement('h3');
         h3.textContent = (index + 1) + '. ' + item.name;
         const p = document.createElement('p');
         p.textContent = item.description;
-        top.append(tag, h3, p);
+        top.append(art, h3, p);
 
         const foot = document.createElement('div');
         foot.className = 'card-foot';
@@ -396,6 +422,7 @@ export function buildCatalogStoreHtml(params: PromptParams): string {
         btn.addEventListener('click', () => {
           cart.push(item);
           updateCartUI();
+          document.getElementById('orderFeedback').textContent = '';
           document.getElementById('cartPanel').classList.add('open');
         });
         foot.append(price, btn);
@@ -411,6 +438,10 @@ export function buildCatalogStoreHtml(params: PromptParams): string {
       document.querySelectorAll('.chip[data-cat]').forEach((el) => el.classList.toggle('active', el === btn));
       renderGrid();
     });
+    document.getElementById('sortSelect').addEventListener('change', (e) => {
+      sortMode = e.target.value;
+      renderGrid();
+    });
     document.getElementById('searchInput').addEventListener('input', (e) => {
       query = e.target.value;
       renderGrid();
@@ -420,7 +451,17 @@ export function buildCatalogStoreHtml(params: PromptParams): string {
     });
     document.getElementById('clearCart').addEventListener('click', () => {
       cart.length = 0;
+      document.getElementById('orderFeedback').textContent = '';
       updateCartUI();
+    });
+    document.getElementById('checkoutBtn').addEventListener('click', () => {
+      const fb = document.getElementById('orderFeedback');
+      if (cart.length === 0) {
+        fb.textContent = 'Agrega al menos un producto para confirmar.';
+        return;
+      }
+      const code = 'ELR-' + String(Math.floor(1000 + Math.random() * 9000));
+      fb.textContent = 'Pedido de prueba ' + code + ' listo (' + cart.length + ' artículos).';
     });
     renderGrid();
   </script>
@@ -789,6 +830,162 @@ export function buildPaletteGeneratorHtml(params: PromptParams): string {
 </html>`;
 }
 
+export function buildBlogHtml(params: PromptParams): string {
+  const brand = escapeHtml(params.brandName || 'Revista Digital');
+  const c = resolveThemePalette(params.preferredTheme, params.accentColor);
+  return `<!DOCTYPE html>
+<html lang="es" data-elara-app="blog">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${brand} — Artículos</title>
+  <style>
+    :root { --bg: ${c.bg}; --surface: ${c.surface}; --card: ${c.card}; --border: ${c.border}; --text: ${c.text}; --muted: ${c.muted}; --accent: ${c.accent}; --ink: ${c.accentInk}; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 28px 18px; line-height: 1.6; }
+    .wrap { max-width: 900px; margin: 0 auto; display: grid; gap: 22px; }
+    header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip { background: var(--surface); color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; font-size: 0.84rem; cursor: pointer; }
+    .chip.active { background: var(--accent); color: var(--ink); border-color: var(--accent); font-weight: 700; }
+    .posts { display: grid; gap: 14px; }
+    .post { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; cursor: pointer; }
+    .post:hover { border-color: var(--accent); }
+    .meta { font-size: 0.78rem; color: var(--accent); font-weight: 600; margin-bottom: 6px; }
+    .post p { color: var(--muted); font-size: 0.92rem; margin-top: 6px; }
+    .reader { background: var(--surface); border: 1px solid var(--accent); border-radius: 14px; padding: 20px; display: none; gap: 10px; }
+    .reader.open { display: grid; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>${brand}</h1>
+        <p style="color:var(--muted);font-size:0.9rem;">Publicaciones breves sobre ingeniería, diseño y producto.</p>
+      </div>
+      <div class="chips" id="tagBar">
+        <button type="button" class="chip active" data-tag="Todos">Todos</button>
+        <button type="button" class="chip" data-tag="Ingeniería">Ingeniería</button>
+        <button type="button" class="chip" data-tag="Diseño">Diseño</button>
+        <button type="button" class="chip" data-tag="IA">IA</button>
+      </div>
+    </header>
+    <article class="reader" id="readerPanel">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span class="meta" id="readerMeta"></span>
+        <button type="button" class="chip" id="closeReader">Cerrar lectura</button>
+      </div>
+      <h2 id="readerTitle"></h2>
+      <p id="readerBody" style="color:var(--muted);"></p>
+    </article>
+    <main class="posts" id="postList"></main>
+  </div>
+  <script>
+    const POSTS = [
+      { tag: 'Ingeniería', time: '4 min', title: 'Arquitectura híbrida web + Android para comunidades rápidas', summary: 'Cómo compartir identidad y sesiones sin duplicar infraestructura.', body: 'Separar la autenticación OAuth en el backend principal permite que clientes web y móviles reutilicen la misma sesión mediante tokens cortos y revocación centralizada.' },
+      { tag: 'Diseño', time: '3 min', title: 'Legibilidad en modo oscuro sin fatiga visual', summary: 'Por qué los fondos azul-pizarra superan al negro puro #000.', body: 'Usar superficies escalonadas (#06080E, #0B0F18 y #121826) mejora el contraste de código fuente y tarjetas sin generar halos incómodos.' },
+      { tag: 'IA', time: '5 min', title: 'Del motor determinístico a un modelo propio en VPS', summary: 'Pasos prácticos para empezar ligero y escalar cuando haya demanda.', body: 'Comenzar con rutas seguras en Next.js y luego conectar un endpoint OpenAI-compatible en tu propio servidor evita bloqueos de presupuesto mientras validas el producto.' }
+    ];
+    let tag = 'Todos';
+    const list = document.getElementById('postList');
+    function render() {
+      list.replaceChildren();
+      POSTS.filter((p) => tag === 'Todos' || p.tag === tag).forEach((p) => {
+        const card = document.createElement('article');
+        card.className = 'post';
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = p.tag + ' · ' + p.time + ' lectura';
+        const h2 = document.createElement('h2');
+        h2.textContent = p.title;
+        const summary = document.createElement('p');
+        summary.textContent = p.summary;
+        card.append(meta, h2, summary);
+        card.addEventListener('click', () => {
+          document.getElementById('readerMeta').textContent = p.tag + ' · ' + p.time;
+          document.getElementById('readerTitle').textContent = p.title;
+          document.getElementById('readerBody').textContent = p.body;
+          document.getElementById('readerPanel').classList.add('open');
+        });
+        list.appendChild(card);
+      });
+    }
+    document.getElementById('tagBar').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-tag]');
+      if (!btn) return;
+      tag = btn.dataset.tag;
+      document.querySelectorAll('#tagBar .chip').forEach((c) => c.classList.toggle('active', c === btn));
+      render();
+    });
+    document.getElementById('closeReader').addEventListener('click', () => {
+      document.getElementById('readerPanel').classList.remove('open');
+    });
+    render();
+  </script>
+</body>
+</html>`;
+}
+
+export function buildBookingFormHtml(params: PromptParams): string {
+  const brand = escapeHtml(params.brandName || 'Formulario & Reservas');
+  const c = resolveThemePalette(params.preferredTheme, params.accentColor);
+  return `<!DOCTYPE html>
+<html lang="es" data-elara-app="form">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${brand}</title>
+  <style>
+    :root { --bg: ${c.bg}; --surface: ${c.surface}; --card: ${c.card}; --border: ${c.border}; --text: ${c.text}; --muted: ${c.muted}; --accent: ${c.accent}; --ink: ${c.accentInk}; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: grid; place-items: center; padding: 20px; }
+    .box { width: 100%; max-width: 520px; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 24px; display: grid; gap: 16px; }
+    label { display: grid; gap: 6px; font-size: 0.88rem; color: var(--muted); }
+    input, select, textarea { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 0.94rem; font-family: inherit; }
+    button { background: var(--accent); color: var(--ink); border: 0; border-radius: 10px; padding: 11px 16px; font-weight: 700; cursor: pointer; }
+    .receipt { background: var(--card); border: 1px solid var(--accent); border-radius: 12px; padding: 14px; display: none; gap: 6px; font-size: 0.9rem; }
+    .receipt.open { display: grid; }
+  </style>
+</head>
+<body>
+  <main class="box">
+    <div>
+      <h1>${brand}</h1>
+      <p style="color:var(--muted);font-size:0.9rem;margin-top:4px;">Completa tus datos para registrar una solicitud o reserva.</p>
+    </div>
+    <form id="bookingForm" style="display:grid;gap:12px;">
+      <label>Nombre completo<input id="fName" required minlength="2" placeholder="Ej. Sofía Paredes" /></label>
+      <label>Correo de contacto<input id="fEmail" type="email" required placeholder="nombre@correo.com" /></label>
+      <label>Servicio / Motivo
+        <select id="fTopic">
+          <option>Asesoría técnica</option>
+          <option>Reserva de cita</option>
+          <option>Cotización web</option>
+        </select>
+      </label>
+      <label>Mensaje adicional<textarea id="fNotes" rows="3" placeholder="Detalles opcionales..."></textarea></label>
+      <button type="submit">Enviar solicitud</button>
+    </form>
+    <section class="receipt" id="receipt">
+      <strong>Resumen generado</strong>
+      <p id="receiptText" style="color:var(--muted);"></p>
+    </section>
+  </main>
+  <script>
+    document.getElementById('bookingForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('fName').value.trim();
+      const email = document.getElementById('fEmail').value.trim();
+      const topic = document.getElementById('fTopic').value;
+      document.getElementById('receiptText').textContent = 'Solicitud lista para ' + name + ' (' + email + ') — ' + topic + '. Conecta aquí tu endpoint POST /api.';
+      document.getElementById('receipt').classList.add('open');
+    });
+  </script>
+</body>
+</html>`;
+}
+
 export function buildWebFromPrompt(params: PromptParams): {
   intent: string;
   description: string;
@@ -822,6 +1019,20 @@ export function buildWebFromPrompt(params: PromptParams): {
       intent: 'code_index_palette',
       description: 'Aquí tienes un **Generador de Paletas y Gradientes CSS (`index.html`)** interactivo:',
       html: buildPaletteGeneratorHtml(params),
+    };
+  }
+  if (/\b(blog|revista|noticias|articulos|periodico)\b/.test(norm)) {
+    return {
+      intent: 'code_index_blog',
+      description: 'Generé un **Blog / Revista Digital (`index.html`)** con filtro por etiquetas y vista de lectura rápida:',
+      html: buildBlogHtml(params),
+    };
+  }
+  if (/\b(formulario|contacto|reserva|cita|encuesta)\b/.test(norm)) {
+    return {
+      intent: 'code_index_form',
+      description: 'Aquí tienes un **Formulario / Reserva interactivo (`index.html`)** con validación HTML5 y resumen:',
+      html: buildBookingFormHtml(params),
     };
   }
 

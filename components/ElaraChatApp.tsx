@@ -8,16 +8,20 @@ import {
   Check,
   Code2,
   Copy,
+  Cpu,
   Download,
   ExternalLink,
+  FileCode2,
   Menu,
   MessageSquare,
   Mic,
   MicOff,
+  Paperclip,
   Pencil,
   Plus,
   RotateCcw,
   Search,
+  Server,
   Sparkles,
   Square,
   Trash2,
@@ -48,12 +52,63 @@ const PROFILE_KEY = 'elara_user_profile_v1';
 const GUEST_COUNT_KEY = 'elara_guest_count_v1';
 const GUEST_MESSAGE_LIMIT = 20;
 
-const STARTER_PROMPTS = [
-  'Genera una web de 20 juguetes de perritos',
-  'Crea una web de 10 laptops gamer en color morado en soles',
-  'Haz un gestor de tareas interactivo (To-Do) en index.html',
-  'Diferencia entre Flexbox y CSS Grid con ejemplos',
-];
+type StarterCategory = 'Destacados' | 'Webs' | 'Apps' | 'Código' | 'Utilidades';
+
+const PROMPT_CATALOG: Record<StarterCategory, string[]> = {
+  Destacados: [
+    'Genera una web de 20 juguetes de perritos',
+    'Crea una web de 10 laptops gamer en color morado en soles',
+    'Haz un gestor de tareas interactivo (To-Do) en index.html',
+    'Diferencia entre Flexbox y CSS Grid con ejemplos',
+  ],
+  Webs: [
+    'Genera un blog revista digital en tema claro color azul',
+    'Crea un formulario de reserva y contacto en index.html',
+    'Haz un login moderno en HTML con botón Continuar con Novvin',
+    'Crea una web de 10 zapatillas y moda urbana en soles',
+  ],
+  Apps: [
+    'Haz un gestor de tareas interactivo (To-Do) en index.html',
+    'Crea un temporizador pomodoro interactivo',
+    'Genera un quiz interactivo de programación',
+    'Crea un generador de paletas de colores CSS',
+  ],
+  Código: [
+    'Diferencia entre Flexbox y CSS Grid con ejemplos',
+    'Expresiones regulares comunes en JavaScript y correo',
+    'Resumen de métodos REST GET POST PUT PATCH y JWT',
+    'Ejemplo de servidor FastAPI en Python básico',
+  ],
+  Utilidades: [
+    'Convierte 25 km a millas',
+    'Convierte color #38bdf8 a rgb',
+    'Formatea json {"app":"ELARA","v":4,"ok":true}',
+    'Genera un uuid y una contraseña segura de 16 caracteres',
+  ],
+};
+
+const EXT_TO_LANG: Record<string, string> = {
+  html: 'html',
+  htm: 'html',
+  css: 'css',
+  js: 'js',
+  mjs: 'js',
+  ts: 'ts',
+  tsx: 'tsx',
+  jsx: 'jsx',
+  json: 'json',
+  py: 'python',
+  sql: 'sql',
+  md: 'text',
+  txt: 'text',
+};
+
+interface AttachedCodeFile {
+  name: string;
+  sizeLabel: string;
+  lang: string;
+  content: string;
+}
 
 type SpeechRecognitionCtor = new () => {
   lang: string;
@@ -219,10 +274,15 @@ function ElaraWorkspace() {
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
   const [listening, setListening] = useState(false);
+  const [starterTab, setStarterTab] = useState<StarterCategory>('Destacados');
+  const [attachedFile, setAttachedFile] = useState<AttachedCodeFile | null>(null);
+  const [engineSheetOpen, setEngineSheetOpen] = useState(false);
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const [health, setHealth] = useState<HealthInfo>({
-    label: 'Elara Core v0.3',
+    label: 'Elara Core v0.4',
     mode: 'elara-core',
-    model: 'elara-core-v0.3',
+    model: 'elara-core-v0.4',
   });
 
   const speechSupported = useSyncExternalStore(
@@ -232,6 +292,8 @@ function ElaraWorkspace() {
   );
   const scrollContainerRef = useRef<HTMLElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recognitionRef = useRef<InstanceType<SpeechRecognitionCtor> | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
   const autoFollowRef = useRef(true);
@@ -408,15 +470,54 @@ function ElaraWorkspace() {
     return true;
   }
 
+  function showToast(msg: string) {
+    setToast(msg);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 2600);
+  }
+
+  function clearAllConversations() {
+    if (busy) stop();
+    const fresh = createEmptyConversation();
+    setSavedConversations([fresh]);
+    setActiveId(fresh.id);
+    setPreviewState(null);
+    setConfirmClearAll(false);
+    setChatSearch('');
+    writeStoredConversations([fresh]);
+    showToast('Historial local limpiado');
+  }
+
+  async function handleFilePicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (file.size > 80_000) {
+      showToast('Archivo demasiado grande (máximo 80 KB)');
+      return;
+    }
+    const text = await file.text();
+    const clipped = text.length > 40_000 ? `${text.slice(0, 40_000)}\n/* ...truncado... */` : text;
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? 'txt';
+    const lang = EXT_TO_LANG[ext] ?? 'text';
+    const sizeLabel = file.size >= 1024 ? `${(file.size / 1024).toFixed(1)} KB` : `${file.size} B`;
+    setAttachedFile({ name: file.name, sizeLabel, lang, content: clipped });
+    showToast(`Archivo adjunto: ${file.name}`);
+  }
+
   function submitPrompt(text: string) {
     const clean = text.trim();
-    if (!clean || busy) return;
+    if ((!clean && !attachedFile) || busy) return;
     if (!recordGuestUsageAndCheck()) return;
     clearError();
     autoFollowRef.current = true;
     setShowScrollDown(false);
-    sendMessage({ text: clean });
+    const outgoing = attachedFile
+      ? `${clean || 'Revisa y analiza este archivo:'}\n\n\`\`\`${attachedFile.lang}\n${attachedFile.content}\n\`\`\``
+      : clean;
+    sendMessage({ text: outgoing });
     setInput('');
+    setAttachedFile(null);
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
@@ -475,6 +576,7 @@ function ElaraWorkspace() {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '') || 'elara-chat';
     downloadTextFile(`${slug}.md`, `# ${title}\n\n${body}\n`);
+    showToast(`Exportado: ${slug}.md`);
   }
 
   function handleSaveProfile(profile: ElaraUserProfile) {
@@ -579,7 +681,37 @@ function ElaraWorkspace() {
               />
             </div>
           )}
-          <p className="px-2 pb-1.5 text-xs font-medium text-[#64748B]">Conversaciones</p>
+          <div className="flex items-center justify-between px-2 pb-1.5">
+            <p className="text-xs font-medium text-[#64748B]">Conversaciones</p>
+            {displayConversations.length > 1 && (
+              confirmClearAll ? (
+                <div className="flex items-center gap-1.5 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={clearAllConversations}
+                    className="font-semibold text-[#FCA5A5] hover:underline"
+                  >
+                    Sí, vaciar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmClearAll(false)}
+                    className="text-[#94A3B8] hover:text-white"
+                  >
+                    No
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmClearAll(true)}
+                  className="text-[11px] text-[#64748B] hover:text-[#CBD5E1]"
+                >
+                  Limpiar
+                </button>
+              )
+            )}
+          </div>
           <div className="space-y-1">
             {filteredConversations.map((conv) => {
               const selected = conv.id === activeId;
@@ -708,7 +840,7 @@ function ElaraWorkspace() {
 
       {/* Main Conversation Column */}
       <div className="relative flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between gap-2 border-b border-[#1B2436] bg-[#06080E]/85 px-4 py-3 backdrop-blur-md">
+        <header className="relative flex items-center justify-between gap-2 border-b border-[#1B2436] bg-[#06080E]/85 px-4 py-3 backdrop-blur-md">
           <div className="flex min-w-0 items-center gap-2.5">
             <button
               type="button"
@@ -720,12 +852,70 @@ function ElaraWorkspace() {
             </button>
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold tracking-wider text-white lg:hidden">ELARA</span>
-              <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[#222E46] bg-[#0F1522] px-3 py-1 text-xs text-[#CBD5E1]">
+              <button
+                type="button"
+                onClick={() => setEngineSheetOpen((v) => !v)}
+                aria-expanded={engineSheetOpen}
+                className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[#222E46] bg-[#0F1522] px-3 py-1 text-xs text-[#CBD5E1] transition-colors hover:border-[#38BDF8]/60 hover:text-white"
+              >
                 <span className="h-1.5 w-1.5 rounded-full bg-[#38BDF8]" />
                 {health.label}
-              </span>
+              </button>
             </div>
           </div>
+
+          {engineSheetOpen && (
+            <div className="absolute top-14 left-4 z-30 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-[#24324D] bg-[#0E1422] p-4 text-xs shadow-2xl">
+              <div className="flex items-center justify-between">
+                <span className="inline-flex items-center gap-1.5 font-semibold text-white">
+                  <Cpu className="h-3.5 w-3.5 text-[#38BDF8]" />
+                  Estado del motor
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setEngineSheetOpen(false)}
+                  aria-label="Cerrar panel de motor"
+                  className="rounded p-1 text-[#94A3B8] hover:bg-[#192235] hover:text-white"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <dl className="mt-3 space-y-1.5 text-[#94A3B8]">
+                <div className="flex justify-between">
+                  <dt>Motor activo:</dt>
+                  <dd className="font-mono text-[#7DD3FC]">{health.label}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt>Contexto estable:</dt>
+                  <dd className="text-[#E2E8F0]">Hasta 40 turnos</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt>Protección crisis:</dt>
+                  <dd className="text-[#4ADE80]">Activa (113 / 106)</dd>
+                </div>
+              </dl>
+              <div className="mt-3 rounded-xl border border-[#1E2A42] bg-[#090D16] p-2.5 text-[11px] leading-relaxed text-[#94A3B8]">
+                <span className="inline-flex items-center gap-1 font-medium text-[#CBD5E1]">
+                  <Server className="h-3 w-3 text-[#38BDF8]" />
+                  Conectar servidor propio
+                </span>
+                <p className="mt-1">
+                  Define <code className="font-mono text-[#7DD3FC]">ELARA_UPSTREAM_URL</code> en Vercel apuntando a tu servidor GPU en Ubuntu cuando quieras reemplazar el núcleo local por un modelo completo.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEngineSheetOpen(false);
+                  openAuthModal();
+                }}
+                className="mt-3 flex w-full items-center justify-between rounded-xl border border-[#283B5E] bg-[#131C2E] px-3 py-2 text-xs font-medium text-[#E0F2FE] hover:border-[#38BDF8]"
+              >
+                <span>{userProfile ? `Perfil Novvin (@${userProfile.handle})` : 'Continuar con Novvin'}</span>
+                <ExternalLink className="h-3.5 w-3.5 text-[#38BDF8]" />
+              </button>
+            </div>
+          )}
 
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             {messages.length > 0 && (
@@ -770,12 +960,30 @@ function ElaraWorkspace() {
                   : '¿Qué construimos hoy con ELARA?'}
               </h1>
               <p className="mt-2 max-w-lg text-sm leading-relaxed text-[#94A3B8]">
-                Pídeme generar una página web sobre cualquier tema (por ejemplo{' '}
-                <span className="text-[#CBD5E1]">20 juguetes de perritos</span>), fragmentos de código o una revisión rápida de sintaxis.
+                Pídeme generar una página web, app interactiva (`index.html`), adjuntar un archivo de código para revisarlo o resolver utilidades al instante.
               </p>
 
-              <div className="mt-7 grid w-full gap-2.5 sm:grid-cols-2">
-                {STARTER_PROMPTS.map((prompt) => (
+              <div className="mt-6 flex flex-wrap justify-center gap-1.5" role="tablist" aria-label="Categorías de sugerencias">
+                {(Object.keys(PROMPT_CATALOG) as StarterCategory[]).map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    role="tab"
+                    aria-selected={starterTab === cat}
+                    onClick={() => setStarterTab(cat)}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                      starterTab === cat
+                        ? 'border-[#38BDF8] bg-[#38BDF8]/15 text-[#7DD3FC]'
+                        : 'border-[#1E2A42] bg-[#0D1320] text-[#94A3B8] hover:border-[#2E4166] hover:text-white'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-4 grid w-full gap-2.5 sm:grid-cols-2">
+                {PROMPT_CATALOG[starterTab].map((prompt) => (
                   <button
                     key={prompt}
                     type="button"
@@ -967,7 +1175,42 @@ function ElaraWorkspace() {
                   submitPrompt(input);
                 }}
               >
+                {attachedFile && (
+                  <div className="mb-2 flex items-center justify-between rounded-xl border border-[#283B5E] bg-[#101829] px-3 py-1.5 text-xs text-[#E2E8F0]">
+                    <span className="inline-flex min-w-0 items-center gap-2">
+                      <FileCode2 className="h-3.5 w-3.5 shrink-0 text-[#38BDF8]" />
+                      <span className="truncate font-mono">{attachedFile.name}</span>
+                      <span className="shrink-0 text-[11px] text-[#64748B]">{attachedFile.sizeLabel}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setAttachedFile(null)}
+                      aria-label="Quitar archivo adjunto"
+                      className="rounded p-0.5 text-[#94A3B8] hover:text-white"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
                 <div className="flex items-end gap-2 rounded-2xl border border-[#222F47] bg-[#0E1421] p-2 shadow-inner focus-within:border-[#38BDF8]/70">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".html,.htm,.css,.js,.mjs,.ts,.tsx,.jsx,.json,.py,.sql,.md,.txt"
+                    onChange={handleFilePicked}
+                    className="hidden"
+                  />
+                  {!busy && (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      aria-label="Adjuntar archivo de código"
+                      title="Adjuntar archivo de código (.html, .js, .py, .sql, .json...)"
+                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#212D44] bg-[#131A29] text-[#94A3B8] transition-colors hover:border-[#38BDF8]/50 hover:text-white"
+                    >
+                      <Paperclip className="h-4 w-4" />
+                    </button>
+                  )}
                   <textarea
                     ref={textareaRef}
                     value={input}
@@ -1012,7 +1255,7 @@ function ElaraWorkspace() {
                   ) : (
                     <button
                       type="submit"
-                      disabled={!input.trim()}
+                      disabled={!input.trim() && !attachedFile}
                       aria-label="Enviar mensaje"
                       className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-[#38BDF8] to-[#60A5FA] text-[#061018] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:from-[#1B2436] disabled:to-[#1B2436] disabled:text-[#64748B]"
                     >
@@ -1060,6 +1303,15 @@ function ElaraWorkspace() {
         onSignOut={handleSignOut}
         onClose={() => setAuthModalOpen(false)}
       />
+
+      {toast && (
+        <div
+          role="status"
+          className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 rounded-full border border-[#2B3D5E] bg-[#11192A]/95 px-4 py-1.5 text-xs font-medium text-[#E0F2FE] shadow-xl backdrop-blur"
+        >
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

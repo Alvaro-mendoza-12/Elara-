@@ -161,8 +161,113 @@ function tryColorConvert(raw: string): { reply: string; intent: string } | null 
   return null;
 }
 
+function utf8ToBase64(input: string): string {
+  const bytes = new TextEncoder().encode(input);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 1) {
+    bin += String.fromCharCode(bytes[i]);
+  }
+  return btoa(bin);
+}
+
+function base64ToUtf8(b64: string): string {
+  const bin = atob(b64.trim());
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i += 1) {
+    bytes[i] = bin.charCodeAt(i);
+  }
+  return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+}
+
+function tryJsonFormat(raw: string, norm: string): { reply: string; intent: string } | null {
+  if (!/\b(formatea|pretty|embellece|ordena|indent)\b/.test(norm) || !/\bjson\b/.test(norm)) return null;
+  const startObj = raw.indexOf('{');
+  const startArr = raw.indexOf('[');
+  const start =
+    startObj !== -1 && startArr !== -1
+      ? Math.min(startObj, startArr)
+      : Math.max(startObj, startArr);
+  if (start === -1) return null;
+  const candidate = raw.slice(start).replace(/```$/g, '').trim();
+  try {
+    const parsed = JSON.parse(candidate);
+    return {
+      reply: `JSON válido y formateado:\n\n\`\`\`json\n${JSON.stringify(parsed, null, 2)}\n\`\`\``,
+      intent: 'dev_json_format',
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Error de sintaxis JSON';
+    return {
+      reply: `El JSON enviado tiene un error de sintaxis:\n\n> \`${msg}\``,
+      intent: 'dev_json_format',
+    };
+  }
+}
+
+function tryBase64Utility(raw: string, norm: string): { reply: string; intent: string } | null {
+  if (!/\bbase64\b/.test(norm)) return null;
+  const quoted = raw.match(/["“]([^"”]+)["”]/);
+  const trailing = raw.match(/base64\s*(?:de|:)\s*([^\n]+)$/i);
+  const payload = (quoted?.[1] ?? trailing?.[1] ?? '').trim();
+  if (!payload) return null;
+
+  if (/\bdecodifica|decode\b/.test(norm)) {
+    try {
+      const decoded = base64ToUtf8(payload);
+      return {
+        reply: `Texto decodificado desde Base64:\n\n\`\`\`text\n${decoded}\n\`\`\``,
+        intent: 'dev_base64',
+      };
+    } catch {
+      return {
+        reply: 'No pude decodificar esa cadena Base64 (verifica que no falten caracteres `=`).',
+        intent: 'dev_base64',
+      };
+    }
+  }
+
+  return {
+    reply: `Resultado en Base64:\n\n\`\`\`text\n${utf8ToBase64(payload)}\n\`\`\``,
+    intent: 'dev_base64',
+  };
+}
+
+function tryTimestampUtility(norm: string): { reply: string; intent: string } | null {
+  if (!/\btimestamp\b/.test(norm)) return null;
+  const numMatch = norm.match(/\b(\d{10}|\d{13})\b/);
+  if (numMatch?.[1]) {
+    const rawNum = Number(numMatch[1]);
+    const ms = numMatch[1].length === 10 ? rawNum * 1000 : rawNum;
+    const date = new Date(ms);
+    if (Number.isNaN(date.getTime())) return null;
+    const lima = new Intl.DateTimeFormat('es-PE', {
+      dateStyle: 'medium',
+      timeStyle: 'medium',
+      timeZone: 'America/Lima',
+    }).format(date);
+    return {
+      reply: `Conversión de timestamp \`${numMatch[1]}\`:\n\n| Zona | Fecha y hora |\n| --- | --- |\n| UTC (ISO 8601) | \`${date.toISOString()}\` |\n| Lima / Perú | **${lima}** |`,
+      intent: 'dev_timestamp',
+    };
+  }
+  const now = Date.now();
+  return {
+    reply: `Timestamp Unix actual:\n\n- **Segundos:** \`${Math.floor(now / 1000)}\`\n- **Milisegundos:** \`${now}\`\n- **ISO 8601:** \`${new Date(now).toISOString()}\``,
+    intent: 'dev_timestamp',
+  };
+}
+
 export function tryConversationalResponse(raw: string): { reply: string; intent: string } | null {
   const norm = normalizeText(raw);
+
+  const jsonFormatted = tryJsonFormat(raw, norm);
+  if (jsonFormatted) return jsonFormatted;
+
+  const b64 = tryBase64Utility(raw, norm);
+  if (b64) return b64;
+
+  const ts = tryTimestampUtility(norm);
+  if (ts) return ts;
 
   // Developer utilities: UUID v4, secure password, color hex/rgb
   if (/\b(uuid|guid)\b/.test(norm) && /\b(genera|dame|crea|nuevo)\b/.test(norm)) {

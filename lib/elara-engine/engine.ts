@@ -12,6 +12,8 @@ import { buildTrainedIntentNetwork, type ElaraIntentNetwork } from './neural-net
 import { detectCrisisHelpResponse } from './safety';
 import { extractFencedCodeBlocks, extractPromptParams, tokenize } from './text';
 import {
+  buildBlogHtml,
+  buildBookingFormHtml,
   buildCatalogStoreHtml,
   buildPaletteGeneratorHtml,
   buildPomodoroHtml,
@@ -144,6 +146,12 @@ function buildContextualFollowUp(userText: string, prevHtml: { prompt: string; h
   if (prevHtml.html.includes('data-elara-app="palette"')) {
     return buildHtmlResponse('Actualicé el generador de paletas `index.html`:', buildPaletteGeneratorHtml(merged), params.wantsCodeOnly);
   }
+  if (prevHtml.html.includes('data-elara-app="blog"')) {
+    return buildHtmlResponse('Actualicé tu blog / revista `index.html`:', buildBlogHtml(merged), params.wantsCodeOnly);
+  }
+  if (prevHtml.html.includes('data-elara-app="form"')) {
+    return buildHtmlResponse('Actualicé el formulario `index.html`:', buildBookingFormHtml(merged), params.wantsCodeOnly);
+  }
   if (prevHtml.html.includes('loginForm')) {
     return buildHtmlResponse('Actualicé la pantalla de acceso según lo pedido:', buildLoginIndexHtml(merged), params.wantsCodeOnly);
   }
@@ -179,9 +187,26 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
   const params = extractPromptParams(latestUser);
   const norm = params.normalized;
 
-  // 2. User pasted code to analyze or fix
+  // 2. JSON formatting & pasted code review (handles attached files or fenced snippets cleanly)
+  if (params.codeBlocks.length > 0) {
+    const firstBlock = params.codeBlocks[0];
+    if (
+      /\b(formatea|pretty|embellece|ordena|indent)\b/.test(norm) &&
+      (firstBlock.lang === 'json' || /^\s*[\[{]/.test(firstBlock.code))
+    ) {
+      const formattedConv = tryConversationalResponse(`formatea json ${firstBlock.code}`);
+      if (formattedConv) {
+        return { reply: formattedConv.reply, intent: formattedConv.intent, confidence: 0.96 };
+      }
+    }
+    return {
+      reply: formatStaticReview(latestUser, params.codeBlocks),
+      intent: 'code_inspect_user_snippet',
+      confidence: 0.92,
+    };
+  }
+
   const looksLikePastedCode =
-    params.codeBlocks.length > 0 ||
     (/[{};]/.test(latestUser) && latestUser.split('\n').length >= 2) ||
     /<\/?[a-z]+[\s>]/i.test(latestUser);
 
@@ -190,13 +215,6 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
       reply: formatStaticReview(latestUser, params.codeBlocks),
       intent: 'code_inspect_user_snippet',
       confidence: 0.94,
-    };
-  }
-  if (params.codeBlocks.length > 0) {
-    return {
-      reply: formatStaticReview(latestUser, params.codeBlocks),
-      intent: 'code_inspect_user_snippet',
-      confidence: 0.9,
     };
   }
 
@@ -221,7 +239,7 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
 
   // 5. Explicit web/app generation with real topic/item synthesis (e.g. "20 juguetes de perritos")
   const wantsWeb =
-    /\b(web|webs|pagina|paginas|sitio|sitios|index|index\.html|html|tiendas?|catalogos?|landing|login|dashboard|panel|calculadoras?|portafolios?|portfolio|pomodoro|temporizador(?:es)?|quiz(?:zes)?|trivias?|paletas?|gradientes?)\b/.test(
+    /\b(web|webs|pagina|paginas|sitio|sitios|index|index\.html|html|tiendas?|catalogos?|landing|login|dashboard|panel|calculadoras?|portafolios?|portfolio|pomodoro|temporizador(?:es)?|quiz(?:zes)?|trivias?|paletas?|gradientes?|blog|revista|noticias|formulario|formularios|reserva|cita|encuesta)\b/.test(
       norm,
     ) ||
     /\b(crea|genera|haz|hazme|dame|construye|arma|quiero)\b.*\b(todo|to-do|tareas|lista\s+de\s+tareas|kanban|cronometro|cuestionario|generador)\b/.test(
@@ -290,7 +308,7 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
       case 'identity_elara':
         return {
           reply:
-            'Soy **ELARA** (`E L A R A`), tu asistente web de programación y prototipado rápido.\n\nEn esta etapa corro con **Elara Core v0.3** (motor propio optimizado en el servidor para construir sitios `index.html` interactivos, utilidades de desarrollo y guías técnicas). Puedes conectar un modelo externo o propio mediante `ELARA_UPSTREAM_URL`.',
+            'Soy **ELARA** (`E L A R A`), tu asistente web de programación y prototipado rápido.\n\nEn esta etapa corro con **Elara Core v0.4** (motor propio en el servidor para construir sitios `index.html` interactivos, utilidades de desarrollo y guías técnicas). Puedes conectar un modelo completo mediante `ELARA_UPSTREAM_URL`.',
           intent: prediction.label,
           confidence: prediction.confidence,
         };
@@ -350,7 +368,7 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
   // 8. Honest, specific fallback acknowledging what was asked without robotic wall of text
   const preview = latestUser.length > 72 ? `${latestUser.slice(0, 72)}…` : latestUser;
   return {
-    reply: `No tengo suficiente contexto entrenado en **Elara Core v0.3** para responder directamente *"${preview}"* sin inventar información.\n\nSi quieres aprovechar lo que ya ejecuta en tiempo real, puedes pedirme:\n- *"Genera una web de 10 laptops gamer en color morado en soles"* o un **Gestor de tareas**, **Pomodoro**, **Trivia** o **Login** en \`index.html\`.\n- Utilidades: *"Convierte 25 km a millas"*, *"Convierte #38bdf8 a rgb"*, *"Genera un UUID"* o *"15% de 800"*.\n- Guías rápidas de **React, CSS Grid/Flexbox, Regex, REST/JWT, Python o PostgreSQL**.`,
+    reply: `No tengo suficiente contexto entrenado en **Elara Core v0.4** para responder directamente *"${preview}"* sin inventar información.\n\nSi quieres aprovechar lo que ya ejecuta en tiempo real, puedes pedirme:\n- *"Crea una web de 10 laptops gamer en color morado en soles"* o un **Blog**, **Formulario**, **Gestor de tareas**, **Pomodoro**, **Trivia** o **Login** en \`index.html\`.\n- Utilidades: *"Convierte 25 km a millas"*, *"Base64 de Hola ELARA"*, *"Timestamp actual"*, *"Formatea json { ... }"*, *"Genera un UUID"* o *"15% de 800"*.\n- Pegar o adjuntar un archivo de código para analizarlo.`,
     intent: '__fallback_honest__',
     confidence: prediction.confidence,
   };

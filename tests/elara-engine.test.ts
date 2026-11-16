@@ -122,3 +122,33 @@ test('elara resolves unit conversion, color conversion, uuid, password and CSS g
   const cssRes = runElaraCoreEngine([{ role: 'user', text: 'Diferencia entre flexbox y css grid' }]);
   assert.match(cssRes.reply, /\| Necesidad \| Recomendado \|/);
 });
+
+test('elara generates blog and booking form apps and runs json/base64/timestamp utilities', () => {
+  const blog = runElaraCoreEngine([{ role: 'user', text: 'Genera un blog revista digital en tema claro' }]);
+  assert.equal(blog.intent, 'code_index_blog');
+  assert.match(blog.reply, /data-elara-app="blog"/);
+
+  const form = runElaraCoreEngine([{ role: 'user', text: 'Crea un formulario de reserva y contacto en index.html' }]);
+  assert.equal(form.intent, 'code_index_form');
+  assert.match(form.reply, /data-elara-app="form"/);
+
+  const catalogSort = runElaraCoreEngine([{ role: 'user', text: 'Generame una web de 6 laptops gamer' }]);
+  assert.match(catalogSort.reply, /sortSelect/);
+  assert.match(catalogSort.reply, /checkoutBtn/);
+
+  const jsonRes = runElaraCoreEngine([{ role: 'user', text: 'Formatea json {"app":"ELARA","v":4,"ok":true}' }]);
+  assert.equal(jsonRes.intent, 'dev_json_format');
+  assert.match(jsonRes.reply, /"v": 4/);
+
+  const b64Encode = runElaraCoreEngine([{ role: 'user', text: 'Codifica en base64 "Hola ELARA"' }]);
+  assert.equal(b64Encode.intent, 'dev_base64');
+  assert.match(b64Encode.reply, /SG9sYSBFTEFSQQ==/);
+
+  const b64Decode = runElaraCoreEngine([{ role: 'user', text: 'Decodifica base64 "SG9sYSBFTEFSQQ=="' }]);
+  assert.equal(b64Decode.intent, 'dev_base64');
+  assert.match(b64Decode.reply, /Hola ELARA/);
+
+  const tsRes = runElaraCoreEngine([{ role: 'user', text: 'Convierte timestamp 1700000000' }]);
+  assert.equal(tsRes.intent, 'dev_timestamp');
+  assert.match(tsRes.reply, /2023-11-14/);
+});
