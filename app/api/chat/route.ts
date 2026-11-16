@@ -92,7 +92,7 @@ export async function POST(req: Request) {
   let verifiedUser: Awaited<ReturnType<typeof verifiedNovvinUser>> = null;
   if (await readNovvinSession()) {
     try {
-      verifiedUser = await verifiedNovvinUser(false,{signal,timeoutMs:7000});
+      verifiedUser = await verifiedNovvinUser(false,{signal,timeoutMs:10000});
       if (!verifiedUser) return Response.json({ error: 'Tu sesión de Novvin terminó. Vuelve a iniciar sesión o continúa en acceso libre.' }, { status: 401 });
     } catch { return Response.json({ error: 'No se pudo verificar tu sesión. Reintenta en un momento.' }, { status: 503 }); }
   }

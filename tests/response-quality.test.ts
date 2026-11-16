@@ -50,7 +50,17 @@ test('grounding follows a scientific referent without overriding a new topic or 
  assert.deepEqual(groundedKnowledge([...history,user('Ahora dime la capital de Chile')]).sources,[]);
  assert.deepEqual(groundedKnowledge([user('Escribe un poema sobre el cielo y las nubes')]).sources,[]);
  assert.match(groundedKnowledge([user('¿Por qué flota el hielo?')]).text,/menos denso/);
+ assert.deepEqual(groundedKnowledge([user('¿Por qué flota el hielo?')]).sources.map(source=>source.id),['ice-density']);
  assert.deepEqual(groundedKnowledge([...history,user('Olvida lo anterior'),user('Dame otro ejemplo')]).sources,[]);
+});
+
+test('explicit independent topics omit irrelevant history but references and user facts survive',()=>{
+ const history=[user('Me llamo Elena.'),assistant('Hola Elena'),user('Explica la fotosíntesis'),assistant('Las plantas captan luz con clorofila.')];
+ const next=boundedModelContext([...history,user('Ahora explícame por qué el hielo flota en el agua.')])!;
+ assert.doesNotMatch(JSON.stringify(next),/plantas|clorofila|fotosíntesis/);
+ assert.match(JSON.stringify(next),/Elena/);
+ const reference=boundedModelContext([user('Usa JSON'),assistant('{"cantidad":5}'),user('Ahora explícame qué significa ese JSON')])!;
+ assert.match(JSON.stringify(reference),/cantidad/);
 });
 
 test('verified notes are bounded, associated with primary sources and never sourced from attached instructions',()=>{

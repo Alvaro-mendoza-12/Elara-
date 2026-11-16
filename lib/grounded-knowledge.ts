@@ -6,7 +6,7 @@ import { normalizeText } from './elara-engine/text';
 // Curated paraphrases of stable primary sources. No per-message internet access.
 const NOTES=[
  {id:'ice-density',match:/\b(?:hielo|iceberg)\b/,text:'Densidad = masa/volumen. El hielo ocupa más volumen que la misma masa de agua líquida; su estructura cristalina lo hace menos denso y por eso flota.',url:'https://openstax.org/books/biology-2e/pages/2-2-water'},
- {id:'buoyancy',match:/\b(?:barcos?|flotacion|empuje|flota|flotan|submarinos?|globos?|helio)\b/,text:'El empuje equivale al peso del fluido desplazado. Un barco flota cuando el empuje del agua equilibra su peso; importa la densidad media del casco con su aire. El aire del casco no sustituye al agua. Un globo de helio recibe empuje del aire y un submarino ajusta su densidad con lastre.',url:'https://openstax.org/books/university-physics-volume-1/pages/14-4-archimedes-principle-and-buoyancy'},
+ {id:'buoyancy',match:/\b(?:barcos?|flotacion|empuje|flota|flotan|submarinos?|globos?|helio)\b/,text:'El empuje es el peso del fluido desplazado. El barco flota si el empuje del agua equilibra su peso: importa la densidad media del casco con aire. El globo de helio desplaza aire; el submarino cambia su densidad mediante lastre.',url:'https://openstax.org/books/university-physics-volume-1/pages/14-4-archimedes-principle-and-buoyancy'},
  {id:'photosynthesis',match:/\bfotosintesis\b|\bplantas\b.*\b(?:luz|energia|crecer|crecen)\b/,text:'La fotosíntesis usa energía de la luz, agua y dióxido de carbono para producir azúcares; libera oxígeno. Los azúcares almacenan energía química y aportan materia para crecer. La clorofila capta luz; las plantas también realizan respiración celular.',url:'https://openstax.org/books/concepts-biology/pages/5-1-overview-of-photosynthesis'},
  {id:'sky-colors',match:/\b(?:cielo|atardecer|amanecer)\b/,text:'Las moléculas del aire dispersan la luz azul más que la roja: por eso vemos azul el cielo diurno. Al atardecer la luz atraviesa más atmósfera; se dispersa más azul fuera de la trayectoria directa y predominan tonos rojos y anaranjados. No es el reflejo del mar.',url:'https://spaceplace.nasa.gov/blue-sky/en/'},
  {id:'seasons',match:/\b(?:estaciones|invierno|verano|otono|primavera)\b/,text:'Las estaciones se deben principalmente a la inclinación del eje terrestre mientras la Tierra orbita el Sol, no a estar más cerca o lejos. Los hemisferios reciben distinta inclinación y duración de la luz; sus estaciones son opuestas.',url:'https://spaceplace.nasa.gov/seasons/en/'},
@@ -27,6 +27,9 @@ export function groundedKnowledge(turns:SimpleTurn[]):{text:string;sources:Array
    if(selected.length)break;
   }
  }
+ // “Hielo flota” already has its specific explanation; the generic buoyancy
+ // note would duplicate it and make this CPU-bound model reprocess more text.
+ if(selected.some(note=>note.id==='ice-density')&&!/\b(?:barcos?|submarinos?|globos?|helio|empuje)\b/.test(norm))selected=selected.filter(note=>note.id!=='buoyancy');
  selected=selected.slice(0,2);
  return {text:selected.map(note=>note.text).join('\n').slice(0,800),sources:selected.map(({id,url})=>({id,url}))};
 }

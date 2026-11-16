@@ -1,6 +1,7 @@
 import type { SimpleTurn } from './elara-engine/engine';
 import { activeConversationTurns, conversationFacts, isRewriteRequest } from './conversation-context';
 import { readWebSpec } from './elara-engine/web-spec';
+import { normalizeText } from './elara-engine/text';
 
 export type ModelChoice = 'auto' | 'core' | 'conversation';
 export type ResponseDetail = 'brief' | 'explain';
@@ -43,11 +44,16 @@ export function boundedModelContext(turns: SimpleTurn[]): Array<{ role: 'user' |
     while (value && JSON.stringify({...compactFacts,[key]:value}).length > 850) value = value.slice(0, Math.floor(value.length * 0.75));
     if (value) compactFacts[key] = value;
   }
-  const memory = Object.keys(compactFacts).length ? `Datos aportados antes por el usuario en este chat (las correcciones posteriores prevalecen):\n${JSON.stringify(compactFacts)}` : '';
+  const memory = Object.keys(compactFacts).length ? `Datos del usuario en este chat, con sus últimas correcciones:\n${JSON.stringify(compactFacts)}` : '';
   if (rewrite) {
     // A rewrite needs its source and the user's facts, not old unrelated topics.
     return [...(memory ? [{role:'user' as const,content:memory}] : []), {role:'user',content:rewrite}];
   }
+  const normalized=normalizeText(latest.text);
+  const independentTopic=/^(?:ahora|otra pregunta|cambiando de tema)\b/.test(normalized)&&
+    /\b(?:explicame|explica|dime|cual es|que es|por que|hablame)\b/.test(normalized)&&
+    !/\b(?:eso|ese|esa|estos|estas|este|esta|anterior|mismo|misma|mi|mis|nuestro|nuestra|tu|tus|su|sus|lo que|texto|documento|codigo|funcion|poema|json|plan)\b/.test(normalized);
+  if(independentTopic)return [...(memory?[{role:'user' as const,content:memory}]:[]),{role:'user',content:latest.text}];
   const budget = Math.max(3600,latest.text.length+memory.length) - memory.length;
   let size = 0;
   for (const [index, turn] of active.slice(-8).reverse().entries()) {

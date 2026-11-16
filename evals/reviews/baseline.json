@@ -1,0 +1,265 @@
+{
+  "label": "baseline",
+  "method": "Review of complete outputs against each declared rubric; no LLM judge; grades bound to saved output hashes",
+  "requests": 36,
+  "grades": {
+    "pass": 8,
+    "partial": 8,
+    "fail": 16,
+    "transport": 4
+  },
+  "results": [
+    {
+      "dialogue": "biology-and-reference",
+      "turn": 1,
+      "sha256": "81aad8b1166efb639c9064f18a99aa8fc1652c5734cf95dc1ffe04a4321e08cb",
+      "grade": "partial",
+      "reason": "Explicación útil, pero confunde la energía captada con los productos materiales y llama al oxígeno vital para el crecimiento sin precisar su función."
+    },
+    {
+      "dialogue": "biology-and-reference",
+      "turn": 2,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "grade": "transport",
+      "reason": "HTTP 503; la versión inicial del evaluador no guardó la causa concreta."
+    },
+    {
+      "dialogue": "biology-and-reference",
+      "turn": 3,
+      "sha256": "b8402c1bea4e57877451f37d521dd1c11eeff88d9fe7671825829a5cd888c9c9",
+      "grade": "partial",
+      "reason": "Apunta a la estructura cristalina y al volumen, pero «densa masa» y «menos pesada» confunden masa y densidad."
+    },
+    {
+      "dialogue": "ship-example",
+      "turn": 1,
+      "sha256": "279a9ccfaec4dd6b092b0e5ce853a7b34e2257d82bba69819d7908316ffab723",
+      "grade": "fail",
+      "reason": "Afirma que un barco flota sin necesidad de agua y atribuye el empuje al aire del casco."
+    },
+    {
+      "dialogue": "ship-example",
+      "turn": 2,
+      "sha256": "09690a687b11ea303312155a8ea828802dd943b31d35c70e2e54cca81e30ddf1",
+      "grade": "fail",
+      "reason": "Confunde densidad del material del globo con densidad media, inventa un ejemplo de espuma de sándwich y explica mal la sustentación de un avión."
+    },
+    {
+      "dialogue": "ship-example",
+      "turn": 3,
+      "sha256": "fbd72d360925386fc0c358634bf39a6b7afdd724f5df0496bf16457330848a5b",
+      "grade": "fail",
+      "reason": "El resumen conserva la explicación falsa del globo y del barco."
+    },
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 1,
+      "sha256": "cbb1ac0b1d874e3387b2a6d80e191f70ee455194a21d50bbfb245eacd6962a98",
+      "grade": "fail",
+      "reason": "Pide productos para una tienda web en lugar de las tres ideas de publicaciones solicitadas."
+    },
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 2,
+      "sha256": "e9ea6baf73b3c15f208f3e850f1c0333f710e6fdaea5e39e7c51b819e352b7b8",
+      "grade": "fail",
+      "reason": "Genera HTML no solicitado cuando se pide abreviar ideas."
+    },
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 3,
+      "sha256": "4679744576b93173722406786f14f503f80f33ad4b3fe2702a1e8dc2cc421d9f",
+      "grade": "transport",
+      "reason": "La generación queda incompleta y vence el plazo; no entrega la frase pedida."
+    },
+    {
+      "dialogue": "negative-web-request",
+      "turn": 1,
+      "sha256": "98fdbc4c3a4a21b4d182ddf3bba5ad5e3a67aed7ce77afbfc56ccbf1fb0f6e07",
+      "grade": "fail",
+      "reason": "Genera una web pese a que el usuario pidió explícitamente no crearla."
+    },
+    {
+      "dialogue": "negative-web-request",
+      "turn": 2,
+      "sha256": "a97dd210cff5a465c1695c7513d8c074c4cebeae20f196825fd61e5fe3b8586e",
+      "grade": "pass",
+      "reason": "Tres consejos pertinentes para mejorar una landing."
+    },
+    {
+      "dialogue": "negative-web-request",
+      "turn": 3,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "grade": "transport",
+      "reason": "HTTP 503; no entrega respuesta al nuevo tema."
+    },
+    {
+      "dialogue": "text-summary-and-translation",
+      "turn": 1,
+      "sha256": "446eafdd0fece5cfe1f15ba34c1c0ab3afa9147b78319b672f6f298454870fee",
+      "grade": "fail",
+      "reason": "Trata el documento de texto como JavaScript y no resume su contenido."
+    },
+    {
+      "dialogue": "text-summary-and-translation",
+      "turn": 2,
+      "sha256": "23e9f1a6f73c2b5ce634630afc123b4ea3ad93b391888ccab0c4601fe8650aac",
+      "grade": "fail",
+      "reason": "Traduce su revisión equivocada en vez del documento o su resumen."
+    },
+    {
+      "dialogue": "text-summary-and-translation",
+      "turn": 3,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "grade": "transport",
+      "reason": "HTTP 503; no recupera el día del documento."
+    },
+    {
+      "dialogue": "code-explanation",
+      "turn": 1,
+      "sha256": "446eafdd0fece5cfe1f15ba34c1c0ab3afa9147b78319b672f6f298454870fee",
+      "grade": "fail",
+      "reason": "Revisa errores aunque se pidió explicar una suma sin buscar errores."
+    },
+    {
+      "dialogue": "code-explanation",
+      "turn": 2,
+      "sha256": "40f232c0d24ecb0f1708dd6b6513efc555370ab168a1a3c8488196b61d9520b4",
+      "grade": "partial",
+      "reason": "Muestra una llamada válida a sumar(4,7), pero omite la salida once."
+    },
+    {
+      "dialogue": "code-explanation",
+      "turn": 3,
+      "sha256": "ba3c25b520eb740dd74f49e6a3c324a97216000db21db44eda93664787fe8897",
+      "grade": "fail",
+      "reason": "Devuelve menos dos en vez de tres; tomó parte de la frase como una expresión independiente."
+    },
+    {
+      "dialogue": "integral-dialogue",
+      "turn": 1,
+      "sha256": "76f25097d049b99b731017d206a34083663e20fe248bc0c6853b8d3a8d4a92a8",
+      "grade": "pass",
+      "reason": "Reconoce la capacidad solicitada y delimita el alcance."
+    },
+    {
+      "dialogue": "integral-dialogue",
+      "turn": 2,
+      "sha256": "ef94e54b4217f2d07442f4e865b8f8763097f3c5584c66ffbe5b633df5df9f30",
+      "grade": "fail",
+      "reason": "Entiende la petición de tres ejercicios, pero el tercero tiene signo incorrecto: la primitiva de exp(-x) es -exp(-x)."
+    },
+    {
+      "dialogue": "integral-dialogue",
+      "turn": 3,
+      "sha256": "41cadce28ac7aa099d3975c011ffb7d4815d111d17ae3c082cd01e44ae238eaf",
+      "grade": "partial",
+      "reason": "El resultado de su segundo ejercicio real es correcto; el primer paso sobre derivar seno no es un desarrollo claro de la integración."
+    },
+    {
+      "dialogue": "corrections-and-memory",
+      "turn": 1,
+      "sha256": "5bc11ead24b6e30c86a9afd0f7011229de59608ff975d7df7bd1887a32e1d085",
+      "grade": "pass",
+      "reason": "Reconoce nombre, negocio y producto sin inventar una tarea."
+    },
+    {
+      "dialogue": "corrections-and-memory",
+      "turn": 2,
+      "sha256": "bfb0cc649d09379dd4a7b5f6b7ac4c2f1f72d3e7f0d79a5fad9ffc6b2162a154",
+      "grade": "partial",
+      "reason": "Corrige el nombre a Carla pero omite responder qué vende."
+    },
+    {
+      "dialogue": "corrections-and-memory",
+      "turn": 3,
+      "sha256": "ceb1241370734432c2c1af91af88875a5203c77fec31687aeec7573382feb799",
+      "grade": "pass",
+      "reason": "Recupera el nombre corregido Sur."
+    },
+    {
+      "dialogue": "json-format",
+      "turn": 1,
+      "sha256": "aad30244a30152d29ad8917330f932ae6e0ab8483522dead33c2e15d74f70dd0",
+      "grade": "pass",
+      "reason": "Objeto JSON válido con las claves, tipos y valores pedidos."
+    },
+    {
+      "dialogue": "json-format",
+      "turn": 2,
+      "sha256": "02297f70e6844a5eaed4919b156afa219a47e8bc92f724e5131367daa9abba78",
+      "grade": "pass",
+      "reason": "Conserva Faro y cambia solamente cantidad a cinco."
+    },
+    {
+      "dialogue": "json-format",
+      "turn": 3,
+      "sha256": "622b89aba4da735bef706c6a6b68ff612a9e75987e12789c8c9bcf0a5e7dcb96",
+      "grade": "fail",
+      "reason": "Inventa tres faros y una limitación sobre documentos privados al explicar el JSON."
+    },
+    {
+      "dialogue": "short-poem",
+      "turn": 1,
+      "sha256": "8d97d3278813eb533e9b092a2100e748dad322ecffb867339920e71a64e743c5",
+      "grade": "pass",
+      "reason": "Entrega cuatro versos sobre lluvia sin título."
+    },
+    {
+      "dialogue": "short-poem",
+      "turn": 2,
+      "sha256": "36f932bccb94c252fb8d2882fcc4d276dbc51af924679aadb66e95ed7e146fa8",
+      "grade": "partial",
+      "reason": "Conserva cuatro versos y cambia al mar, pero contiene la frase agramatical «sin fin y vastas»."
+    },
+    {
+      "dialogue": "short-poem",
+      "turn": 3,
+      "sha256": "445665b92fcf31dc682bc7da2c44e2225e18c92617b241fe1123143f0116874c",
+      "grade": "partial",
+      "reason": "Menciona imágenes del poema pero mezcla la lluvia y despertar la tierra del poema anterior."
+    },
+    {
+      "dialogue": "typos-and-explanation",
+      "turn": 1,
+      "sha256": "7547f112990d270235b5685635cc0cb743a5abecba11958038888f8f25adcd4c",
+      "grade": "fail",
+      "reason": "Responde con su identidad y capacidades, no a la pregunta sobre el cielo."
+    },
+    {
+      "dialogue": "typos-and-explanation",
+      "turn": 2,
+      "sha256": "ff904b31cef49d56ad9821ef050ce58d745ce7df6bb6efa3c92715a52286c265",
+      "grade": "fail",
+      "reason": "Explica el azul mediante absorción del rojo; el fenómeno pertinente es dispersión."
+    },
+    {
+      "dialogue": "typos-and-explanation",
+      "turn": 3,
+      "sha256": "b12ddfcd44286ce20f1112102c2424a10f06a0f866034346e8dc197851555498",
+      "grade": "fail",
+      "reason": "La explicación de absorción, colores que supuestamente quedan y aspecto rojo es falsa y contradictoria."
+    },
+    {
+      "dialogue": "constraints-and-plan",
+      "turn": 1,
+      "sha256": "26abea5c2728fb5204829645a0f7a106bef2b890d1362e330ba07a555dcbd5c2",
+      "grade": "partial",
+      "reason": "Tres pasos pertinentes, pero no reparte los treinta minutos ni demuestra que quepan."
+    },
+    {
+      "dialogue": "constraints-and-plan",
+      "turn": 2,
+      "sha256": "c710b3691b2c19942e63e2d9b52bcc4e45045b97752906c1c6dd6df6c13e118b",
+      "grade": "fail",
+      "reason": "Asigna los quince minutos a los apuntes y deja la mochila para después del límite."
+    },
+    {
+      "dialogue": "constraints-and-plan",
+      "turn": 3,
+      "sha256": "8e8ec7c2a281f45d2a625ad25e658a350e4eff2cc42dbf4bb85370f717a946e6",
+      "grade": "pass",
+      "reason": "Responde correctamente Montevideo y deja el tema anterior."
+    }
+  ]
+}
