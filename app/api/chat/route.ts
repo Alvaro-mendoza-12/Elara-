@@ -17,7 +17,7 @@ import { unavailableDataReply } from '@/lib/elara-engine/data-boundaries';
 import { conversationInstructions } from '@/lib/conversation-instructions';
 import { activeConversationTurns } from '@/lib/conversation-context';
 import { verifiedKnowledgeReply } from '@/lib/verified-knowledge';
-import { CHAT_TIMEOUT_MESSAGE, conversationErrorMessage, modelResponseStream } from '@/lib/chat-reliability';
+import { CHAT_TIMEOUT_MESSAGE, conversationErrorMessage, conversationFailureKind, modelResponseStream } from '@/lib/chat-reliability';
 
 export const maxDuration = 60;
 
@@ -69,6 +69,7 @@ function coreStreamResponse(req: Request, reply: string, engine: 'core' | 'safet
 
 export async function POST(req: Request) {
   const started = performance.now();
+  const requestId=crypto.randomUUID();
   const deadline = AbortSignal.timeout(42_000);
   const signal = AbortSignal.any([req.signal,deadline]);
   if (!trustedMutation(req)) return Response.json({ error: 'Origen no permitido.' }, { status: 403 });
@@ -93,12 +94,14 @@ export async function POST(req: Request) {
   const verifiedAnswer=verifiedKnowledgeReply(turns);
   if(verifiedAnswer)return coreStreamResponse(req,verifiedAnswer);
   let verifiedUser: Awaited<ReturnType<typeof verifiedNovvinUser>> = null;
+  const authStarted=performance.now();
   if (await readNovvinSession()) {
     try {
       verifiedUser = await verifiedNovvinUser(false,{signal,timeoutMs:10000});
       if (!verifiedUser) return Response.json({ error: 'Tu sesión de Novvin terminó. Vuelve a iniciar sesión o continúa en acceso libre.' }, { status: 401 });
-    } catch { return Response.json({ error: 'No se pudo verificar tu sesión. Reintenta en un momento.' }, { status: 503 }); }
+    } catch { console.info('[elara.chat]',JSON.stringify({requestId,outcome:'session-unavailable',elapsedMs:Math.round(performance.now()-started)}));return Response.json({ error: 'No se pudo verificar tu sesión. Reintenta en un momento.' }, { status: 503 }); }
   }
+  const authMs=Math.round(performance.now()-authStarted);
   const engineInfo = resolveEngineInfo();
 
   try {
@@ -116,6 +119,13 @@ export async function POST(req: Request) {
         apiKey: config.apiKey,
         headers: { 'X-Elara-Account': createHmac('sha256', config.apiKey).update(verifiedUser.id).digest('hex') },
       });
+      const contextChars=messages.reduce((size,message)=>size+message.content.length,0);
+      const userChars=turns.at(-1)?.text.length||0;
+      let firstTextMs:number|null=null,logged=false;
+      const logOutcome=(outcome:string,finishReason?:string)=>{
+        if(logged)return;logged=true;
+        console.info('[elara.chat]',JSON.stringify({requestId,engine:'conversation',outcome,elapsedMs:Math.round(performance.now()-started),authMs,firstTextMs,contextChars,messageCount:messages.length,userChars,...(finishReason?{finishReason}:{})}));
+      };
       const result = streamText({
         model: customProvider.chatModel(config.model),
         instructions: conversationInstructions(preferences.detail,turns),
@@ -126,14 +136,17 @@ export async function POST(req: Request) {
         temperature: 0.5,
         maxRetries: 0,
         streamRetries: 0,
-        onEnd: ({finishReason}) => console.info('[elara.chat]',JSON.stringify({engine:'conversation',elapsedMs:Math.round(performance.now()-started),finishReason})),
+        onChunk: ({chunk})=>{if(chunk.type==='text-delta'&&firstTextMs===null)firstTextMs=Math.round(performance.now()-started);},
+        onEnd: ({finishReason})=>logOutcome(finishReason==='stop'?'complete':'incomplete',finishReason),
+        onAbort: ()=>logOutcome(req.signal.aborted?'cancelled':firstTextMs===null?'timeout-before-text':'timeout-after-text'),
+        onError: ({error})=>logOutcome(conversationFailureKind(error)),
       });
       return createUIMessageStreamResponse({
         stream: modelResponseStream(toUIMessageStream({ stream: result.stream, sendReasoning: false, onError: error => {
-          console.info('[elara.chat]',JSON.stringify({engine:'conversation',elapsedMs:Math.round(performance.now()-started),outcome:'error'}));
+          logOutcome(conversationFailureKind(error));
           return deadline.aborted ? CHAT_TIMEOUT_MESSAGE : conversationErrorMessage(error);
         } }),()=>req.signal.aborted),
-        headers: { 'Cache-Control': 'no-store', 'X-Elara-Engine': 'conversation' },
+        headers: { 'Cache-Control': 'no-store', 'X-Elara-Engine': 'conversation','X-Elara-Request-Id':requestId,'X-Elara-Context-Chars':String(contextChars) },
       });
     }
     if (conversationRequested && preferences.model === 'conversation' && engineInfo.mode !== 'custom-server') {

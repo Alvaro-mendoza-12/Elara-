@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
-import {liveDialogues,validationDialogues,knowledgeDialogues} from '../evals/live-dialogues.mjs';
+import {liveDialogues,validationDialogues,knowledgeDialogues,timeoutDialogues} from '../evals/live-dialogues.mjs';
 const require=createRequire(import.meta.url);
 const {createChatFetch}=require('../.test-dist/lib/chat-reliability.js');
 const args=Object.fromEntries(process.argv.slice(2).map(arg=>arg.replace(/^--/,'').split('=')));
 const base=(process.env.ELARA_TEST_URL || 'https://elara-mu-mauve.vercel.app').replace(/\/+$/,'');
 const fixture=JSON.parse(fs.readFileSync(process.env.ELARA_QA_FIXTURE || '.vercel/qa-broad-v07.json','utf8'));
-const samples=(args.set==='validation'?validationDialogues:args.set==='knowledge'?knowledgeDialogues:liveDialogues).filter(sample=>!args.only||args.only.split(',').includes(sample.id));
+const samples=(args.set==='validation'?validationDialogues:args.set==='knowledge'?knowledgeDialogues:args.set==='timeouts'?timeoutDialogues:liveDialogues).filter(sample=>!args.only||args.only.split(',').includes(sample.id));
 assert.ok(samples.length,'No live dialogues selected');
 const label=args.label || 'live';
 fs.mkdirSync('evals/results',{recursive:true});
@@ -50,7 +50,7 @@ try{
  assert.equal(login.status,200,'Synthetic Novvin login');
  cookie=login.headers.getSetCookie().find(value=>/^(?:elara-session|__Host-elara-session)=/.test(value)).split(';')[0];
  for(const sample of samples){
-  const history=[];let priorError=false;
+  const history=(sample.history||[]).map(turn=>({id:crypto.randomUUID(),role:turn.role,parts:[{type:'text',text:turn.text}]}));let priorError=false;
   for(const [index,turn]of sample.turns.entries()){
    if(interrupted.signal.aborted)break;
    await pause(Math.max(0,lastStart+10500-Date.now()));
@@ -61,17 +61,17 @@ try{
    }
    history.push({id:crypto.randomUUID(),role:'user',parts:[{type:'text',text:turn.text}]});
    const started=Date.now();lastStart=started;
-   let text='',engine=null,status=null,finish=null,firstByteMs=null,error=null;
+   let text='',engine=null,status=null,finish=null,firstByteMs=null,error=null,requestId=null,modelContextChars=null;
    try{
-    const response=await clientFetch(base+'/api/chat',{method:'POST',headers:{Origin:base,'Content-Type':'application/json',Cookie:cookie},body:JSON.stringify({model:'auto',detail:'brief',messages:history}),signal:interrupted.signal});
-    status=response.status;engine=response.headers.get('x-elara-engine');
+    const response=await clientFetch(base+'/api/chat',{method:'POST',headers:{Origin:base,'Content-Type':'application/json',Cookie:cookie},body:JSON.stringify({model:args.model||'auto',detail:'brief',messages:history}),signal:interrupted.signal});
+    status=response.status;engine=response.headers.get('x-elara-engine');requestId=response.headers.get('x-elara-request-id');const context=response.headers.get('x-elara-context-chars');if(context!==null)modelContextChars=Number(context);
     let raw='';const decoder=new TextDecoder();for await(const chunk of response.body){const piece=decoder.decode(chunk,{stream:true});if(firstByteMs===null&&piece.includes('text-delta'))firstByteMs=Date.now()-started;raw+=piece;}
     for(const line of raw.split('\n'))if(line.startsWith('data: {')){const part=JSON.parse(line.slice(6));if(part.type==='text-delta')text+=part.delta;if(part.type==='finish')finish=part.finishReason;if(part.type==='error')error=part.errorText;}
     if(!response.ok){let detail='';try{detail=JSON.parse(raw).error || ''}catch{}error='HTTP '+response.status+(detail?': '+String(detail).slice(0,140):'');}
     if(finish!=='stop'&&!error)error='incomplete-stream:'+finish;
    }catch(caught){error=caught instanceof Error?caught.message:'request-failed';}
    const issues=error?['transport:'+error]:grade(text,turn,text.includes('```html'));
-   const row={dialogue:sample.id,category:sample.category,turn:index+1,prompt:turn.text,rubric:turn.rubric,engine,status,finish,elapsedMs:Date.now()-started,firstByteMs,rulePass:!issues.length,issues,priorError,manual:'pending',text:text.slice(0,6000),truncated:text.length>6000,sha256:createHash('sha256').update(text).digest('hex')};
+   const row={dialogue:sample.id,category:sample.category,turn:index+1,prompt:turn.text,rubric:turn.rubric,engine,status,finish,requestId,modelContextChars,elapsedMs:Date.now()-started,firstByteMs,rulePass:!issues.length,issues,priorError,manual:'pending',text:text.slice(0,6000),truncated:text.length>6000,sha256:createHash('sha256').update(text).digest('hex')};
    results.push(row);if(results.length%5===0)sampleRuntime();save();fs.appendFileSync(events,JSON.stringify({dialogue:row.dialogue,turn:row.turn,engine,elapsedMs:row.elapsedMs,rulePass:row.rulePass,issues})+'\n');
    console.log(JSON.stringify({dialogue:row.dialogue,turn:row.turn,engine,elapsedMs:row.elapsedMs,rulePass:row.rulePass,issues}));
    if(!error)history.push({id:crypto.randomUUID(),role:'assistant',parts:[{type:'text',text}]});

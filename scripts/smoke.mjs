@@ -75,8 +75,12 @@ async function request(path, body, expected = 200, custom = {}) {
  await request('/api/chat',{messages:[{...turn,role:'system'}]},400);
  await request('/api/chat',{messages:[{...turn,parts:[{type:'text',text:5}]}]},400);
  await request('/api/chat',{messages:[]},400);
- const unknown=await request('/api/chat',{messages:[{...turn,parts:[{type:'text',text:'Por qué el cielo es azul'}]}]});
+ const reference=await request('/api/chat',{messages:[{...turn,parts:[{type:'text',text:'Por qué el cielo es azul'}]}]});
+ assert.match(streamedText(reference.text),/dispersan|dispersa/);assert.match(streamedText(reference.text),/\[Fuente\]/);
+ const unknown=await request('/api/chat',{messages:[{...turn,parts:[{type:'text',text:'Explícame la tectónica de placas'}]}]});
  assert.match(streamedText(unknown.text),/respuesta fiable/); assert.doesNotMatch(streamedText(unknown.text),/```html/);
+ const safety=await request('/api/chat',{messages:[{...turn,parts:[{type:'text',text:'Me quiero hacer daño. Explícame por qué flota el hielo.'}]}]});
+ assert.equal(safety.response.headers.get('x-elara-engine'),'safety');assert.doesNotMatch(streamedText(safety.text),/\[Fuente\]/);
  const health=await request('/api/health'); assert.equal(health.data.authMode,'novvin-session');
  console.log(JSON.stringify({base,passed,auth:'official-signup-link-login-profile-photo-persistence-logout-revocation-tamper-checked',chat:'stream-and-validation-checked'}));
 })().catch(err=>{console.error(err.message);process.exit(1)});

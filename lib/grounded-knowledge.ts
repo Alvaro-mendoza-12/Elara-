@@ -19,7 +19,7 @@ export function groundedKnowledge(turns:SimpleTurn[]):{text:string;sources:Array
  const active=activeConversationTurns(turns),latest=active.at(-1)?.text || '';
  const clean=(text:string)=>normalizeText(normalizeRequestSpelling(text.replace(/```[\s\S]*?(?:```|$)/g,'')));
  const norm=clean(latest);
- if(/\b(?:poema|cuento|versos|ficcion|eslogan|publicaciones|anuncio|diagnostico|medicamento|tratamiento)\b/.test(norm))return {text:'',sources:[]};
+ if(/\b(?:poema|cuento|versos|ficcion|chistes?|bromas?|adivinanzas?|acertijos?|eslogan|publicaciones|anuncio|diagnostico|medicamento|tratamiento)\b/.test(norm))return {text:'',sources:[]};
  let selected=NOTES.filter(note=>note.match.test(norm));
  if(!selected.length&&(isConversationFollowUp(latest)||/^(?:y )?por que\s+(?:dame|explica|no repitas)\b/.test(norm))){
   for(const previous of active.slice(0,-1).filter(turn=>turn.role==='user').slice(-4).reverse()){

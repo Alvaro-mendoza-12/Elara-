@@ -39,3 +39,4 @@ const report={label:args.label||'current',scope:'routing-tools-and-context; not 
 fs.mkdirSync('evals/results',{recursive:true});
 const destination=path.join('evals/results',`${report.label}-${args.split||'all'}.json`);fs.writeFileSync(destination,JSON.stringify(report,null,2)+'\n');
 console.log(JSON.stringify({file:destination,cases:report.cases,passed:report.passed,categories,failures:results.filter(row=>!row.pass&&row.split==='development').slice(0,24).map(({id,issues,turns,reply})=>({id,issues,prompt:turns.at(-1).text,reply:reply.slice(0,130)}))},null,2));
+if(report.passed!==report.cases&&!process.argv.includes('--record-only'))process.exitCode=1;

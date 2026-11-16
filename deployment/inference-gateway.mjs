@@ -8,19 +8,19 @@ const secret=fs.readFileSync('/run/secrets/api-key','utf8').trim();
 const upstream=process.env.MODEL_URL || 'http://elara-model:8080';
 const speechUpstream=process.env.SPEECH_URL || 'http://elara-speech:8081';
 let active=false; const buckets=new Map();
-function reply(res,status,message){res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store',...(status===429?{'Retry-After':'8'}:{})});res.end(JSON.stringify({error:{message,type:'elara_runtime',code:status===429?'MODEL_BUSY':'MODEL_UNAVAILABLE'}}));}
+function reply(res,status,message,code,retryAfter=8){res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store',...(status===429?{'Retry-After':String(retryAfter)}:{})});res.end(JSON.stringify({error:{message,type:'elara_runtime',code:code||(status===429?'MODEL_BUSY':'MODEL_UNAVAILABLE')}}));}
 function resourceReady(){const text=fs.readFileSync('/proc/meminfo','utf8');const available=Number(text.match(/MemAvailable:\s+(\d+)/)?.[1]||0);return available>2500*1024 && os.loadavg()[0]<6;}
 function allowed(header){const received=Buffer.from(String(header||'').replace(/^Bearer /,'')),expected=Buffer.from(secret);return received.length===expected.length&&timingSafeEqual(received,expected);}
-async function isReady(){try{const response=await fetch(upstream+'/health',{headers:{Authorization:'Bearer '+secret},signal:AbortSignal.timeout(1500)});return response.ok;}catch{return false}}
+async function modelStatus(){try{const response=await fetch(upstream+'/slots',{headers:{Authorization:'Bearer '+secret},signal:AbortSignal.timeout(1500)});const slots=await response.json();const ready=response.ok&&Array.isArray(slots)&&slots.length>0&&slots.every(slot=>typeof slot.is_processing==='boolean');return {ready,busy:ready&&slots.some(slot=>slot.is_processing)};}catch{return {ready:false,busy:false}}}
 async function speechReady(){try{return (await fetch(speechUpstream+'/health',{signal:AbortSignal.timeout(1500)})).ok}catch{return false}}
 http.createServer(async(req,res)=>{
  if(!allowed(req.headers.authorization))return reply(res,401,'Autenticación requerida.');
  const path=(req.url||'').replace(/^\/elara-inference(?=\/|$)/,'');
  if(req.method==='GET'&&path==='/v1/models'){
-  const ready=resourceReady()&&await isReady();res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({object:'list',data:ready?[{id:'elara-conversacion-v1',object:'model',owned_by:'elara',base_model:'Qwen3.5-2B',busy:active}]:[],ready,busy:active}));
+  const state=await modelStatus(),ready=resourceReady()&&state.ready,busy=active||state.busy;res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({object:'list',data:ready?[{id:'elara-conversacion-v1',object:'model',owned_by:'elara',base_model:'Qwen3.5-2B',busy}]:[],ready,busy}));
  }
  if(req.method==='GET'&&path==='/v1/audio/status'){
-  res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({ready:resourceReady()&&await speechReady(),busy:active}));
+  const state=await modelStatus();res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({ready:resourceReady()&&state.ready&&await speechReady(),busy:active||state.busy}));
  }
  const isSpeech=path==='/v1/audio/transcriptions';
  if(req.method!=='POST'||(!isSpeech&&path!=='/v1/chat/completions'))return reply(res,404,'Ruta no disponible.');
@@ -29,9 +29,13 @@ http.createServer(async(req,res)=>{
  active=true;const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),48000);
  res.on('close',()=>{if(!res.writableEnded)controller.abort()});req.on('aborted',()=>controller.abort());
  try{
+  // A cancelled HTTP stream can leave llama.cpp finishing its current batch.
+  // Reserve admission before awaiting this probe, and never queue new work
+  // behind a slot that is still processing after the gateway flag cleared.
+  const state=await modelStatus();if(!state.ready)return reply(res,503,'El servicio de inferencia no está disponible. Reintenta en un momento.');if(state.busy)return reply(res,429,'El modelo está terminando otra solicitud. Espera unos segundos.');
   const account=String(req.headers['x-elara-account']||'').slice(0,100);if(!/^[a-z0-9-]{12,100}$/i.test(account)){return reply(res,403,'Cuenta de Elara requerida.');}
   const now=Date.now();for(const [key,value]of buckets)if(value.until<now)buckets.delete(key);
-  const bucket=buckets.get(account)||{count:0,until:now+60000};if(bucket.count>=6)return reply(res,429,'Espera un momento antes de volver a consultar el modelo.');bucket.count++;buckets.set(account,bucket);
+  const bucket=buckets.get(account)||{count:0,until:now+60000};if(bucket.count>=6)return reply(res,429,'Alcanzaste el límite temporal de Conversación.','RATE_LIMITED',Math.max(1,Math.ceil((bucket.until-now)/1000)));bucket.count++;buckets.set(account,bucket);
   const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>(isSpeech?2000000:100000))return reply(res,413,isSpeech?'Graba como máximo 30 segundos.':'Reduce la conversación.');chunks.push(chunk)}
   if(isSpeech){
    const type=String(req.headers['content-type']||'').split(';')[0];

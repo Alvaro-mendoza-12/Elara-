@@ -29,12 +29,25 @@ export function boundedModelContext(turns: SimpleTurn[]): Array<{ role: 'user' |
   const active = activeConversationTurns(turns);
   const latest = active.at(-1);
   if (!latest || latest.role !== 'user' || latest.text.length > 6000) return null;
+  const normalized=normalizeText(latest.text);
+  const creative=/\b(?:cuenta(?:me|s)?|contar(?:me)?|escribe(?:me)?|dime|dame|redacta|crea)\b/.test(normalized)&&/\b(?:chistes?|bromas?|cuentos?|historias?|poemas?|adivinanzas?)\b/.test(normalized);
+  const creativeReference=creative&&/\b(?:otro|otra|otros|otras|mismo|misma|anterior|eso|esa|ese|estos|estas|continua|sigue|basado|basada)\b/.test(normalized);
+  const personalCreative=creative&&/\b(?:mi|mis|nuestro|nuestra|nuestros|nuestras)\b/.test(normalized);
+  // A complete new creative request supplies its own topic. Old plans, drafts
+  // and account facts would add prefill latency and can distract a small model.
+  if(creative&&!creativeReference&&!personalCreative)return [{role:'user',content:latest.text}];
   const selected: Array<{ role: 'user' | 'assistant'; content: string }> = [];
   const priorAnswer = active.slice(0, -1).reverse().find(turn => turn.role === 'assistant')?.text;
   let source = priorAnswer?.slice(0, 1600) || '';
   while (JSON.stringify(source).length > 2000) source = source.slice(0, Math.floor(source.length * 0.75));
+  const rewriteRequest=normalizeText(latest.text);
+  const language=rewriteRequest.match(/\b(?:al|en) (ingles|espanol|portugues|frances)\b/)?.[1];
+  const languages:Record<string,string>={ingles:'inglés',espanol:'español',portugues:'portugués',frances:'francés'};
+  const translation=language&&/^(?:(?:y|ahora|por favor)\s+)*(?:traducelo|en\b)/.test(rewriteRequest);
+  const shortening=/\b(?:mas (?:breve|breves|corto|corta|cortos|cortas)|resumelo|resume|sintetiza)\b/.test(rewriteRequest);
+  const instruction=translation?`Traduce al ${languages[language]} únicamente el texto indicado. Conserva nombres y cifras. Entrega solo la traducción, sin traducir instrucciones ni añadir comentarios.`:shortening?`Acorta únicamente el texto indicado a un máximo de ${Math.max(8,Math.floor(source.trim().split(/\s+/).length*.6))} palabras. Conserva nombres y cifras; entrega el resultado sin comentarios sobre instrucciones.`:'Aplica mi petición únicamente al texto indicado. Conserva los datos que no he pedido cambiar y entrega el resultado sin comentarios sobre instrucciones.';
   const rewrite = latest.text.length <= 2000 && isRewriteRequest(latest.text) && priorAnswer && !/```html\b/i.test(priorAnswer)
-    ? `Aplica mi petición al texto anterior. Conserva los datos y lo que no he pedido cambiar; entrega el texto resultante.\nTexto anterior: ${JSON.stringify(source)}${priorAnswer.length > source.length ? '\n[Texto anterior abreviado.]' : ''}\nMi petición: ${latest.text}`
+    ? `${instruction}\nTexto indicado: ${JSON.stringify(source)}${priorAnswer.length > source.length ? '\n[Texto abreviado por el límite de contexto.]' : ''}\nMi petición: ${latest.text}`
     : null;
   const facts = conversationFacts(active);
   const compactFacts: Record<string, string> = {};
@@ -45,11 +58,21 @@ export function boundedModelContext(turns: SimpleTurn[]): Array<{ role: 'user' |
     if (value) compactFacts[key] = value;
   }
   const memory = Object.keys(compactFacts).length ? `Datos del usuario en este chat, con sus últimas correcciones:\n${JSON.stringify(compactFacts)}` : '';
+  if(creativeReference){
+    const previous=active.slice(0,-1);
+    const reverseIndex=[...previous].reverse().findIndex(turn=>turn.role==='user');
+    const lastUserIndex=reverseIndex<0?-1:previous.length-1-reverseIndex;
+    if(lastUserIndex>=0){
+      const previousAssistant=previous.slice(lastUserIndex+1).reverse().find(turn=>turn.role==='assistant');
+      const recent=[previous[lastUserIndex],...(previousAssistant?[previousAssistant]:[])].map(turn=>({role:turn.role as 'user'|'assistant',content:turn.text.replace(/```html[\s\S]*?(?:```|$)/gi,'[Prototipo web anterior.]').slice(0,turn.role==='user'?1000:800)}));
+      return [...(personalCreative&&memory?[{role:'user' as const,content:memory}]:[]),...recent,{role:'user',content:latest.text}];
+    }
+  }
+  if(creative&&!creativeReference&&personalCreative)return [...(memory?[{role:'user' as const,content:memory}]:[]),{role:'user',content:latest.text}];
   if (rewrite) {
     // A rewrite needs its source and the user's facts, not old unrelated topics.
     return [...(memory ? [{role:'user' as const,content:memory}] : []), {role:'user',content:rewrite}];
   }
-  const normalized=normalizeText(latest.text);
   const independentTopic=/^(?:ahora|otra pregunta|cambiando de tema)\b/.test(normalized)&&
     /\b(?:explicame|explica|dime|cual es|que es|por que|hablame)\b/.test(normalized)&&
     !/\b(?:eso|ese|esa|estos|estas|este|esta|anterior|mismo|misma|mi|mis|nuestro|nuestra|tu|tus|su|sus|lo que|texto|documento|codigo|funcion|poema|json|plan)\b/.test(normalized);

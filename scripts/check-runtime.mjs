@@ -13,4 +13,10 @@ assert.equal(status.busy,true,'One generation must reserve the runtime');
 const second=await fetch(base+'/chat/completions',{method:'POST',headers,body});assert.equal(second.status,429,'Additional generation must be rejected with backpressure');assert.equal(second.headers.get('retry-after'),'8');
 const response=await generation;assert.equal(response.status,200);const streamed=await response.text();assert.match(streamed,/choices/);
 const speech=await(await fetch(base+'/audio/status',{headers})).json();assert.equal(speech.ready,true);assert.equal(speech.busy,false);
-console.log(JSON.stringify({publicAnonymous:401,oneActiveGeneration:true,secondRequest:429,retryAfter:8,speechReady:true,elapsedMs:Date.now()-started}));
+// Invalid model selections never run inference, but still test the account
+// quota. A distinct synthetic account avoids consuming a real user's budget.
+const quotaHeaders={...headers,'X-Elara-Account':'elara-quota-check-'+Date.now()};
+for(let i=0;i<6;i++)assert.equal((await fetch(base+'/chat/completions',{method:'POST',headers:quotaHeaders,body:JSON.stringify({model:'invalid-test-only',messages:[]})})).status,400);
+const limited=await fetch(base+'/chat/completions',{method:'POST',headers:quotaHeaders,body:JSON.stringify({model:'invalid-test-only',messages:[]})});
+assert.equal(limited.status,429);assert.equal((await limited.json()).error.code,'RATE_LIMITED');assert.ok(Number(limited.headers.get('retry-after'))>=1&&Number(limited.headers.get('retry-after'))<=60);
+console.log(JSON.stringify({publicAnonymous:401,oneActiveGeneration:true,secondRequest:429,retryAfter:8,quotaRequestsWithoutInference:7,quotaCode:'RATE_LIMITED',speechReady:true,elapsedMs:Date.now()-started}));

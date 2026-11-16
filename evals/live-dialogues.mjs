@@ -104,3 +104,18 @@ export const knowledgeDialogues=[
   {text:'¿DNS ya cifra toda mi conexión?',must:['no|cifra|HTTPS|TLS'],rubric:'No atribuye a DNS el cifrado del tráfico web.'},
  ]},
 ];
+
+const oldCreativeHistory=[
+ {role:'user',text:'Mi tienda se llama Faro. Vendemos plantas. Estamos revisando la presentación del proyecto.'},
+ {role:'assistant',text:'La presentación puede ordenar el objetivo, las tareas y los datos que tú compartas. '.repeat(24)},
+ {role:'user',text:'Ahora explica cómo organizar un documento técnico para esa tienda.'},
+ {role:'assistant',text:'Un documento técnico separa requisitos, decisiones, ejemplos y comprobaciones. Sus apartados deben ser claros y conservar los datos aportados. '.repeat(16)},
+ {role:'user',text:'Quiero repasar un plan para ordenar apuntes y preparar una mochila.'},
+ {role:'assistant',text:'Puedes agrupar los apuntes, revisar lo necesario y preparar los materiales antes de cerrar la mochila. '.repeat(23)},
+];
+export const timeoutDialogues=[
+ {id:'joke-clean',category:'reported-timeout',turns:[{text:'me puedes contar un chiste',rubric:'Entrega un chiste breve completo; no describe instrucciones ni crea una web.'}]},
+ {id:'joke-long-history',category:'reported-timeout',history:oldCreativeHistory,turns:[{text:'me puedes contar un chiste',rubric:'El historial antiguo no impide entregar un chiste breve completo.'}]},
+ {id:'joke-new-specific-topic',category:'reported-timeout',history:oldCreativeHistory,turns:[{text:'Cuéntame un chiste de programadores.',must:['program|código|bug|error|variable|informátic|Java|Python'],rubric:'Usa el tema nuevo solicitado, sin retomar la tienda o el plan.'}]},
+ {id:'joke-topic-followup',category:'reported-timeout',history:[{role:'user',text:'Cuéntame un chiste de robots.'},{role:'assistant',text:'¿Por qué el robot llevó un paraguas? Porque anunciaron una nube de datos.'}],turns:[{text:'Cuéntame otro chiste de ese mismo tema.',must:['robot'],rubric:'Conserva la referencia a robots y ofrece un chiste diferente.'}]},
+];
