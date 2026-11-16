@@ -2,6 +2,11 @@ import { normalizeText } from './text';
 
 export type RequestMeaning = 'default' | 'explain' | 'write' | 'web-capability';
 
+export function isTextCorrectionRequest(raw:string):boolean {
+ const norm=normalizeText(raw.replace(/```[\s\S]*?(?:```|$)/g,'').replace(/["“][^"”]*["”]/g,''));
+ return /\b(?:corrige|corregir|corregirme|revisa|arregla|arreglar)\b/.test(norm)&&/\b(?:texto|mensaje|frase|ortografia|ortograficos?|gramatica|puntuacion|redaccion)\b/.test(norm);
+}
+
 /** Small routing aliases only. Quoted names, attachments and code are preserved. */
 export function normalizeRequestSpelling(raw: string): string {
   if (/\b(?:me llamo|mi nombre es|se llama)\b/i.test(raw)) return raw;
@@ -11,6 +16,7 @@ export function normalizeRequestSpelling(raw: string): string {
 
 /** Distinguish the requested deliverable from incidental words such as “store”. */
 export function requestMeaning(raw: string): RequestMeaning {
+  if(isTextCorrectionRequest(raw))return 'write';
   const prose=raw.replace(/```[\s\S]*?(?:```|$)/g,'').replace(/["“][^"”]*["”]/g,'');
   const norm=normalizeText(prose).replace(/^hola(?: elara)?\s*/,'');
   if (/\b(?:tus capacidades|que puedes hacer|que sabes hacer)\b/.test(norm) || /^(?:puedes|sabes) (?:crear|hacer|desarrollar) (?:paginas(?: web)?|webs|sitios web)[.? ]*$/.test(norm)) return 'web-capability';

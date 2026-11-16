@@ -34,6 +34,21 @@ test('a personalized creative request retains the user facts it explicitly refer
  assert.doesNotMatch(JSON.stringify(context),/Borrador|documento largo/);
 });
 
+test('an inline spelling request uses its own text and cannot edit an older website',()=>{
+ const source='Corrige la ortografía y puntuación de este mensaje: ola soi carlos y nesesito alluda con mi proyeto';
+ const created=run([user('Crea una tienda de 4 plantas')]).reply;
+ const result=run([user('Crea una tienda de 4 plantas'),assistant(created),user(source)]);
+ assert.equal(result.intent,'__fallback_honest__');
+ assert.doesNotMatch(result.reply,/```html|color|moneda/);
+ assert.deepEqual(boundedModelContext([...old,user(source)]),[{role:'user',content:source}]);
+});
+
+test('a correction referring to an earlier message does not discard its source',()=>{
+ const source='ola soi carlos y nesesito alluda';
+ const context=boundedModelContext([user(source),assistant('¿Cómo puedo ayudarte?'),user('Corrige la ortografía de mi mensaje anterior')])!;
+ assert.match(JSON.stringify(context),/ola soi carlos/);
+});
+
 test('educational notes cannot turn a joke about a known subject into a science lecture',()=>{
  for(const text of ['Cuéntame un chiste sobre el cielo azul','Dame una adivinanza sobre un barco','Escribe una broma sobre átomos'])assert.deepEqual(groundedKnowledge([user(text)]).sources,[]);
 });

@@ -20,6 +20,7 @@ export async function modelAvailability(): Promise<ModelAvailability> {
     const response = await fetch(config.baseURL + '/models', { headers: { Authorization: 'Bearer ' + config.apiKey }, cache: 'no-store', signal: AbortSignal.timeout(2500) });
     if (!response.ok) throw new Error('Runtime no disponible');
     const data = await response.json();
-    return { configured: true, ready: Boolean(data.ready && data.data?.some((model: { id: string }) => model.id === config.model)), busy: Boolean(data.busy), base: 'Qwen3.5-2B' };
+    const model=data.data?.find((entry:{id:string})=>entry.id===config.model);
+    return { configured: true, ready: Boolean(data.ready && model), busy: Boolean(data.busy), base:typeof model?.base_model==='string'?model.base_model:null };
   } catch { return { configured, ready: false, busy: false, base: null }; }
 }

@@ -18,6 +18,7 @@ import { detectCrisisHelpResponse } from './safety';
 import { polynomialIntegral } from './math';
 import { integralHelp } from './integral-help';
 import { normalizeRequestSpelling, requestMeaning } from './request-meaning';
+import {addThemeToggle,hasThemeToggle,isThemeToggleRequest} from './theme-toggle';
 import { extractFencedCodeBlocks, extractPromptParams, tokenize } from './text';
 import {
   buildBlogHtml,
@@ -73,14 +74,14 @@ Pulsa **Vista previa** en el bloque superior (o **Abrir visor index** arriba) pa
 }
 
 function languageFallback(text:string):EngineResult {
-  const preview=text.replace(/[`*_<>\[\]]/g,'').slice(0,150);
-  return {reply:`Sobre «${preview}${text.length>150?'…':''}»: no tengo una respuesta fiable con el motor básico actual. Puedes usar Conversación para trabajar esta petición con lenguaje general.`,intent:'__fallback_honest__',confidence:0};
+  const task=/\b(?:ortograf|corrige|corregir|mensaje|gramatica)/i.test(text)?'corregir o redactar un mensaje':'trabajar texto libre o conversar';
+  return {reply:`Core rápido trabaja con herramientas y prototipos. No tengo una respuesta fiable para esta petición en ese modo. Para ${task}, elige **Automático** o **Conversación** cuando estén disponibles.`,intent:'__fallback_honest__',confidence:0};
 }
 
 function findPreviousHtml(turns: SimpleTurn[]): { prompt: string; html: string } | null {
   const latest = extractPromptParams(turns.at(-1)?.text || '').normalized;
   const lastAssistant = turns.slice(0, -1).reverse().find((turn) => turn.role === 'assistant');
-  const explicitReturn = /\b(?:web|pagina|sitio|catalogo|tienda|prototipo|html|codigo)\b.*\b(?:anterior|que creaste|que generaste)\b/.test(latest) || /^(?:retoma|volvamos|vuelve|regresa)\b.*\b(?:web|pagina|sitio|catalogo|tienda|prototipo|html)\b/.test(latest);
+  const explicitReturn = /\b(?:web|pagina|sitio|catalogo|tienda|prototipo|html|codigo)\b.*\b(?:anterior|que creaste|que generaste|que aca[bv]as de (?:crear|generar)|que acabamos de (?:crear|generar))\b/.test(latest) || /^(?:retoma|volvamos|vuelve|regresa)\b.*\b(?:web|pagina|sitio|catalogo|tienda|prototipo|html)\b/.test(latest);
   // A textual answer becomes the current referent. An old artifact is only
   // resumed explicitly, or after a reply that is still discussing that artifact.
   if (!explicitReturn && lastAssistant && !extractFencedCodeBlocks(lastAssistant.text).some(block => block.lang === 'html') && !/^(?:Con el motor básico puedo cambiar|El `index\.html` anterior está organizado)/.test(lastAssistant.text)) return null;
@@ -116,6 +117,8 @@ function buildContextualFollowUp(userText: string, prevHtml: { prompt: string; h
   userText = userText.replace(/^\s*en (?:la|el) (?:web|p[aá]gina|sitio|cat[aá]logo|tienda|prototipo|html)(?: anterior| que (?:creaste|generaste))?\s*[:,]?\s*/i, '');
   const params = extractPromptParams(userText);
   const norm = params.normalized;
+  if(isThemeToggleRequest(userText))return buildHtmlResponse(hasThemeToggle(prevHtml.html)?'La web ya incluye su botón para alternar entre modo claro y oscuro:':'Añadí el botón de modo claro y oscuro en la esquina superior derecha:',addThemeToggle(prevHtml.html),params.wantsCodeOnly);
+  const respond=(title:string,html:string,codeOnly:boolean)=>buildHtmlResponse(title,hasThemeToggle(prevHtml.html)?addThemeToggle(html):html,codeOnly);
   if (!/^(?:por favor )?(?:cambia|cambial[oa]|ponle|ponlo|actualiza|modifica|agrega|anade|quita|color|tema|hazl[oa]|explica|corrige|retoma|volvamos|vuelve|regresa)\b/.test(norm)) return null;
   if (/\bexplica\b/.test(norm) && !/\b(esto|eso|anterior|codigo|html|pagina|sitio|estructura)\b/.test(norm)) return null;
   if (/\b(crea|genera|construye|disena|hazme)\b/.test(norm)) return null;
@@ -162,36 +165,36 @@ function buildContextualFollowUp(userText: string, prevHtml: { prompt: string; h
   }
 
   if (prevHtml.html.includes('data-elara-app="catalog"') || prevHtml.html.includes('catalogGrid')) {
-    return buildHtmlResponse('Actualicé el catálogo `index.html` con tus cambios:', buildCatalogStoreHtml(merged), params.wantsCodeOnly);
+    return respond('Actualicé el catálogo `index.html` con tus cambios:', buildCatalogStoreHtml(merged), params.wantsCodeOnly);
   }
   if (prevHtml.html.includes('data-elara-app="todo"')) {
-    return buildHtmlResponse('Actualicé tu gestor de tareas `index.html`:', buildTodoAppHtml(merged), params.wantsCodeOnly);
+    return respond('Actualicé tu gestor de tareas `index.html`:', buildTodoAppHtml(merged), params.wantsCodeOnly);
   }
   if (prevHtml.html.includes('data-elara-app="pomodoro"')) {
-    return buildHtmlResponse('Actualicé tu temporizador Pomodoro `index.html`:', buildPomodoroHtml(merged), params.wantsCodeOnly);
+    return respond('Actualicé tu temporizador Pomodoro `index.html`:', buildPomodoroHtml(merged), params.wantsCodeOnly);
   }
   if (prevHtml.html.includes('data-elara-app="quiz"')) {
-    return buildHtmlResponse('Actualicé la trivia interactiva `index.html`:', buildQuizAppHtml(merged), params.wantsCodeOnly);
+    return respond('Actualicé la trivia interactiva `index.html`:', buildQuizAppHtml(merged), params.wantsCodeOnly);
   }
   if (prevHtml.html.includes('data-elara-app="palette"')) {
-    return buildHtmlResponse('Actualicé el generador de paletas `index.html`:', buildPaletteGeneratorHtml(merged), params.wantsCodeOnly);
+    return respond('Actualicé el generador de paletas `index.html`:', buildPaletteGeneratorHtml(merged), params.wantsCodeOnly);
   }
   if (prevHtml.html.includes('data-elara-app="blog"')) {
-    return buildHtmlResponse('Actualicé tu blog / revista `index.html`:', buildBlogHtml(merged), params.wantsCodeOnly);
+    return respond('Actualicé tu blog / revista `index.html`:', buildBlogHtml(merged), params.wantsCodeOnly);
   }
   if (prevHtml.html.includes('data-elara-app="form"')) {
-    return buildHtmlResponse('Actualicé el formulario `index.html`:', buildBookingFormHtml(merged), params.wantsCodeOnly);
+    return respond('Actualicé el formulario `index.html`:', buildBookingFormHtml(merged), params.wantsCodeOnly);
   }
   if (prevHtml.html.includes('loginForm')) {
-    return buildHtmlResponse('Actualicé la pantalla de acceso según lo pedido:', buildLoginIndexHtml(merged), params.wantsCodeOnly);
+    return respond('Actualicé la pantalla de acceso según lo pedido:', buildLoginIndexHtml(merged), params.wantsCodeOnly);
   }
   if (prevHtml.html.includes('countStat')) {
-    return buildHtmlResponse('Actualicé el panel `index.html`:', buildDashboardIndexHtml(merged), params.wantsCodeOnly);
+    return respond('Actualicé el panel `index.html`:', buildDashboardIndexHtml(merged), params.wantsCodeOnly);
   }
   if (prevHtml.html.includes('evalSafe')) {
-    return buildHtmlResponse('Actualicé la calculadora interactiva:', buildCalculatorIndexHtml(merged), params.wantsCodeOnly);
+    return respond('Actualicé la calculadora interactiva:', buildCalculatorIndexHtml(merged), params.wantsCodeOnly);
   }
-  return buildHtmlResponse('Actualicé tu archivo `index.html`:', buildLandingIndexHtml(merged), params.wantsCodeOnly);
+  return respond('Actualicé tu archivo `index.html`:', buildLandingIndexHtml(merged), params.wantsCodeOnly);
 }
 
 export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
@@ -440,9 +443,5 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
   }
 
   // Acknowledge unsupported requests without switching to unrelated templates.
-  const preview = latestUser.replace(/[`*_<>\[\]]/g, '').slice(0, 150);
-  return {
-    reply: `Sobre «${preview}${latestUser.length > 150 ? '…' : ''}»: no tengo una respuesta fiable con el motor básico actual. No quiero inventarte una.\n\n¿Puedes concretar qué necesitas resolver o compartir un ejemplo? Si buscas información general o actual, necesitarás contrastarla con una fuente especializada.`,
-    intent: '__fallback_honest__', confidence: 0,
-  };
+  return languageFallback(latestUser);
 }

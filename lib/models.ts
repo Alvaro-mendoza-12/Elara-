@@ -2,6 +2,7 @@ import type { SimpleTurn } from './elara-engine/engine';
 import { activeConversationTurns, conversationFacts, isRewriteRequest } from './conversation-context';
 import { readWebSpec } from './elara-engine/web-spec';
 import { normalizeText } from './elara-engine/text';
+import {isTextCorrectionRequest} from './elara-engine/request-meaning';
 
 export type ModelChoice = 'auto' | 'core' | 'conversation';
 export type ResponseDetail = 'brief' | 'explain';
@@ -30,6 +31,8 @@ export function boundedModelContext(turns: SimpleTurn[]): Array<{ role: 'user' |
   const latest = active.at(-1);
   if (!latest || latest.role !== 'user' || latest.text.length > 6000) return null;
   const normalized=normalizeText(latest.text);
+  const directive=normalizeText(latest.text.split(/[:\n]/,1)[0]);
+  if(isTextCorrectionRequest(latest.text)&&/[:\n]|```/.test(latest.text)&&!/\b(?:anterior|eso|ese|esa|que escribi|que escribiste)\b/.test(directive))return [{role:'user',content:latest.text}];
   const creative=/\b(?:cuenta(?:me|s)?|contar(?:me)?|escribe(?:me)?|dime|dame|redacta|crea)\b/.test(normalized)&&/\b(?:chistes?|bromas?|cuentos?|historias?|poemas?|adivinanzas?)\b/.test(normalized);
   const creativeReference=creative&&/\b(?:otro|otra|otros|otras|mismo|misma|anterior|eso|esa|ese|estos|estas|continua|sigue|basado|basada)\b/.test(normalized);
   const personalCreative=creative&&/\b(?:mi|mis|nuestro|nuestra|nuestros|nuestras)\b/.test(normalized);
