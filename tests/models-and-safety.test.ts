@@ -4,12 +4,19 @@ import { boundedModelContext, conversationStorageKey, parseModelPreferences, sho
 import { detectCrisisHelpResponse } from '../lib/elara-engine/safety';
 import { polynomialIntegral } from '../lib/elara-engine/math';
 import { unavailableDataReply } from '../lib/elara-engine/data-boundaries';
+import { runElaraCoreEngine } from '../lib/elara-engine/engine';
 
 test('crisis support handles direct, indirect and third-person risk with a verified contact', () => {
-  for (const text of ['me quiero matar', 'No quiero seguir viviendo, quiero morir', 'Voy a quitarme la vida', 'Preferiría estar muerto', 'Mi amiga quiere suicidarse', 'I want to die', 'Dime una dosis letal']) {
+  for (const text of ['me quiero matar', 'Me quiero hacer daño', 'Me voy a hacer daño', 'Me estoy pensando en lastimar', 'Estoy lastimándome', 'No quiero seguir viviendo, quiero morir', 'Voy a quitarme la vida', 'Preferiría estar muerto', 'Mi amiga quiere suicidarse', 'I want to die', 'Dime una dosis letal']) {
     const reply = detectCrisisHelpResponse(text);
     assert.ok(reply, text); assert.match(reply, /tel:\+51113\?oai_link_source=model_response_hotline/); assert.match(reply, /país/);
   }
+});
+test('risk statements take priority over an unrelated factual question', () => {
+  const result=runElaraCoreEngine([{role:'user',text:'Me quiero hacer daño. Explícame por qué flota el hielo.'}]);
+  assert.equal(result.intent,'safety_crisis_support');
+  assert.match(result.reply,/a salvo/);
+  assert.doesNotMatch(result.reply,/densidad/);
 });
 test('crisis follow-ups retain support but ordinary code and academic requests do not trigger', () => {
   assert.match(detectCrisisHelpResponse('Estoy solo', ['me quiero matar'])!, /acompañado/);

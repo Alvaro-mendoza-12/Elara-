@@ -5,6 +5,8 @@ const SELF_HARM_PATTERNS = [
   /\b(?:me quiero matar|quiero matarme|me voy a matar|suicidarme|quitarme la vida|terminar con mi vida|acabar con mi vida)\b/,
   /\b(?:no quiero (?:seguir )?vivir|no vale la pena vivir|quiero morir|preferiria (?:estar muerto|morir))\b/,
   /\b(?:hacerme dano|lastimarme|cortarme las venas|pensamientos suicidas)\b/,
+  /\bme (?:quiero|voy a|pienso|estoy pensando en) (?:hacer dano|lastimar)\b/,
+  /\bestoy (?:haciendome dano|lastimandome)\b/,
   /\b(?:kill myself|want to die|end my life|hurt myself|i am suicidal)\b/,
   /\b(?:mi amigo|mi amiga|mi hermano|mi hermana|mi hijo|mi hija|mi pareja)\b.{0,60}\b(?:suicidarse|matarse|quiere morir|no quiere vivir|hacerse dano)\b/,
   /\b(?:dosis (?:letal|mortal)|cuantas pastillas.{0,40}(?:morir|matar)|como (?:puedo )?(?:matarme|suicidarme)|metodo (?:indoloro|para suicidarme))\b/,
