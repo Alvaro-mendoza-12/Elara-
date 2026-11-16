@@ -1,0 +1,37 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const base=(process.env.ELARA_TEST_URL || 'http://localhost:3107').replace(/\/+$/,'');
+const message=(role,text,metadata)=>({id:crypto.randomUUID(),role,parts:[{type:'text',text}],...(metadata?{metadata}:{})});
+const user=text=>message('user',text),assistant=(text,metadata)=>message('assistant',text,metadata);
+const results=[];
+async function chat(name,messages,model='auto') {
+  const started=performance.now();
+  const response=await fetch(base+'/api/chat',{method:'POST',headers:{Origin:new URL(base).origin,'Content-Type':'application/json'},body:JSON.stringify({model,messages}),signal:AbortSignal.timeout(20000)});
+  assert.equal(response.status,200,name);
+  assert.equal(response.headers.get('x-elara-engine'),'core',name);
+  const raw=await response.text();
+  assert.doesNotMatch(raw,/"type":"error"/);
+  assert.match(raw,/"finishReason":"stop"/);
+  const text=raw.split('\n').filter(line=>line.startsWith('data: {')).map(line=>JSON.parse(line.slice(6))).filter(part=>part.type==='text-delta').map(part=>part.delta).join('');
+  assert.doesNotMatch(text,/index\.html|```html|Generé/);
+  const elapsedMs=Math.round(performance.now()-started);
+  assert.ok(elapsedMs<15000,name+': expected a fast public tool, got '+elapsedMs+'ms');
+  results.push({case:name,engine:'core',elapsedMs,text});
+  return text;
+}
+const question='puedes desarrollar ejercicios de integrales?';
+assert.match(await chat('reported-question',[user(question)]),/Envíame el ejercicio/);
+assert.match(await chat('conversation-choice-uses-public-math-tool',[user(question)],'conversation'),/Envíame el ejercicio/);
+assert.match(await chat('question-after-website',[user('Crea una tienda de laptops'),assistant('Aquí está el catálogo:\n```html\n<!doctype html><html><body>Catálogo de laptops</body></html>\n```'),user(question)]),/Envíame el ejercicio/);
+const expression='∫ (3x^2 + 2x - 5) dx paso a paso';
+const solution=await chat('polynomial-with-steps',[user(expression)]);
+assert.match(solution,/x\^3 \+ x\^2 - 5x \+ C/);assert.match(solution,/Por términos/);
+const request='Dame tres ejercicios de integrales resueltos paso a paso';
+const list=await chat('three-worked-exercises',[user(request)]);
+assert.equal((list.match(/^\d\. `∫ /gm)||[]).length,3);
+assert.match(await chat('solve-the-second-exercise',[user(request),assistant(list),user('Resuelve el segundo paso a paso')]),/x\^3 \+ x\^2 - 5x \+ C/);
+assert.match(await chat('unsupported-expression',[user('∫ sin(x) dx')]),/no puedo verificar/);
+assert.match(await chat('failed-reply-excluded',[user(question),assistant('Generé un index.html completo [',{elaraIncomplete:true}),user(question)]),/Envíame el ejercicio/);
+const report={base,passed:results.length,results};
+fs.writeFileSync('.vercel/integral-help-public.json',JSON.stringify(report,null,2));
+console.log(JSON.stringify(report,null,2));

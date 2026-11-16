@@ -12,7 +12,8 @@ export function polynomialIntegral(raw: string): string | null {
   const normalized = normalizeText(raw);
   if (!/integral|integrar/.test(normalized) && !raw.includes('∫')) return null;
   if (/\b(?:definida|entre|desde|hasta|limites)\b/.test(normalized)) return null;
-  let expression = raw.toLowerCase().replace(/²/g, '^2').replace(/³/g, '^3').replace(/−/g, '-');
+  const wantsSteps = /\b(?:paso a paso|con pasos|desarrolla)\b/.test(normalized);
+  let expression = raw.toLowerCase().replace(/²/g, '^2').replace(/³/g, '^3').replace(/−/g, '-').replace(/\s+(?:paso a paso|con (?:todos los )?pasos|por favor)[?.!\s]*$/i,'');
   const extracted = expression.match(/∫\s*(.+?)\s*d\s*x(?:\b|$)/)?.[1] || expression.match(/integr(?:al(?:\s+indefinida)?|ar)\s*(?:de\s+)?(.+?)(?:\s*d\s*x\b|[?¿]|$)/)?.[1];
   const candidate = extracted?.replace(/[¿?.!]/g, '').trim();
   if (!extracted || !candidate || /^(?:una|la|una integral|puedes|por favor)[. ]*$/.test(candidate)) {
@@ -39,5 +40,10 @@ export function polynomialIntegral(raw: string): string | null {
     return `${coefficient < 0 ? (i ? ' - ' : '-') : i ? ' + ' : ''}${value}`;
   });
   const result = pieces.join('') || '0';
-  return `La integral indefinida es **\`${result} + C\`**, donde \`C\` es una constante.\n\nApliqué la regla de la potencia a cada término: \`∫ ax^n dx = (a/(n+1))x^(n+1) + C\`. Al derivar el resultado se recupera \`${expression}\`.`;
+  const steps = wantsSteps && ordered.length ? '\n\nPor términos:\n'+ordered.map(([power,coefficient])=>{
+    const divisor=power+1, magnitude=Math.abs(coefficient), quotient=magnitude/divisor;
+    const value=(coefficient<0?'-':'')+(Number.isInteger(quotient)?termText(quotient,divisor):`(${numberText(magnitude)}/${divisor})x${divisor===1?'':`^${divisor}`}`);
+    return `- \`∫ ${termText(coefficient,power)} dx = ${value}\``;
+  }).join('\n') : '';
+  return `La integral indefinida es **\`${result} + C\`**, donde \`C\` es una constante.\n\nApliqué la regla de la potencia a cada término: \`∫ ax^n dx = (a/(n+1))x^(n+1) + C\`.${steps}\n\nAl derivar el resultado se recupera \`${expression}\`.`;
 }

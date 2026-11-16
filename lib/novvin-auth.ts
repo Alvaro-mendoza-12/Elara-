@@ -21,11 +21,11 @@ export function trustedMutation(req: Request) {
   } catch { return false; }
 }
 
-export async function novvinFetch(path: string, body?: unknown, refresh?: string, method = 'POST', accessToken?: string, timeoutMs = 15_000, extraHeaders: Record<string, string> = {}) {
+export async function novvinFetch(path: string, body?: unknown, refresh?: string, method = 'POST', accessToken?: string, timeoutMs = 15_000, extraHeaders: Record<string, string> = {}, signal?: AbortSignal) {
   const base = new URL(process.env.NOVVIN_API_URL || 'https://conectate.tail9b267c.ts.net');
   if (base.protocol !== 'https:') throw new Error('Novvin requiere HTTPS.');
   return fetch(new URL(path, base), {
-    method, cache: 'no-store', signal: AbortSignal.timeout(timeoutMs), redirect: 'error',
+    method, cache: 'no-store', signal: AbortSignal.any([AbortSignal.timeout(timeoutMs),...(signal?[signal]:[])]), redirect: 'error',
     headers: {
       'Content-Type': 'application/json',
       // This BFF speaks the existing first-party web session contract.
@@ -70,10 +70,10 @@ export async function enrichNovvinUser(user: NovvinUser, accessToken: string): P
   } catch { return user; }
 }
 
-export async function verifiedNovvinSession(withProfile = false): Promise<{ user: NovvinUser; accessToken: string } | null> {
+export async function verifiedNovvinSession(withProfile = false, options: {signal?:AbortSignal;timeoutMs?:number} = {}): Promise<{ user: NovvinUser; accessToken: string } | null> {
   const session = await readNovvinSession();
   if (!session) return null;
-  const response = await novvinFetch('/v1/auth/web-session/refresh', undefined, session.refresh);
+  const response = await novvinFetch('/v1/auth/web-session/refresh', undefined, session.refresh, 'POST', undefined, options.timeoutMs ?? 15_000, {}, options.signal);
   if ([401, 403].includes(response.status)) {
     (await cookies()).delete(SESSION_COOKIE);
     return null;
@@ -84,6 +84,6 @@ export async function verifiedNovvinSession(withProfile = false): Promise<{ user
   return { user: withProfile ? await enrichNovvinUser(payload.user, payload.accessToken) : payload.user, accessToken: payload.accessToken };
 }
 
-export async function verifiedNovvinUser(withProfile = false): Promise<NovvinUser | null> {
-  return (await verifiedNovvinSession(withProfile))?.user || null;
+export async function verifiedNovvinUser(withProfile = false, options: {signal?:AbortSignal;timeoutMs?:number} = {}): Promise<NovvinUser | null> {
+  return (await verifiedNovvinSession(withProfile,options))?.user || null;
 }

@@ -16,6 +16,7 @@ import { upstreamConfiguration } from '@/lib/model-runtime';
 import { unavailableDataReply } from '@/lib/elara-engine/data-boundaries';
 import { conversationInstructions } from '@/lib/conversation-instructions';
 import { activeConversationTurns } from '@/lib/conversation-context';
+import { CHAT_TIMEOUT_MESSAGE, conversationErrorMessage, modelResponseStream } from '@/lib/chat-reliability';
 
 export const maxDuration = 60;
 
@@ -66,6 +67,9 @@ function coreStreamResponse(req: Request, reply: string, engine: 'core' | 'safet
 }
 
 export async function POST(req: Request) {
+  const started = performance.now();
+  const deadline = AbortSignal.timeout(40_000);
+  const signal = AbortSignal.any([req.signal,deadline]);
   if (!trustedMutation(req)) return Response.json({ error: 'Origen no permitido.' }, { status: 403 });
   let rawBody: unknown;
   try {
@@ -83,10 +87,12 @@ export async function POST(req: Request) {
   const computed = runElaraCoreEngine(turns);
   // Support must still work if Novvin is unavailable or a session has expired.
   if (computed.intent === 'safety_crisis_support') return coreStreamResponse(req, computed.reply, 'safety');
+  // Public exact math tools use only this request's data and need no remote session.
+  if (computed.intent.startsWith('math_')) return coreStreamResponse(req,computed.reply);
   let verifiedUser: Awaited<ReturnType<typeof verifiedNovvinUser>> = null;
   if (await readNovvinSession()) {
     try {
-      verifiedUser = await verifiedNovvinUser();
+      verifiedUser = await verifiedNovvinUser(false,{signal,timeoutMs:7000});
       if (!verifiedUser) return Response.json({ error: 'Tu sesión de Novvin terminó. Vuelve a iniciar sesión o continúa en acceso libre.' }, { status: 401 });
     } catch { return Response.json({ error: 'No se pudo verificar tu sesión. Reintenta en un momento.' }, { status: 503 }); }
   }
@@ -111,13 +117,19 @@ export async function POST(req: Request) {
         model: customProvider.chatModel(config.model),
         instructions: conversationInstructions(preferences.detail),
         messages,
-        abortSignal: AbortSignal.any([req.signal, AbortSignal.timeout(50_000)]),
+        abortSignal: signal,
+        timeout: {totalMs:35_000,firstChunkMs:22_000,chunkMs:10_000},
         maxOutputTokens: preferences.detail === 'brief' ? 192 : 256,
         temperature: 0.5,
         maxRetries: 0,
+        streamRetries: 0,
+        onEnd: ({finishReason}) => console.info('[elara.chat]',JSON.stringify({engine:'conversation',elapsedMs:Math.round(performance.now()-started),finishReason})),
       });
       return createUIMessageStreamResponse({
-        stream: toUIMessageStream({ stream: result.stream, sendReasoning: false, onError: () => 'Conversación está ocupada o no pudo responder. Prueba Core rápido o vuelve a intentarlo en un momento.' }),
+        stream: modelResponseStream(toUIMessageStream({ stream: result.stream, sendReasoning: false, onError: error => {
+          console.info('[elara.chat]',JSON.stringify({engine:'conversation',elapsedMs:Math.round(performance.now()-started),outcome:'error'}));
+          return deadline.aborted ? CHAT_TIMEOUT_MESSAGE : conversationErrorMessage(error);
+        } }),()=>req.signal.aborted),
         headers: { 'Cache-Control': 'no-store', 'X-Elara-Engine': 'conversation' },
       });
     }

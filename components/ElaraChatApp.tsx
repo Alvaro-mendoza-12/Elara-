@@ -2,6 +2,7 @@
 
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport, type UIMessage } from 'ai';
+import { chatFetch, incompleteMessage, interruptedReply, isIncompleteMessage } from '@/lib/chat-reliability';
 import {
   ArrowDown,
   ArrowUp,
@@ -125,7 +126,7 @@ function extractAllHtmlArtifacts(messages: UIMessage[]): HtmlArtifactVersion[] {
   const list: HtmlArtifactVersion[] = [];
   let version = 1;
   for (const msg of messages) {
-    if (msg.role !== 'assistant') continue;
+    if (msg.role !== 'assistant' || isIncompleteMessage(msg)) continue;
     const text = extractMessageText(msg);
     const regex = /```html\n([\s\S]*?)```/g;
     let match: RegExpExecArray | null;
@@ -286,7 +287,7 @@ function ElaraWorkspace({ initialProfile }: { initialProfile: ElaraUserProfile |
   const autoFollowRef = useRef(true);
   const authEpochRef = useRef(0);
 
-  const transport = useMemo(() => new DefaultChatTransport({ api: '/api/chat', body: modelPreferences }), [modelPreferences]);
+  const transport = useMemo(() => new DefaultChatTransport({ api: '/api/chat', body: modelPreferences, fetch:chatFetch }), [modelPreferences]);
   const initialMessages = useMemo(
     () => savedConversations.find((c) => c.id === activeId)?.messages ?? [],
     [savedConversations, activeId],
@@ -296,7 +297,12 @@ function ElaraWorkspace({ initialProfile }: { initialProfile: ElaraUserProfile |
     id: activeId,
     messages: initialMessages,
     transport,
-    onFinish: ({ message }) => {
+    onFinish: ({ message, isAbort, isDisconnect, isError, finishReason }) => {
+      if (interruptedReply({isAbort,isDisconnect,isError,finishReason})) {
+        setMessages(current=>current.map(item=>item.id===message.id?incompleteMessage(item,isAbort):item));
+        setPreviewState(current=>current?.id.startsWith(message.id)?null:current);
+        return;
+      }
       const text = extractMessageText(message);
       const match = text.match(/```html\n([\s\S]*?)```/);
       if (match?.[1] && typeof window !== 'undefined' && window.innerWidth >= 1024) {
@@ -529,7 +535,7 @@ function ElaraWorkspace({ initialProfile }: { initialProfile: ElaraUserProfile |
     if (messages.length === 0) return;
     const title = displayConversations.find((c) => c.id === activeId)?.title || 'conversacion-elara';
     const body = messages
-      .map((m) => `## ${m.role === 'user' ? 'Usuario' : 'ELARA'}\n\n${extractMessageText(m)}`)
+      .map((m) => `## ${m.role === 'user' ? 'Usuario' : 'ELARA'}\n\n${isIncompleteMessage(m)?'[Respuesta interrumpida e incompleta.]':extractMessageText(m)}`)
       .join('\n\n---\n\n');
     const slug = title
       .toLowerCase()
@@ -910,7 +916,7 @@ function ElaraWorkspace({ initialProfile }: { initialProfile: ElaraUserProfile |
           ) : (
             <div className="mx-auto flex max-w-3xl flex-col gap-6">
               {messages.map((message, index) => {
-                const text = extractMessageText(message);
+                const text = isIncompleteMessage(message) ? 'La respuesta se interrumpió y quedó incompleta. Puedes reintentar o plantear una consulta más breve.' : extractMessageText(message);
                 const isUser = message.role === 'user';
                 const isLastAssistant = !isUser && index === messages.length - 1 && !busy;
                 return (

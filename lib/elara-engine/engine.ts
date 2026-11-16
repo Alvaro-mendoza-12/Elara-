@@ -16,6 +16,7 @@ import { ELARA_INTENTS, KNOWLEDGE_ARTICLES } from './dataset';
 import { buildTrainedIntentNetwork, type ElaraIntentNetwork } from './neural-net';
 import { detectCrisisHelpResponse } from './safety';
 import { polynomialIntegral } from './math';
+import { integralHelp } from './integral-help';
 import { extractFencedCodeBlocks, extractPromptParams, tokenize } from './text';
 import {
   buildBlogHtml,
@@ -211,6 +212,9 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
 
   const contextResponse = contextualReply(turns);
   if (contextResponse) return contextResponse;
+
+  const integralSupport = integralHelp(turns);
+  if (integralSupport) return integralSupport;
 
   const integral = polynomialIntegral(latestUser);
   if (integral) return { reply: integral, intent: 'math_polynomial_integral', confidence: 1 };

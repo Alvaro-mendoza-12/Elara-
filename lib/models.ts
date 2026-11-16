@@ -48,7 +48,7 @@ export function boundedModelContext(turns: SimpleTurn[]): Array<{ role: 'user' |
     // A rewrite needs its source and the user's facts, not old unrelated topics.
     return [...(memory ? [{role:'user' as const,content:memory}] : []), {role:'user',content:rewrite}];
   }
-  const budget = 7500 - memory.length;
+  const budget = Math.max(3600,latest.text.length+memory.length) - memory.length;
   let size = 0;
   for (const [index, turn] of active.slice(-16).reverse().entries()) {
     if (turn.role !== 'user' && turn.role !== 'assistant') continue;
