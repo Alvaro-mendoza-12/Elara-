@@ -1,0 +1,97 @@
+{
+  "label": "validation",
+  "method": "Qualitative review of saved outputs by the implementing coding assistant against declared rubrics; truncated unsolicited HTML rejected only for that diversion; not independent human validation or a self-score from the tested model; grades bound to output hashes",
+  "requests": 12,
+  "grades": {
+    "pass": 7,
+    "partial": 2,
+    "fail": 3,
+    "transport": 0
+  },
+  "results": [
+    {
+      "dialogue": "validation-store-correction",
+      "turn": 1,
+      "sha256": "4f436d4c1f75e5189cfbcac8c0d81ed2aef9a0815f2921060c994c458e614746",
+      "grade": "partial",
+      "reason": "Es una bienvenida pertinente, pero inventa entrega a domicilio."
+    },
+    {
+      "dialogue": "validation-store-correction",
+      "turn": 2,
+      "sha256": "bc1c60b31fba8b46f23117736a8b3fac2bd2cd1f4b1aa5cf26be0fe9dd7965d0",
+      "grade": "pass",
+      "reason": "Usa el nombre corregido Marea y abrevia."
+    },
+    {
+      "dialogue": "validation-prose",
+      "turn": 1,
+      "sha256": "1adec9c07ecf5b39e30b372485f8009a45d0b5e0bba50b26292ad76c20d0718e",
+      "grade": "fail",
+      "reason": "Inventa días y fechas distintos de jueves y sábado."
+    },
+    {
+      "dialogue": "validation-prose",
+      "turn": 2,
+      "sha256": "a57d28f139664624840bb5f21ea400156e19828eb1c26b6c6fec49c9123b4b55",
+      "grade": "fail",
+      "reason": "Propaga el miércoles incorrecto en lugar del jueves del documento."
+    },
+    {
+      "dialogue": "validation-negative-request",
+      "turn": 1,
+      "sha256": "bf26f3a510a47e44bc1bfbf63c145f41477cc9b217b0b3e13c7874922efa6dd8",
+      "grade": "partial",
+      "reason": "Evita HTML, pero una donación no es vender y solicita datos de marca innecesarios."
+    },
+    {
+      "dialogue": "validation-negative-request",
+      "turn": 2,
+      "sha256": "dc5c5f03cdcfdbc161f810614695c8471657101cf4a6da9dc60e41323531b2c5",
+      "grade": "fail",
+      "reason": "Repite las propuestas y da dos cuando se pidió otra distinta."
+    },
+    {
+      "dialogue": "validation-integrals",
+      "turn": 1,
+      "sha256": "76f25097d049b99b731017d206a34083663e20fe248bc0c6853b8d3a8d4a92a8",
+      "grade": "pass",
+      "reason": "Reconoce la errata y delimita la capacidad de integrales."
+    },
+    {
+      "dialogue": "validation-integrals",
+      "turn": 2,
+      "sha256": "51466eb5bcc721557956c472ff9eb009aeee11c4c82d28545635e6ac2342187f",
+      "grade": "pass",
+      "reason": "Entrega dos ejercicios con resultados verificables y pasos."
+    },
+    {
+      "dialogue": "validation-format",
+      "turn": 1,
+      "sha256": "cb353d0480205b142c1b093d44b08e3188d87edfd1960a6719d4a283e3acb4b0",
+      "grade": "pass",
+      "reason": "JSON válido con estado listo y total siete."
+    },
+    {
+      "dialogue": "validation-format",
+      "turn": 2,
+      "sha256": "f1bbc145981c9a0b8b1139c087ee587ca4db7622d0733a71b29cb56a75800dbb",
+      "grade": "pass",
+      "reason": "Conserva JSON y cambia total a nueve."
+    },
+    {
+      "dialogue": "validation-simple-facts",
+      "turn": 1,
+      "sha256": "e09f899197ed06adcb9c2d06c24beb03edbd7f79d7292167f728e771aa8dacff",
+      "grade": "pass",
+      "reason": "Responde Santiago de forma breve."
+    },
+    {
+      "dialogue": "validation-simple-facts",
+      "turn": 2,
+      "sha256": "df7ef226a4b0c0c89eff6bf3218fc25a03d57c2a6151b7519e694802592570ad",
+      "grade": "pass",
+      "reason": "Cambia a la capital de Perú y responde Lima."
+    }
+  ]
+}

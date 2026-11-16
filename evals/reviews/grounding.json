@@ -1,0 +1,55 @@
+{
+  "label": "grounding",
+  "method": "Qualitative review of saved outputs by the implementing coding assistant against declared rubrics; truncated unsolicited HTML rejected only for that diversion; not independent human validation or a self-score from the tested model; grades bound to output hashes",
+  "requests": 6,
+  "grades": {
+    "pass": 2,
+    "partial": 2,
+    "fail": 2,
+    "transport": 0
+  },
+  "results": [
+    {
+      "dialogue": "grounding-seasons",
+      "turn": 1,
+      "sha256": "53108caac64984850cdf9b00e8464dd3410b7765b0b02e09efad6e6ba9d4a2b0",
+      "grade": "fail",
+      "reason": "Atribuye estaciones opuestas a distancia al Sol pese a la nota correcta."
+    },
+    {
+      "dialogue": "grounding-seasons",
+      "turn": 2,
+      "sha256": "d215f906de565d4ad0b54468523c9c5542eb3675dff07a5af177178b3d9fbc36",
+      "grade": "fail",
+      "reason": "Confirma la premisa falsa sobre distancia al Sol."
+    },
+    {
+      "dialogue": "grounding-water",
+      "turn": 1,
+      "sha256": "375f773a27b703cb3650141563c0ce6c65261d6ae442a78d57330128b75b4332",
+      "grade": "pass",
+      "reason": "Distingue correctamente gotas o cristales visibles del vapor gaseoso."
+    },
+    {
+      "dialogue": "grounding-water",
+      "turn": 2,
+      "sha256": "958ebca6580026b61f0f72fa7ceb6f9e766220c67c1a5369e55da0fd30040f60",
+      "grade": "partial",
+      "reason": "El ejemplo de vaso caliente y niebla es ambiguo y no explica claramente condensación del vapor."
+    },
+    {
+      "dialogue": "grounding-dns",
+      "turn": 1,
+      "sha256": "746741b2b2b90ee97bbacfd6cf38b376951a927845f32d653e3974cad3fc53e6",
+      "grade": "partial",
+      "reason": "La traducción de nombres es pertinente, pero añade IP interna y una analogía confusa."
+    },
+    {
+      "dialogue": "grounding-dns",
+      "turn": 2,
+      "sha256": "d88d5ebc1c5751ed733b2e0399b9237091b4ca58a6d1831af1cb8b60b2653baf",
+      "grade": "pass",
+      "reason": "Distingue resolución DNS de cifrar toda la conexión; error gramatical menor."
+    }
+  ]
+}

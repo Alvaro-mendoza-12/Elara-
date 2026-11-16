@@ -1,0 +1,55 @@
+{
+  "label": "repeat",
+  "method": "Qualitative review of saved outputs by the implementing coding assistant against declared rubrics; truncated unsolicited HTML rejected only for that diversion; not independent human validation or a self-score from the tested model; grades bound to output hashes",
+  "requests": 6,
+  "grades": {
+    "pass": 5,
+    "partial": 1,
+    "fail": 0,
+    "transport": 0
+  },
+  "results": [
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 1,
+      "sha256": "793fc75e6296e29fe8c9eeef723ebef0108dec39fa166fc6237e6555f530fb9d",
+      "grade": "pass",
+      "reason": "Entrega tres propuestas breves de publicaciones."
+    },
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 2,
+      "sha256": "86282bfd6989b4df1c8bd4b73efd683603d4043b40bf0d7a9187e8ff06ca749b",
+      "grade": "partial",
+      "reason": "Abrevia, pero cambia Cultiva a Cultura y altera el significado."
+    },
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 3,
+      "sha256": "e993c945c382f3e61dc9268a2363218cae844411ec5dcc4d3b8804988e92f493",
+      "grade": "pass",
+      "reason": "Usa el nombre corregido Nube en una frase."
+    },
+    {
+      "dialogue": "corrections-and-memory",
+      "turn": 1,
+      "sha256": "79ebe6bf882b2a9c560dd5c523818b0662419cdae7c476c29822fd732bb6d6e7",
+      "grade": "pass",
+      "reason": "Reconoce correctamente Lucía, Alba y zapatos."
+    },
+    {
+      "dialogue": "corrections-and-memory",
+      "turn": 2,
+      "sha256": "0424a9c18e3b0b323bcc1eef10837661fdcaf3fceb3d5c867e4160cffea0610b",
+      "grade": "pass",
+      "reason": "Aplica la corrección Carla conservando zapatos."
+    },
+    {
+      "dialogue": "corrections-and-memory",
+      "turn": 3,
+      "sha256": "ceb1241370734432c2c1af91af88875a5203c77fec31687aeec7573382feb799",
+      "grade": "pass",
+      "reason": "Recupera el nombre corregido Sur."
+    }
+  ]
+}

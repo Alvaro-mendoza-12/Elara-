@@ -1,0 +1,265 @@
+{
+  "label": "final",
+  "method": "Qualitative review of saved outputs by the implementing coding assistant against declared rubrics; truncated unsolicited HTML rejected only for that diversion; not independent human validation or a self-score from the tested model; grades bound to output hashes",
+  "requests": 36,
+  "grades": {
+    "pass": 25,
+    "partial": 6,
+    "fail": 4,
+    "transport": 1
+  },
+  "results": [
+    {
+      "dialogue": "biology-and-reference",
+      "turn": 1,
+      "sha256": "09401d322c013bc733b11498a30fbd6a77fbe6d2f3c988f9636b3bc396c89cfd",
+      "grade": "pass",
+      "reason": "Dos frases pertinentes con fuente sobre fotosíntesis."
+    },
+    {
+      "dialogue": "biology-and-reference",
+      "turn": 2,
+      "sha256": "b70681e19fd89f1e76e6c1e054cbf05a585c4faaa808f71ab00a9e2fb25dae79",
+      "grade": "pass",
+      "reason": "Mantiene la referencia y explica el papel causal de la clorofila."
+    },
+    {
+      "dialogue": "biology-and-reference",
+      "turn": 3,
+      "sha256": "72e30995698cb8b66f5dd25e2074a8a75d716854806da2321f8415e5a8494962",
+      "grade": "pass",
+      "reason": "Relaciona correctamente estructura, volumen y densidad del hielo."
+    },
+    {
+      "dialogue": "ship-example",
+      "turn": 1,
+      "sha256": "ec3f54f0aef87b6fdf75920c45ef1628e1c0c814e1cc37f45e6f4e8fba77cf16",
+      "grade": "pass",
+      "reason": "Explica equilibrio de empuje y peso y densidad media del casco."
+    },
+    {
+      "dialogue": "ship-example",
+      "turn": 2,
+      "sha256": "fc5d176f7c0e45cf70fb3559ae4194f503f80bab20b9d84bdde04376a293fc4b",
+      "grade": "pass",
+      "reason": "Aplica correctamente Arquímedes a un globo de helio."
+    },
+    {
+      "dialogue": "ship-example",
+      "turn": 3,
+      "sha256": "20c255b91041e977c1be9477daa720529480397b72abb36070a6791405e9f96b",
+      "grade": "pass",
+      "reason": "Resume el ejemplo anterior en una frase; mayúscula tras punto y coma mejorable."
+    },
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 1,
+      "sha256": "efd4c4829c41590622af7339cce07ab7aa9a2d6016117f280ceebbd3d52584dd",
+      "grade": "partial",
+      "reason": "Da tres propuestas pertinentes, pero añade un comentario innecesario sobre no inventar órdenes."
+    },
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 2,
+      "sha256": "efd4c4829c41590622af7339cce07ab7aa9a2d6016117f280ceebbd3d52584dd",
+      "grade": "partial",
+      "reason": "Repite exactamente el texto; la petición de abreviar no se cumple."
+    },
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 3,
+      "sha256": "18ead5bc20bd9cb8da97e7ddacee0dbde9f922592003719d0da72c515d1572cd",
+      "grade": "partial",
+      "reason": "Usa Nube y plantas, pero entrega tres fragmentos en lugar de una frase publicitaria."
+    },
+    {
+      "dialogue": "negative-web-request",
+      "turn": 1,
+      "sha256": "7b00607bb4187c401489047a3a2684db6bce303b22580ff18713e8389759bca0",
+      "grade": "partial",
+      "reason": "Define una landing sin generar HTML; presenta un producto como ejemplo de llamada a la acción."
+    },
+    {
+      "dialogue": "negative-web-request",
+      "turn": 2,
+      "sha256": "55d1f609d2001f61c23065df7e73d7237e53b3e38e8b9d0bc1bbb5835043cdb3",
+      "grade": "pass",
+      "reason": "Da tres consejos pertinentes para la landing."
+    },
+    {
+      "dialogue": "negative-web-request",
+      "turn": 3,
+      "sha256": "2d159069588f25b0a2d8446a6d6099d175eedaf7ea9b72a7008cb6ed210a8e88",
+      "grade": "partial",
+      "reason": "Cambia al tema de los apuntes, pero añade formulaciones confusas y una pregunta innecesaria."
+    },
+    {
+      "dialogue": "text-summary-and-translation",
+      "turn": 1,
+      "sha256": "c7b20d3422a04551a0689e88f1cabeb3286c41089409c35245314827180f6654",
+      "grade": "partial",
+      "reason": "Conserva el martes, pero atribuye a Elena todas las labores de cultivo y entrega."
+    },
+    {
+      "dialogue": "text-summary-and-translation",
+      "turn": 2,
+      "sha256": "40485c4104d672da668d5ea8cf0e5cef15ff3d7c5d0e612e22ec6acd4b38c799",
+      "grade": "fail",
+      "reason": "Traduce instrucciones sobre su comportamiento en lugar del texto fuente."
+    },
+    {
+      "dialogue": "text-summary-and-translation",
+      "turn": 3,
+      "sha256": "e40d08b6e43e96ad6194673bbb384367a9a4cbbfd336078af66225aaaf4e2012",
+      "grade": "pass",
+      "reason": "Recupera correctamente el martes del documento."
+    },
+    {
+      "dialogue": "code-explanation",
+      "turn": 1,
+      "sha256": "c51892384a507962177bc54d95c354a7928a346f3749e1aa575adb5890abe2d2",
+      "grade": "pass",
+      "reason": "Explica la suma sin revisar errores no pedidos."
+    },
+    {
+      "dialogue": "code-explanation",
+      "turn": 2,
+      "sha256": "7d092b645bd6fac689c83bc2c213049a74d4aea0d673dcfa20091d88059743c7",
+      "grade": "pass",
+      "reason": "Da once para cuatro más siete."
+    },
+    {
+      "dialogue": "code-explanation",
+      "turn": 3,
+      "sha256": "4eb6ba2bfeb148dc06318add45b161137db9b5c8762001db7f6f040e397347e4",
+      "grade": "pass",
+      "reason": "Da tres para menos dos más cinco."
+    },
+    {
+      "dialogue": "integral-dialogue",
+      "turn": 1,
+      "sha256": "76f25097d049b99b731017d206a34083663e20fe248bc0c6853b8d3a8d4a92a8",
+      "grade": "pass",
+      "reason": "Delimita el alcance y ofrece integrales polinómicas verificables."
+    },
+    {
+      "dialogue": "integral-dialogue",
+      "turn": 2,
+      "sha256": "0ed4d63a964dc3a3e0d7c29ec50a08cf2c237ee5cb3c1b51ff2f7d3fe37b5dde",
+      "grade": "pass",
+      "reason": "Entrega los tres ejercicios pedidos mediante la referencia contextual."
+    },
+    {
+      "dialogue": "integral-dialogue",
+      "turn": 3,
+      "sha256": "e5d60f37be2ef6e7bf09d78da67b071745d121c82fd4e612d69238f486a5c540",
+      "grade": "pass",
+      "reason": "Resuelve el segundo con pasos verificables y constante."
+    },
+    {
+      "dialogue": "corrections-and-memory",
+      "turn": 1,
+      "sha256": "18e8238ae3ea2a5a5a625176c99da9a7752beeaee37d8f69cc22c4db6c3dcc42",
+      "grade": "pass",
+      "reason": "Reconoce nombre, tienda y producto sin inventar una tarea."
+    },
+    {
+      "dialogue": "corrections-and-memory",
+      "turn": 2,
+      "sha256": "0424a9c18e3b0b323bcc1eef10837661fdcaf3fceb3d5c867e4160cffea0610b",
+      "grade": "pass",
+      "reason": "Responde ambas partes con Carla y zapatos."
+    },
+    {
+      "dialogue": "corrections-and-memory",
+      "turn": 3,
+      "sha256": "ceb1241370734432c2c1af91af88875a5203c77fec31687aeec7573382feb799",
+      "grade": "pass",
+      "reason": "Recuerda la corrección Sur."
+    },
+    {
+      "dialogue": "json-format",
+      "turn": 1,
+      "sha256": "aad30244a30152d29ad8917330f932ae6e0ab8483522dead33c2e15d74f70dd0",
+      "grade": "pass",
+      "reason": "JSON válido con claves, tipos y valores pedidos."
+    },
+    {
+      "dialogue": "json-format",
+      "turn": 2,
+      "sha256": "02297f70e6844a5eaed4919b156afa219a47e8bc92f724e5131367daa9abba78",
+      "grade": "pass",
+      "reason": "Mantiene Faro y cambia solo cantidad a cinco."
+    },
+    {
+      "dialogue": "json-format",
+      "turn": 3,
+      "sha256": "86e7fb9fe5bb3c3eedaab41ff549d81236f77b2ef7767f372a01c0242a489c5f",
+      "grade": "fail",
+      "reason": "Inventa que cantidad significa número de menciones."
+    },
+    {
+      "dialogue": "short-poem",
+      "turn": 1,
+      "sha256": "30fb09b5cfcfb91cdd375dd60d2889771ab417314a9e31159a6a2da6d0142e13",
+      "grade": "pass",
+      "reason": "Cuatro versos pertinentes sin título."
+    },
+    {
+      "dialogue": "short-poem",
+      "turn": 2,
+      "sha256": "680773274b79cb43a3b6b6eeef6c2bf9aa771a62db7a278117e2be530580b203",
+      "grade": "pass",
+      "reason": "Cambia al mar y conserva cuatro versos; estilo mejorable."
+    },
+    {
+      "dialogue": "short-poem",
+      "turn": 3,
+      "sha256": "5ab48b80f59a6569a7b70fd49ccef23a8428f8b5b36d9f3ee72ed2fcc45c50ae",
+      "grade": "pass",
+      "reason": "Interpreta la imagen marítima en una frase."
+    },
+    {
+      "dialogue": "typos-and-explanation",
+      "turn": 1,
+      "sha256": "5b4a9e72b5f7d26efb38acf23bcf74cd6e7f59ec6f3eac03b9997a5b3425e38d",
+      "grade": "pass",
+      "reason": "Interpreta las erratas y explica dispersión con fuente."
+    },
+    {
+      "dialogue": "typos-and-explanation",
+      "turn": 2,
+      "sha256": "8426395a4f43eb54c99595373df2a300bdd11fdc16889abcc8f1315c659e8d40",
+      "grade": "pass",
+      "reason": "Simplifica conservando el referente y el fenómeno."
+    },
+    {
+      "dialogue": "typos-and-explanation",
+      "turn": 3,
+      "sha256": "62ebfa091a6f774ba96cb8bb2bcc3ddbe9d6170a8c0c9811ff9ad03944ce9327",
+      "grade": "pass",
+      "reason": "Explica correctamente el recorrido y la dispersión al atardecer."
+    },
+    {
+      "dialogue": "constraints-and-plan",
+      "turn": 1,
+      "sha256": "9acd83cd69fb682ae0d8f58ac5a7f4a8126c4167b519896cc1b675d0c57e0592",
+      "grade": "fail",
+      "reason": "No propone los tres pasos y pide horas pese a recibir treinta minutos."
+    },
+    {
+      "dialogue": "constraints-and-plan",
+      "turn": 2,
+      "sha256": "963ab852b0eee2a1de1905023292ebe21a5c3205ffc8bc1bf1e642f57ebcfad1",
+      "grade": "fail",
+      "reason": "Ignora los quince minutos e inventa una dificultad con datos privados."
+    },
+    {
+      "dialogue": "constraints-and-plan",
+      "turn": 3,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "grade": "transport",
+      "reason": "No completa la respuesta porque otro usuario ocupa la única ranura."
+    }
+  ]
+}

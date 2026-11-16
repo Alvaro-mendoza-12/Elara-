@@ -1,0 +1,77 @@
+{
+  "model": "Qwen3-4B-Instruct-2507",
+  "quantization": "Q3_K_M",
+  "scope": "Private QA; CPU 2.5, RAM 3 GiB, ctx 4096, cache 256 MiB, checkpoints 2; pauses for live service; wall times not production latency",
+  "selection": "Not deployed: cold first text exceeded public deadline; first spelling still changed Hola to Olá. Warm joke and JSON completed; insufficient evidence to replace public model.",
+  "peakBytes": 1433772032,
+  "memoryEvents": {
+    "max": 0,
+    "oom": 0,
+    "oomKill": 0
+  },
+  "results": [
+    {
+      "id": "orthography",
+      "system": "Eres Elara, asistente de Novvin. Sigue la petición del usuario. Responde directamente, en su idioma, con precisión y sin inventar datos. Sé breve (hasta 60 palabras).",
+      "prompt": "Corrige la ortografía y puntuación. Devuelve solo el texto corregido: ola soi carlos y nesesito alluda con mi proyeto",
+      "text": "Olá, soy Carlos y necesito ayuda con mi proyecto.",
+      "reason": "stop",
+      "error": null,
+      "firstTextMs": 62506,
+      "elapsedMs": 68582,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 99,
+        "prompt_ms": 62471.191,
+        "prompt_per_token_ms": 631.0221313131314,
+        "prompt_per_second": 1.584730472002687,
+        "predicted_n": 14,
+        "predicted_ms": 6076.997,
+        "predicted_per_token_ms": 467.46130769230774,
+        "predicted_per_second": 2.1392144837326725
+      }
+    },
+    {
+      "id": "joke",
+      "system": "Eres Elara, asistente de Novvin. Sigue la petición del usuario. Responde directamente, en su idioma, con precisión y sin inventar datos. Sé breve (hasta 60 palabras).",
+      "prompt": "me puedes contar un chiste",
+      "text": "¿Por qué el robot nunca pierde en el ajedrez?  \nPorque siempre da el *checkmate* con sus algoritmos… ¡y no tiene miedo a perder! 😄",
+      "reason": "stop",
+      "error": null,
+      "firstTextMs": 4372,
+      "elapsedMs": 22679,
+      "timings": {
+        "cache_n": 57,
+        "prompt_n": 11,
+        "prompt_ms": 4355.886,
+        "prompt_per_token_ms": 395.9896363636364,
+        "prompt_per_second": 2.525318614858148,
+        "predicted_n": 42,
+        "predicted_ms": 18304.258,
+        "predicted_per_token_ms": 446.44531707317077,
+        "predicted_per_second": 2.2399159802052613
+      }
+    },
+    {
+      "id": "json",
+      "system": "Eres Elara, asistente de Novvin. Sigue la petición del usuario. Responde directamente, en su idioma, con precisión y sin inventar datos. Sé breve (hasta 60 palabras).",
+      "prompt": "Responde únicamente con JSON válido: nombre Faro, cantidad 3. Usa las claves nombre y cantidad.",
+      "text": "{\"nombre\": \"Faro\", \"cantidad\": 3}",
+      "reason": "stop",
+      "error": null,
+      "firstTextMs": 7648,
+      "elapsedMs": 15191,
+      "timings": {
+        "cache_n": 57,
+        "prompt_n": 30,
+        "prompt_ms": 7641.331,
+        "prompt_per_token_ms": 254.71103333333335,
+        "prompt_per_second": 3.9260176008603738,
+        "predicted_n": 14,
+        "predicted_ms": 7543.07,
+        "predicted_per_token_ms": 580.2361538461538,
+        "predicted_per_second": 1.7234362136371528
+      }
+    }
+  ]
+}

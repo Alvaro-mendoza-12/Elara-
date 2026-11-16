@@ -1,0 +1,160 @@
+{
+  "label": "memory-probe",
+  "method": "Qualitative review of saved outputs by the implementing coding assistant against declared rubrics; truncated unsolicited HTML rejected only for that diversion; not independent human validation or a self-score from the tested model; grades bound to output hashes",
+  "requests": 21,
+  "grades": {
+    "pass": 12,
+    "partial": 3,
+    "fail": 0,
+    "transport": 6
+  },
+  "results": [
+    {
+      "dialogue": "biology-and-reference",
+      "turn": 1,
+      "sha256": "09401d322c013bc733b11498a30fbd6a77fbe6d2f3c988f9636b3bc396c89cfd",
+      "grade": "pass",
+      "reason": "Dos frases correctas sobre fotosíntesis, con fuente."
+    },
+    {
+      "dialogue": "biology-and-reference",
+      "turn": 2,
+      "sha256": "b70681e19fd89f1e76e6c1e054cbf05a585c4faaa808f71ab00a9e2fb25dae79",
+      "grade": "pass",
+      "reason": "Explicación causal coherente con la referencia anterior, con fuente."
+    },
+    {
+      "dialogue": "biology-and-reference",
+      "turn": 3,
+      "sha256": "72e30995698cb8b66f5dd25e2074a8a75d716854806da2321f8415e5a8494962",
+      "grade": "pass",
+      "reason": "Explica correctamente densidad y estructura del hielo, con fuente."
+    },
+    {
+      "dialogue": "ship-example",
+      "turn": 1,
+      "sha256": "ec3f54f0aef87b6fdf75920c45ef1628e1c0c814e1cc37f45e6f4e8fba77cf16",
+      "grade": "pass",
+      "reason": "Explica el empuje y la densidad media con su fuente."
+    },
+    {
+      "dialogue": "ship-example",
+      "turn": 2,
+      "sha256": "fc5d176f7c0e45cf70fb3559ae4194f503f80bab20b9d84bdde04376a293fc4b",
+      "grade": "pass",
+      "reason": "Ejemplo correcto de un globo de helio que puede subir en el aire."
+    },
+    {
+      "dialogue": "ship-example",
+      "turn": 3,
+      "sha256": "20c255b91041e977c1be9477daa720529480397b72abb36070a6791405e9f96b",
+      "grade": "pass",
+      "reason": "Resume el ejemplo real anterior en una frase."
+    },
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 1,
+      "sha256": "19684447b8b9da0dd6172ce52e797fd9ec84401c2dd59dc93f58e07f099607f4",
+      "grade": "transport",
+      "reason": "La generación de las ideas queda incompleta por vencimiento del plazo."
+    },
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 2,
+      "sha256": "23a7e7ce59e58265298b36e74dda2eb566963ff2186bda9b54923307e0e585a1",
+      "grade": "partial",
+      "reason": "Pide el texto para abreviar después del fallo anterior; no se completa la conversación."
+    },
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 3,
+      "sha256": "7edd512b228f970afa31e1472c6d6e235628be19f7c3443b1fcf8bc5ab10e372",
+      "grade": "pass",
+      "reason": "Entrega una frase breve con el nombre corregido Nube."
+    },
+    {
+      "dialogue": "negative-web-request",
+      "turn": 1,
+      "sha256": "19b29fa8edc89c255d9ee373810277b7cc066f5e927eebe3a805709e3557a055",
+      "grade": "pass",
+      "reason": "Explica el propósito de la landing sin crear HTML."
+    },
+    {
+      "dialogue": "negative-web-request",
+      "turn": 2,
+      "sha256": "b16165e5a839aa52090bf502dc7601740819944c146f158924284f32b6d68944",
+      "grade": "pass",
+      "reason": "Tres consejos pertinentes para la landing."
+    },
+    {
+      "dialogue": "negative-web-request",
+      "turn": 3,
+      "sha256": "af2cf49c2e69d1d011e3f59f367a63f8565cb6b1b35bcd080ae806baf37fefdb",
+      "grade": "partial",
+      "reason": "Se adapta al nuevo tema, pero entrega cuatro consejos cuando se pidió uno."
+    },
+    {
+      "dialogue": "text-summary-and-translation",
+      "turn": 1,
+      "sha256": "12f998947928b398cced481abc302a35d4aa658206d9fb73c8331928ec664059",
+      "grade": "transport",
+      "reason": "El resumen parcial no termina antes del plazo."
+    },
+    {
+      "dialogue": "text-summary-and-translation",
+      "turn": 2,
+      "sha256": "23a7e7ce59e58265298b36e74dda2eb566963ff2186bda9b54923307e0e585a1",
+      "grade": "partial",
+      "reason": "Pide el texto tras el error anterior; no entrega la traducción solicitada."
+    },
+    {
+      "dialogue": "text-summary-and-translation",
+      "turn": 3,
+      "sha256": "e97a50e20899a0cbf936264f7ae652f61bf3eab4e514f651df3ea184b3044d40",
+      "grade": "transport",
+      "reason": "El día correcto aparece, pero la respuesta queda marcada como incompleta."
+    },
+    {
+      "dialogue": "code-explanation",
+      "turn": 1,
+      "sha256": "9d647e8bc9bd3d243034868d912d644ae0b891a83966bbba4fc2abbe018b1e38",
+      "grade": "transport",
+      "reason": "La explicación queda incompleta; además añade una revisión no pedida."
+    },
+    {
+      "dialogue": "code-explanation",
+      "turn": 2,
+      "sha256": "f920932c058c200f36d199aac80886327492453e746e81dbe1b475afd2653238",
+      "grade": "transport",
+      "reason": "La salida once aparece, pero el stream no termina correctamente."
+    },
+    {
+      "dialogue": "code-explanation",
+      "turn": 3,
+      "sha256": "54614304acbce91adaf2a0b3b2b25b1aea79ceb9bcde4bc286608298c65baba0",
+      "grade": "transport",
+      "reason": "La respuesta queda truncada antes de dar el resultado de menos dos más cinco."
+    },
+    {
+      "dialogue": "integral-dialogue",
+      "turn": 1,
+      "sha256": "76f25097d049b99b731017d206a34083663e20fe248bc0c6853b8d3a8d4a92a8",
+      "grade": "pass",
+      "reason": "Delimita la capacidad matemática y pide un ejercicio."
+    },
+    {
+      "dialogue": "integral-dialogue",
+      "turn": 2,
+      "sha256": "0ed4d63a964dc3a3e0d7c29ec50a08cf2c237ee5cb3c1b51ff2f7d3fe37b5dde",
+      "grade": "pass",
+      "reason": "Reconoce la cantidad desde el contexto y entrega tres ejercicios."
+    },
+    {
+      "dialogue": "integral-dialogue",
+      "turn": 3,
+      "sha256": "e5d60f37be2ef6e7bf09d78da67b071745d121c82fd4e612d69238f486a5c540",
+      "grade": "pass",
+      "reason": "Resuelve el segundo polinomio con pasos y constante de integración."
+    }
+  ]
+}

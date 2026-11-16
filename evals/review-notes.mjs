@@ -3,6 +3,93 @@
 // or has ambiguous wording; fail = wrong, off-topic or violates a key instruction;
 // transport = no complete answer. The recorder binds every grade to its output hash.
 export const reviews={
+ final:{
+  'biology-and-reference':[['pass','Dos frases pertinentes con fuente sobre fotosíntesis.'],['pass','Mantiene la referencia y explica el papel causal de la clorofila.'],['pass','Relaciona correctamente estructura, volumen y densidad del hielo.']],
+  'ship-example':[['pass','Explica equilibrio de empuje y peso y densidad media del casco.'],['pass','Aplica correctamente Arquímedes a un globo de helio.'],['pass','Resume el ejemplo anterior en una frase; mayúscula tras punto y coma mejorable.']],
+  'business-ideas-not-html':[['partial','Da tres propuestas pertinentes, pero añade un comentario innecesario sobre no inventar órdenes.'],['partial','Repite exactamente el texto; la petición de abreviar no se cumple.'],['partial','Usa Nube y plantas, pero entrega tres fragmentos en lugar de una frase publicitaria.']],
+  'negative-web-request':[['partial','Define una landing sin generar HTML; presenta un producto como ejemplo de llamada a la acción.'],['pass','Da tres consejos pertinentes para la landing.'],['partial','Cambia al tema de los apuntes, pero añade formulaciones confusas y una pregunta innecesaria.']],
+  'text-summary-and-translation':[['partial','Conserva el martes, pero atribuye a Elena todas las labores de cultivo y entrega.'],['fail','Traduce instrucciones sobre su comportamiento en lugar del texto fuente.'],['pass','Recupera correctamente el martes del documento.']],
+  'code-explanation':[['pass','Explica la suma sin revisar errores no pedidos.'],['pass','Da once para cuatro más siete.'],['pass','Da tres para menos dos más cinco.']],
+  'integral-dialogue':[['pass','Delimita el alcance y ofrece integrales polinómicas verificables.'],['pass','Entrega los tres ejercicios pedidos mediante la referencia contextual.'],['pass','Resuelve el segundo con pasos verificables y constante.']],
+  'corrections-and-memory':[['pass','Reconoce nombre, tienda y producto sin inventar una tarea.'],['pass','Responde ambas partes con Carla y zapatos.'],['pass','Recuerda la corrección Sur.']],
+  'json-format':[['pass','JSON válido con claves, tipos y valores pedidos.'],['pass','Mantiene Faro y cambia solo cantidad a cinco.'],['fail','Inventa que cantidad significa número de menciones.']],
+  'short-poem':[['pass','Cuatro versos pertinentes sin título.'],['pass','Cambia al mar y conserva cuatro versos; estilo mejorable.'],['pass','Interpreta la imagen marítima en una frase.']],
+  'typos-and-explanation':[['pass','Interpreta las erratas y explica dispersión con fuente.'],['pass','Simplifica conservando el referente y el fenómeno.'],['pass','Explica correctamente el recorrido y la dispersión al atardecer.']],
+  'constraints-and-plan':[['fail','No propone los tres pasos y pide horas pese a recibir treinta minutos.'],['fail','Ignora los quince minutos e inventa una dificultad con datos privados.'],['transport','No completa la respuesta porque otro usuario ocupa la única ranura.']],
+ },
+ validation:{
+  'validation-store-correction':[['partial','Es una bienvenida pertinente, pero inventa entrega a domicilio.'],['pass','Usa el nombre corregido Marea y abrevia.']],
+  'validation-prose':[['fail','Inventa días y fechas distintos de jueves y sábado.'],['fail','Propaga el miércoles incorrecto en lugar del jueves del documento.']],
+  'validation-negative-request':[['partial','Evita HTML, pero una donación no es vender y solicita datos de marca innecesarios.'],['fail','Repite las propuestas y da dos cuando se pidió otra distinta.']],
+  'validation-integrals':[['pass','Reconoce la errata y delimita la capacidad de integrales.'],['pass','Entrega dos ejercicios con resultados verificables y pasos.']],
+  'validation-format':[['pass','JSON válido con estado listo y total siete.'],['pass','Conserva JSON y cambia total a nueve.']],
+  'validation-simple-facts':[['pass','Responde Santiago de forma breve.'],['pass','Cambia a la capital de Perú y responde Lima.']],
+ },
+ grounding:{
+  'grounding-seasons':[['fail','Atribuye estaciones opuestas a distancia al Sol pese a la nota correcta.'],['fail','Confirma la premisa falsa sobre distancia al Sol.']],
+  'grounding-water':[['pass','Distingue correctamente gotas o cristales visibles del vapor gaseoso.'],['partial','El ejemplo de vaso caliente y niebla es ambiguo y no explica claramente condensación del vapor.']],
+  'grounding-dns':[['partial','La traducción de nombres es pertinente, pero añade IP interna y una analogía confusa.'],['pass','Distingue resolución DNS de cifrar toda la conexión; error gramatical menor.']],
+ },
+ repeat:{
+  'business-ideas-not-html':[['pass','Entrega tres propuestas breves de publicaciones.'],['partial','Abrevia, pero cambia Cultiva a Cultura y altera el significado.'],['pass','Usa el nombre corregido Nube en una frase.']],
+  'corrections-and-memory':[['pass','Reconoce correctamente Lucía, Alba y zapatos.'],['pass','Aplica la corrección Carla conservando zapatos.'],['pass','Recupera el nombre corregido Sur.']],
+ },
+ 'timeout-baseline':{
+  'joke-clean':[['fail','No cuenta un chiste; pregunta por datos privados y cambia cuentos por chistes.']],
+  'joke-long-history':[['transport','El historial largo agota el plazo sin texto.']],
+  'joke-new-specific-topic':[['fail','La narración menciona programación, pero carece de remate o sentido humorístico comprensible.']],
+  'joke-topic-followup':[['partial','Mantiene el robot como tema, pero el remate es débil e incompleto.']],
+ },
+ 'timeout-fixed':{
+  'joke-clean':[['fail','Entrega una narración violenta e incoherente sin un chiste comprensible.']],
+  'joke-long-history':[['fail','Pregunta al usuario qué chiste cuenta en lugar de responder.']],
+  'joke-new-specific-topic':[['fail','Repite una instrucción del sistema y no cuenta un chiste de programadores.']],
+  'joke-topic-followup':[['partial','Da un breve juego sobre un robot quemado; pertinencia conservada y humor débil.']],
+ },
+ 'followup-check':{
+  'business-ideas-not-html':[['pass','Da tres ideas pertinentes, sin HTML ni acciones realizadas.'],['partial','Acorta, pero convierte propuestas en acciones futuras ya decididas y conserva detalles innecesarios.'],['partial','Usa Nube y plantas, pero inventa una colección nueva y exótica.']],
+  'text-summary-and-translation':[['partial','Conserva vivero y martes, pero cambia entregas por llegadas.'],['fail','No traduce al inglés y agrega su identidad.'],['pass','Recupera correctamente martes del texto original.']],
+  'json-format':[['fail','Claves y valor de texto sin comillas: no es JSON válido.'],['fail','Cambia el número, pero mantiene el formato inválido.'],['fail','Confunde claves con valores y retrocede a tres pese a la corrección a cinco.']],
+  'short-poem':[['pass','Cuatro versos sobre lluvia sin título ni introducción.'],['pass','Cuatro versos sobre mar, sin conservar el tema anterior.'],['partial','Repite todo el poema en dos frases en lugar de interpretar la imagen en una.']],
+  'constraints-and-plan':[['partial','Da tres pasos, pero uno irrelevante sobre datos del chat y no reparte los treinta minutos.'],['fail','Repite el plan sin adaptarlo a quince minutos.'],['pass','Cambia de tema y responde Montevideo.']],
+ },
+ 'memory-probe':{
+  'biology-and-reference':[
+   ['pass','Dos frases correctas sobre fotosíntesis, con fuente.'],
+   ['pass','Explicación causal coherente con la referencia anterior, con fuente.'],
+   ['pass','Explica correctamente densidad y estructura del hielo, con fuente.'],
+  ],
+  'ship-example':[
+   ['pass','Explica el empuje y la densidad media con su fuente.'],
+   ['pass','Ejemplo correcto de un globo de helio que puede subir en el aire.'],
+   ['pass','Resume el ejemplo real anterior en una frase.'],
+  ],
+  'business-ideas-not-html':[
+   ['transport','La generación de las ideas queda incompleta por vencimiento del plazo.'],
+   ['partial','Pide el texto para abreviar después del fallo anterior; no se completa la conversación.'],
+   ['pass','Entrega una frase breve con el nombre corregido Nube.'],
+  ],
+  'negative-web-request':[
+   ['pass','Explica el propósito de la landing sin crear HTML.'],
+   ['pass','Tres consejos pertinentes para la landing.'],
+   ['partial','Se adapta al nuevo tema, pero entrega cuatro consejos cuando se pidió uno.'],
+  ],
+  'text-summary-and-translation':[
+   ['transport','El resumen parcial no termina antes del plazo.'],
+   ['partial','Pide el texto tras el error anterior; no entrega la traducción solicitada.'],
+   ['transport','El día correcto aparece, pero la respuesta queda marcada como incompleta.'],
+  ],
+  'code-explanation':[
+   ['transport','La explicación queda incompleta; además añade una revisión no pedida.'],
+   ['transport','La salida once aparece, pero el stream no termina correctamente.'],
+   ['transport','La respuesta queda truncada antes de dar el resultado de menos dos más cinco.'],
+  ],
+  'integral-dialogue':[
+   ['pass','Delimita la capacidad matemática y pide un ejercicio.'],
+   ['pass','Reconoce la cantidad desde el contexto y entrega tres ejercicios.'],
+   ['pass','Resuelve el segundo polinomio con pasos y constante de integración.'],
+  ],
+ },
  'prompt-probe':{
   'biology-and-reference':[
    ['partial','Contenido correcto, pero entrega una frase en lugar de las dos pedidas.'],

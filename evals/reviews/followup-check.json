@@ -1,0 +1,118 @@
+{
+  "label": "followup-check",
+  "method": "Qualitative review of saved outputs by the implementing coding assistant against declared rubrics; truncated unsolicited HTML rejected only for that diversion; not independent human validation or a self-score from the tested model; grades bound to output hashes",
+  "requests": 15,
+  "grades": {
+    "pass": 5,
+    "partial": 5,
+    "fail": 5,
+    "transport": 0
+  },
+  "results": [
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 1,
+      "sha256": "29dc87e4e7f53977843c46cf13bbd8729db2313b014f3088b554b0e43746e962",
+      "grade": "pass",
+      "reason": "Da tres ideas pertinentes, sin HTML ni acciones realizadas."
+    },
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 2,
+      "sha256": "4ef87f86e11f3342598cec400d9ed690f464a6585c3492e07a8769b9cab80e98",
+      "grade": "partial",
+      "reason": "Acorta, pero convierte propuestas en acciones futuras ya decididas y conserva detalles innecesarios."
+    },
+    {
+      "dialogue": "business-ideas-not-html",
+      "turn": 3,
+      "sha256": "adc6c271a3ea5d975271ae9399fca7aa8d02d6d98a471ba5b12e1929636487d9",
+      "grade": "partial",
+      "reason": "Usa Nube y plantas, pero inventa una colección nueva y exótica."
+    },
+    {
+      "dialogue": "text-summary-and-translation",
+      "turn": 1,
+      "sha256": "640b8ffeb6a2c4db0a2c2c1c088e05d60fec57b880cc53e1869cd6bf1627e143",
+      "grade": "partial",
+      "reason": "Conserva vivero y martes, pero cambia entregas por llegadas."
+    },
+    {
+      "dialogue": "text-summary-and-translation",
+      "turn": 2,
+      "sha256": "934e2c246a663c8066df59d2162621f68a4968bc737fb257703b5297d5a60a6d",
+      "grade": "fail",
+      "reason": "No traduce al inglés y agrega su identidad."
+    },
+    {
+      "dialogue": "text-summary-and-translation",
+      "turn": 3,
+      "sha256": "90b873587737b94c3b9b87741e25135a3d804f13b56e1e6ffb057e53692ddc4e",
+      "grade": "pass",
+      "reason": "Recupera correctamente martes del texto original."
+    },
+    {
+      "dialogue": "json-format",
+      "turn": 1,
+      "sha256": "4c3e223658f5928b91ba5862e44b5832533c3dc77fb27664ee1b848f72b80d9d",
+      "grade": "fail",
+      "reason": "Claves y valor de texto sin comillas: no es JSON válido."
+    },
+    {
+      "dialogue": "json-format",
+      "turn": 2,
+      "sha256": "3fcad07abfeb077a8e3eb7501acb676802189cdb9d24006214624f2b6d3c7472",
+      "grade": "fail",
+      "reason": "Cambia el número, pero mantiene el formato inválido."
+    },
+    {
+      "dialogue": "json-format",
+      "turn": 3,
+      "sha256": "a10072d58ee1581b275f6675b96045c01171f05fcabb4ae19d33b00a566d08f3",
+      "grade": "fail",
+      "reason": "Confunde claves con valores y retrocede a tres pese a la corrección a cinco."
+    },
+    {
+      "dialogue": "short-poem",
+      "turn": 1,
+      "sha256": "2a76a1684855fbab9e8dedd48e9d3f0d9f7478ea3526dbc0eed663f44e7e6121",
+      "grade": "pass",
+      "reason": "Cuatro versos sobre lluvia sin título ni introducción."
+    },
+    {
+      "dialogue": "short-poem",
+      "turn": 2,
+      "sha256": "a3fb24e58bf5a59ec83d161c38d87af195ba00e46559bc6ed56f03d040192820",
+      "grade": "pass",
+      "reason": "Cuatro versos sobre mar, sin conservar el tema anterior."
+    },
+    {
+      "dialogue": "short-poem",
+      "turn": 3,
+      "sha256": "61fa83aea5244137cd65908819686171f738381010c4dc993ad3732fa7e7309b",
+      "grade": "partial",
+      "reason": "Repite todo el poema en dos frases en lugar de interpretar la imagen en una."
+    },
+    {
+      "dialogue": "constraints-and-plan",
+      "turn": 1,
+      "sha256": "bb1dfe38ff47e2e253cfcade532bebd3b6af9f5c6dbfc2538240e353a48514c3",
+      "grade": "partial",
+      "reason": "Da tres pasos, pero uno irrelevante sobre datos del chat y no reparte los treinta minutos."
+    },
+    {
+      "dialogue": "constraints-and-plan",
+      "turn": 2,
+      "sha256": "bb1dfe38ff47e2e253cfcade532bebd3b6af9f5c6dbfc2538240e353a48514c3",
+      "grade": "fail",
+      "reason": "Repite el plan sin adaptarlo a quince minutos."
+    },
+    {
+      "dialogue": "constraints-and-plan",
+      "turn": 3,
+      "sha256": "8e8ec7c2a281f45d2a625ad25e658a350e4eff2cc42dbf4bb85370f717a946e6",
+      "grade": "pass",
+      "reason": "Cambia de tema y responde Montevideo."
+    }
+  ]
+}

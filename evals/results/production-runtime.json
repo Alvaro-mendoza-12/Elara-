@@ -1,0 +1,21 @@
+{
+  "observedAt": "2026-11-16T19:38:28.987657+00:00",
+  "model": "Qwen3.5-2B",
+  "cpuLimit": 2.5,
+  "memoryLimitMiB": 3072,
+  "cacheMiB": 256,
+  "checkpoints": 2,
+  "inferenceSlots": 1,
+  "ready": true,
+  "busy": false,
+  "novvinReady": true,
+  "privateEvaluationWorkers": 0,
+  "cgroupEvents": {
+    "low": 0,
+    "high": 0,
+    "max": 0,
+    "oom": 0,
+    "oom_kill": 0,
+    "oom_group_kill": 0
+  }
+}

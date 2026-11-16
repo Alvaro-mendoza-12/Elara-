@@ -1,0 +1,87 @@
+{
+  "model": "Qwen3.5-2B",
+  "quantization": "Q4_K_M",
+  "scope": "Private uncached QA; qualitative comparison only; CPU 1.5, RAM 3 GiB, ctx 2048; yields to live chat; not production latency",
+  "results": [
+    {
+      "scope": "private isolated model; uncached; yields CPU to live service; latency not comparable to production",
+      "variant": "minimal",
+      "id": "joke",
+      "prompt": "me puedes contar un chiste",
+      "text": "¿Por qué siempre se te olvida el nombre de tu perro cuando le das de comer? Porque tú siempre le das de comer antes de que llegue el momento.",
+      "reason": "stop",
+      "error": null,
+      "elapsedMs": 11585
+    },
+    {
+      "scope": "private isolated model; uncached; yields CPU to live service; latency not comparable to production",
+      "variant": "minimal",
+      "id": "orthography",
+      "prompt": "Corrige la ortografía y puntuación. Devuelve solo el texto corregido: ola soi carlos y nesesito alluda con mi proyeto",
+      "text": "Olá sou Carlos e necessito ajuda com o meu projeto",
+      "reason": "stop",
+      "error": null,
+      "elapsedMs": 15452
+    },
+    {
+      "scope": "private isolated model; uncached; yields CPU to live service; latency not comparable to production",
+      "variant": "minimal",
+      "id": "document",
+      "prompt": "Explica este aviso con palabras sencillas: El taller Horizonte recibirá pedidos hasta el jueves y hará las entregas el sábado.",
+      "text": "El taller abrirá sus puertas para recibir tus pedidos a partir de hoy hasta el jueves. Una vez que te lo pidas, no esperes al sábado: **el taller ya está listo para entregártelo inmediatamente después**.",
+      "reason": "stop",
+      "error": null,
+      "elapsedMs": 22220
+    },
+    {
+      "scope": "private isolated model; uncached; yields CPU to live service; latency not comparable to production",
+      "variant": "minimal",
+      "id": "seasons",
+      "prompt": "¿Por qué en Argentina es verano cuando en España es invierno? Explícalo sin fórmulas.",
+      "text": "Es porque el sol está en la parte opuesta de la Tierra respecto a cada país. En Argentina, el sol se eleva más alto y da más luz durante el año, mientras que en España, el sol permanece bajo el horizonte por más tiempo.",
+      "reason": "stop",
+      "error": null,
+      "elapsedMs": 19613
+    },
+    {
+      "scope": "private isolated model; uncached; yields CPU to live service; latency not comparable to production",
+      "variant": "current",
+      "id": "joke",
+      "prompt": "me puedes contar un chiste",
+      "text": "No puedo contarte un chiste porque soy una IA y no tengo humorismo o capacidad para generar risas. Solo puedo ayudarte con información real basada en lo que hemos hablado.",
+      "reason": "stop",
+      "error": null,
+      "elapsedMs": 23253
+    },
+    {
+      "scope": "private isolated model; uncached; yields CPU to live service; latency not comparable to production",
+      "variant": "current",
+      "id": "orthography",
+      "prompt": "Corrige la ortografía y puntuación. Devuelve solo el texto corregido: ola soi carlos y nesesito alluda con mi proyeto",
+      "text": "Hola soy Carlos y necesito ayuda con mi proyecto",
+      "reason": "stop",
+      "error": null,
+      "elapsedMs": 16291
+    },
+    {
+      "scope": "private isolated model; uncached; yields CPU to live service; latency not comparable to production",
+      "variant": "current",
+      "id": "document",
+      "prompt": "Explica este aviso con palabras sencillas: El taller Horizonte recibirá pedidos hasta el jueves y hará las entregas el sábado.",
+      "text": "El taller Horizon abre sus puertas el jueves para recibir órdenes y cerrar el servicio el sábado.",
+      "reason": "stop",
+      "error": null,
+      "elapsedMs": 17918
+    },
+    {
+      "scope": "private isolated model; uncached; yields CPU to live service; latency not comparable to production",
+      "variant": "current",
+      "id": "seasons",
+      "prompt": "¿Por qué en Argentina es verano cuando en España es invierno? Explícalo sin fórmulas.",
+      "text": "Argentina y España comparten el mismo huso horario, por lo que su clima varía por la latitud y las estaciones globales, no por su posición temporal relativa.",
+      "reason": "stop",
+      "error": null,
+      "elapsedMs": 29627
+    }
+  ]
+}

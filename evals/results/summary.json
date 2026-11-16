@@ -1,0 +1,210 @@
+{
+  "scope": "Targeted product evaluation; parametrized routing cases, real sequential conversations, qualitative assistant review; not a general model benchmark",
+  "offline": {
+    "cases": 1200,
+    "baselinePassed": 680,
+    "finalPassed": 1200,
+    "catalogSha256": "75967be8db92389e9262aa4b32eedbcfb97ce8b21d1b1a8077fd0f4705cf3d64",
+    "graderSha256": "1760cd0c2538b0e8a0af683149e315347d7f0af367e409e95e3892c10cfe1753"
+  },
+  "recordedHttpTurns": 167,
+  "bffModelTurns": 121,
+  "completedModelResponses": 110,
+  "finalRevision": "24d28076169c972b98dde79b9af146ad57914cc4",
+  "finalRuntimePolicySha256": "a729c317f5f34f2bb7e58408ad1c5201fc63e0c02307452dd371e82bf0720ff8",
+  "final": {
+    "requests": 60,
+    "grades": {
+      "pass": 39,
+      "partial": 11,
+      "fail": 9,
+      "transport": 1
+    },
+    "rulePassed": 53,
+    "modelTurns": 42,
+    "completedModelResponses": 41,
+    "coreMedianMs": 488,
+    "modelMedianMs": 15064,
+    "modelP95Ms": 25896
+  },
+  "memory": {
+    "samples": 15,
+    "maxUsedMiB": 1161,
+    "peakMiB": 1164,
+    "limitMiB": 3072,
+    "maxEvents": 0,
+    "oomEvents": 0,
+    "oomKills": 0
+  },
+  "runs": [
+    {
+      "label": "baseline",
+      "requests": 36,
+      "modelTurns": 22,
+      "rulePassed": 19,
+      "grades": {
+        "pass": 8,
+        "partial": 8,
+        "fail": 16,
+        "transport": 4
+      },
+      "sourceCommit": null
+    },
+    {
+      "label": "latency-probe",
+      "requests": 11,
+      "modelTurns": 8,
+      "rulePassed": 8,
+      "grades": {
+        "pass": 7,
+        "partial": 2,
+        "fail": 0,
+        "transport": 2
+      },
+      "sourceCommit": "ba901b5cc12e390947054d0dc03b80dfbc3fc051"
+    },
+    {
+      "label": "prompt-probe",
+      "requests": 16,
+      "modelTurns": 16,
+      "rulePassed": 15,
+      "grades": {
+        "pass": 4,
+        "partial": 9,
+        "fail": 2,
+        "transport": 1
+      },
+      "sourceCommit": "3b5db8a200652ae707409d62bc0b1d36d171d773"
+    },
+    {
+      "label": "memory-probe",
+      "requests": 21,
+      "modelTurns": 10,
+      "rulePassed": 13,
+      "grades": {
+        "pass": 12,
+        "partial": 3,
+        "fail": 0,
+        "transport": 6
+      },
+      "sourceCommit": "50c040a12973874f81dec45710362c687d3f3954"
+    },
+    {
+      "label": "final",
+      "requests": 36,
+      "modelTurns": 22,
+      "rulePassed": 32,
+      "grades": {
+        "pass": 25,
+        "partial": 6,
+        "fail": 4,
+        "transport": 1
+      },
+      "sourceCommit": "24d28076169c972b98dde79b9af146ad57914cc4"
+    },
+    {
+      "label": "validation",
+      "requests": 12,
+      "modelTurns": 10,
+      "rulePassed": 10,
+      "grades": {
+        "pass": 7,
+        "partial": 2,
+        "fail": 3,
+        "transport": 0
+      },
+      "sourceCommit": "24d28076169c972b98dde79b9af146ad57914cc4"
+    },
+    {
+      "label": "grounding",
+      "requests": 6,
+      "modelTurns": 6,
+      "rulePassed": 5,
+      "grades": {
+        "pass": 2,
+        "partial": 2,
+        "fail": 2,
+        "transport": 0
+      },
+      "sourceCommit": "24d28076169c972b98dde79b9af146ad57914cc4"
+    },
+    {
+      "label": "repeat",
+      "requests": 6,
+      "modelTurns": 4,
+      "rulePassed": 6,
+      "grades": {
+        "pass": 5,
+        "partial": 1,
+        "fail": 0,
+        "transport": 0
+      },
+      "sourceCommit": "24d28076169c972b98dde79b9af146ad57914cc4"
+    },
+    {
+      "label": "timeout-baseline",
+      "requests": 4,
+      "modelTurns": 4,
+      "rulePassed": 3,
+      "grades": {
+        "pass": 0,
+        "partial": 1,
+        "fail": 2,
+        "transport": 1
+      },
+      "sourceCommit": "24d28076169c972b98dde79b9af146ad57914cc4"
+    },
+    {
+      "label": "timeout-fixed",
+      "requests": 4,
+      "modelTurns": 4,
+      "rulePassed": 3,
+      "grades": {
+        "pass": 0,
+        "partial": 1,
+        "fail": 3,
+        "transport": 0
+      },
+      "sourceCommit": "04ac16aefe8e119fb7dbb314a53264f0cbe86c9f"
+    },
+    {
+      "label": "followup-check",
+      "requests": 15,
+      "modelTurns": 15,
+      "rulePassed": 10,
+      "grades": {
+        "pass": 5,
+        "partial": 5,
+        "fail": 5,
+        "transport": 0
+      },
+      "sourceCommit": "04ac16aefe8e119fb7dbb314a53264f0cbe86c9f"
+    }
+  ],
+  "privateCalibration": [
+    {
+      "file": "native-qwen3-4b-cached.json",
+      "model": "Qwen3-4B-Instruct-2507",
+      "recordedGenerations": 3,
+      "scope": "Private QA; CPU 2.5, RAM 3 GiB, ctx 4096, cache 256 MiB, checkpoints 2; pauses for live service; wall times not production latency"
+    },
+    {
+      "file": "native-qwen3-4b-current.json",
+      "model": "Qwen3-4B-Instruct-2507",
+      "recordedGenerations": 4,
+      "scope": "Private uncached QA; CPU 2.5, RAM 3 GiB, ctx 4096; pauses for live service; not production latency"
+    },
+    {
+      "file": "native-qwen3-4b-minimal.json",
+      "model": "Qwen3-4B-Instruct-2507",
+      "recordedGenerations": 4,
+      "scope": "Private uncached QA; CPU 1.5, RAM 3 GiB, ctx 4096; pauses for live service; not production latency"
+    },
+    {
+      "file": "native-qwen35-2b.json",
+      "model": "Qwen3.5-2B",
+      "recordedGenerations": 8,
+      "scope": "Private uncached QA; qualitative comparison only; CPU 1.5, RAM 3 GiB, ctx 2048; yields to live chat; not production latency"
+    }
+  ]
+}

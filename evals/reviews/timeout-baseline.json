@@ -1,0 +1,41 @@
+{
+  "label": "timeout-baseline",
+  "method": "Qualitative review of saved outputs by the implementing coding assistant against declared rubrics; truncated unsolicited HTML rejected only for that diversion; not independent human validation or a self-score from the tested model; grades bound to output hashes",
+  "requests": 4,
+  "grades": {
+    "pass": 0,
+    "partial": 1,
+    "fail": 2,
+    "transport": 1
+  },
+  "results": [
+    {
+      "dialogue": "joke-clean",
+      "turn": 1,
+      "sha256": "d464f8a0d6a5ac52bf29a217e0ae7891a88505e85e46eb29bede5f312b356608",
+      "grade": "fail",
+      "reason": "No cuenta un chiste; pregunta por datos privados y cambia cuentos por chistes."
+    },
+    {
+      "dialogue": "joke-long-history",
+      "turn": 1,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "grade": "transport",
+      "reason": "El historial largo agota el plazo sin texto."
+    },
+    {
+      "dialogue": "joke-new-specific-topic",
+      "turn": 1,
+      "sha256": "f7538dde025f3c2b8307c515a6721bea6edcaca24acae167ac09759a35559a85",
+      "grade": "fail",
+      "reason": "La narración menciona programación, pero carece de remate o sentido humorístico comprensible."
+    },
+    {
+      "dialogue": "joke-topic-followup",
+      "turn": 1,
+      "sha256": "559e9eff89ee946e63b98054ad57850086c5da7a0bb8a455562aaecb68a89942",
+      "grade": "partial",
+      "reason": "Mantiene el robot como tema, pero el remate es débil e incompleto."
+    }
+  ]
+}

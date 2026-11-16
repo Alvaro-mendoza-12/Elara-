@@ -3,7 +3,11 @@
   "oneActiveGeneration": true,
   "secondRequest": 429,
   "retryAfter": 8,
+  "quotaRequestsWithoutInference": 7,
+  "quotaCode": "RATE_LIMITED",
   "speechReady": true,
-  "elapsedMs": 8425,
-  "runtimePolicySha256": "a729c317f5f34f2bb7e58408ad1c5201fc63e0c02307452dd371e82bf0720ff8"
+  "elapsedMs": 11471,
+  "scope": "Separate authenticated runtime admission/quota test; one model generation, seven invalid-model quota probes; excluded from dialogue-turn totals",
+  "runtimePolicySha256": "a729c317f5f34f2bb7e58408ad1c5201fc63e0c02307452dd371e82bf0720ff8",
+  "gatewaySourceSha256": "80d1f94625267ec13d97faf8851b200b2b0b026f61e258bec8dd946118cfc6cc"
 }

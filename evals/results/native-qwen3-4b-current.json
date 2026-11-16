@@ -1,0 +1,52 @@
+{
+  "model": "Qwen3-4B-Instruct-2507",
+  "repository": "unsloth/Qwen3-4B-Instruct-2507-GGUF",
+  "revision": "a06e946bb6b655725eafa393f4a9745d460374c9",
+  "sha256": "9c6e0763577125a994a9bea0bbd7a737ac4498b8a6a4e0f788727553af1806c9",
+  "quantization": "Q3_K_M",
+  "scope": "Private uncached QA; CPU 2.5, RAM 3 GiB, ctx 4096; pauses for live service; not production latency",
+  "plannedGenerations": 4,
+  "incomplete": false,
+  "results": [
+    {
+      "scope": "private isolated model; uncached; yields CPU to live service; latency not comparable to production",
+      "variant": "current",
+      "id": "joke",
+      "prompt": "me puedes contar un chiste",
+      "text": "¿Por qué el robot nunca se cansa?  \nPorque siempre tiene su *batería* de humor. 😄",
+      "reason": "stop",
+      "error": null,
+      "elapsedMs": 44995
+    },
+    {
+      "scope": "private isolated model; uncached; yields CPU to live service; latency not comparable to production",
+      "variant": "current",
+      "id": "orthography",
+      "prompt": "Corrige la ortografía y puntuación. Devuelve solo el texto corregido: ola soi carlos y nesesito alluda con mi proyeto",
+      "text": "Hola, soy Carlos y necesito ayuda con mi proyecto.",
+      "reason": "stop",
+      "error": null,
+      "elapsedMs": 47161
+    },
+    {
+      "scope": "private isolated model; uncached; yields CPU to live service; latency not comparable to production",
+      "variant": "current",
+      "id": "document",
+      "prompt": "Explica este aviso con palabras sencillas: El taller Horizonte recibirá pedidos hasta el jueves y hará las entregas el sábado.",
+      "text": "El taller Horizonte acepta pedidos hasta el jueves y entrega los productos el sábado siguiente.",
+      "reason": "stop",
+      "error": null,
+      "elapsedMs": 45479
+    },
+    {
+      "scope": "private isolated model; uncached; yields CPU to live service; latency not comparable to production",
+      "variant": "current",
+      "id": "seasons",
+      "prompt": "¿Por qué en Argentina es verano cuando en España es invierno? Explícalo sin fórmulas.",
+      "text": "Porque la Tierra gira sobre su eje de forma inclinada, haciendo que diferentes partes del planeta reciban más o menos sol al mismo tiempo. Cuando es verano en Argentina, es invierno en España por la posición de cada país respecto al Sol.",
+      "reason": "stop",
+      "error": null,
+      "elapsedMs": 55515
+    }
+  ]
+}

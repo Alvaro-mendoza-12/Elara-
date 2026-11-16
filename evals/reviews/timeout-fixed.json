@@ -1,0 +1,41 @@
+{
+  "label": "timeout-fixed",
+  "method": "Qualitative review of saved outputs by the implementing coding assistant against declared rubrics; truncated unsolicited HTML rejected only for that diversion; not independent human validation or a self-score from the tested model; grades bound to output hashes",
+  "requests": 4,
+  "grades": {
+    "pass": 0,
+    "partial": 1,
+    "fail": 3,
+    "transport": 0
+  },
+  "results": [
+    {
+      "dialogue": "joke-clean",
+      "turn": 1,
+      "sha256": "8a868142a4e218c5471b454394b2dca2494ab794ef4419612e15b13d02de2d56",
+      "grade": "fail",
+      "reason": "Entrega una narración violenta e incoherente sin un chiste comprensible."
+    },
+    {
+      "dialogue": "joke-long-history",
+      "turn": 1,
+      "sha256": "6523e26cf4792af38436f31b91fd86e18b842e58147d7adef8b1e0974ca18fdf",
+      "grade": "fail",
+      "reason": "Pregunta al usuario qué chiste cuenta en lugar de responder."
+    },
+    {
+      "dialogue": "joke-new-specific-topic",
+      "turn": 1,
+      "sha256": "2aede1881e97e2582605fef0599c30332cf9fa183f10d9c081b69cd70b2709fa",
+      "grade": "fail",
+      "reason": "Repite una instrucción del sistema y no cuenta un chiste de programadores."
+    },
+    {
+      "dialogue": "joke-topic-followup",
+      "turn": 1,
+      "sha256": "eefe3265687eae4315fe67d01684dcc50d51438215d698f5f57ac1caad208e55",
+      "grade": "partial",
+      "reason": "Da un breve juego sobre un robot quemado; pertinencia conservada y humor débil."
+    }
+  ]
+}
