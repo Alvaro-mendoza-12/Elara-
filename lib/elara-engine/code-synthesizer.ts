@@ -168,7 +168,7 @@ export function buildLoginIndexHtml(params: PromptParams): string {
   <main class="panel">
     <div>
       <h1>Iniciar sesión en ${brand}</h1>
-      <p class="sub">Accede con tus credenciales o continúa sin cuenta en modo invitado.</p>
+      <p class="sub">Prototipo visual. No introduzcas tu contraseña real: esta página no autentica cuentas.</p>
     </div>
     <form id="loginForm" style="display:grid;gap:12px;">
       <label>Correo electrónico
@@ -192,10 +192,10 @@ export function buildLoginIndexHtml(params: PromptParams): string {
       feedback.textContent = 'Validación local superada para ' + email + '. Conecta aquí tu endpoint /auth.';
     });
     document.getElementById('novvinBtn').addEventListener('click', () => {
-      feedback.textContent = 'Flujo OAuth previsto: abrir autorización en Novvin Web / App y volver con token.';
+      feedback.textContent = 'Este prototipo no está conectado a Novvin. Abre Elara para iniciar una sesión real.';
     });
     document.getElementById('guestBtn').addEventListener('click', () => {
-      feedback.textContent = 'Sesión de invitado lista sin registro.';
+      feedback.textContent = 'Vista de invitado seleccionada. No se ha creado ninguna sesión.';
     });
   </script>
 </body>

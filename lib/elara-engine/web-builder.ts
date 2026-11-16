@@ -219,8 +219,10 @@ function selectCatalogItems(params: PromptParams): {
     if (preset.pattern.test(norm)) {
       const picked: CatalogItem[] = [];
       for (let i = 0; i < count; i += 1) {
-        const base = preset.items[i % preset.items.length];
-        const name = i < preset.items.length ? base.name : `${base.name} (Edición ${i + 1})`;
+        const candidates = preset.id === 'tech' && /\b(laptops?|portatiles?)\b/.test(norm)
+          ? preset.items.filter((item) => item.category === 'Laptops') : preset.items;
+        const base = candidates[i % candidates.length];
+        const name = i < (preset.id === 'tech' && /\b(laptops?|portatiles?)\b/.test(norm) ? 2 : preset.items.length) ? base.name : `${base.name} (Edición ${i + 1})`;
         picked.push({
           ...base,
           name,
@@ -259,7 +261,7 @@ export function buildCatalogStoreHtml(params: PromptParams): string {
   const { title, subtitle, accent, items } = selectCatalogItems(params);
   const c = resolveThemePalette(params.preferredTheme, accent);
   const categories = ['Todos', ...Array.from(new Set(items.map((x) => x.category)))];
-  const serializedItems = JSON.stringify(items);
+  const serializedItems = JSON.stringify(items).replace(/</g, '\\u003c');
   const currency = params.currencySymbol || '$';
 
   return `<!DOCTYPE html>
@@ -272,9 +274,9 @@ export function buildCatalogStoreHtml(params: PromptParams): string {
     :root { --bg: ${c.bg}; --surface: ${c.surface}; --card: ${c.card}; --border: ${c.border}; --text: ${c.text}; --muted: ${c.muted}; --accent: ${c.accent}; --accent-ink: ${c.accentInk}; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
-    .container { max-width: 1120px; margin: 0 auto; padding: 24px 20px 64px; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px 20px 64px; }
     header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
-    h1 { font-size: clamp(1.45rem, 3vw, 2.15rem); letter-spacing: -0.02em; }
+    h1 { font-size: clamp(2rem, 4vw, 3.4rem); letter-spacing: -0.02em; }
     .sub { color: var(--muted); font-size: 0.94rem; margin-top: 4px; }
     .cart-pill { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 999px; padding: 10px 18px; font-weight: 700; cursor: pointer; font-size: 0.9rem; }
     .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin: 22px 0; }
@@ -287,7 +289,7 @@ export function buildCatalogStoreHtml(params: PromptParams): string {
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; transition: border-color 0.15s, transform 0.15s; }
     .card:hover { border-color: var(--accent); transform: translateY(-2px); }
-    .card-art { height: 76px; border-radius: 10px; border: 1px solid var(--border); background: radial-gradient(circle at top right, rgba(148,163,184,0.2), transparent 65%), var(--surface); display: flex; align-items: center; justify-content: space-between; padding: 0 14px; margin-bottom: 10px; }
+    .card-art { height: 144px; border-radius: 10px; border: 1px solid var(--border); background: radial-gradient(circle at top right, rgba(148,163,184,0.2), transparent 65%), var(--surface); display: flex; align-items: center; justify-content: space-between; padding: 0 14px; margin-bottom: 10px; }
     .mono { width: 38px; height: 38px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-weight: 800; display: grid; place-items: center; font-size: 0.9rem; letter-spacing: 0.04em; }
     .tag { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: rgba(148,163,184,0.14); color: var(--accent); width: fit-content; }
     .card h3 { font-size: 1rem; margin-top: 4px; }
@@ -303,10 +305,17 @@ export function buildCatalogStoreHtml(params: PromptParams): string {
     .rm { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 2px 8px; cursor: pointer; font-size: 0.78rem; }
     .checkout-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
     #orderFeedback { font-size: 0.85rem; color: var(--accent); font-weight: 600; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+    button, input, select { font: inherit; }
+    h1 { letter-spacing: -.045em; line-height: 1.12; }
+    @media(max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card { padding: 12px; min-width: 0; overflow-wrap: anywhere; } .card-art { height: 110px; padding: 10px; gap: 6px; } .tag { min-width: 0; overflow-wrap: anywhere; } .mono { flex-shrink: 0; } .card-foot { flex-wrap: wrap; gap: 10px; } .container { padding: 20px 0; } }
+    @media(max-width: 360px) { .grid { grid-template-columns: 1fr; } }
+    @media(prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } .card:hover { transform: none; } }
   </style>
 </head>
 <body>
   <div class="container">
+    <p style="color:var(--muted);font-size:.75rem;margin-bottom:20px">Prototipo interactivo · Productos y precios de ejemplo</p>
     <header>
       <div>
         <h1>${escapeHtml(title)}</h1>
@@ -499,6 +508,12 @@ export function buildTodoAppHtml(params: PromptParams): string {
     .done { text-decoration: line-through; color: var(--muted); }
     .prio { font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--accent); }
     .del { background: transparent; border: 0; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 2px 6px; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+    button, input, select { font: inherit; }
+    h1 { letter-spacing: -.045em; line-height: 1.12; }
+    @media(max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card { padding: 12px; min-width: 0; overflow-wrap: anywhere; } .card-art { height: 110px; padding: 10px; gap: 6px; } .tag { min-width: 0; overflow-wrap: anywhere; } .mono { flex-shrink: 0; } .card-foot { flex-wrap: wrap; gap: 10px; } .container { padding: 20px 0; } }
+    @media(max-width: 360px) { .grid { grid-template-columns: 1fr; } }
+    @media(prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } .card:hover { transform: none; } }
   </style>
 </head>
 <body>
@@ -617,6 +632,12 @@ export function buildPomodoroHtml(params: PromptParams): string {
     button.btn { background: var(--accent); color: var(--ink); border: 0; border-radius: 12px; padding: 11px 22px; font-weight: 700; cursor: pointer; }
     button.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); border-radius: 12px; padding: 11px 18px; cursor: pointer; }
     small { color: var(--muted); }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+    button, input, select { font: inherit; }
+    h1 { letter-spacing: -.045em; line-height: 1.12; }
+    @media(max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card { padding: 12px; min-width: 0; overflow-wrap: anywhere; } .card-art { height: 110px; padding: 10px; gap: 6px; } .tag { min-width: 0; overflow-wrap: anywhere; } .mono { flex-shrink: 0; } .card-foot { flex-wrap: wrap; gap: 10px; } .container { padding: 20px 0; } }
+    @media(max-width: 360px) { .grid { grid-template-columns: 1fr; } }
+    @media(prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } .card:hover { transform: none; } }
   </style>
 </head>
 <body>
@@ -694,6 +715,12 @@ export function buildQuizAppHtml(params: PromptParams): string {
     .opt.ok { border-color: #10b981; background: rgba(16,185,129,0.16); }
     .opt.bad { border-color: #f43f5e; background: rgba(244,63,94,0.16); }
     button.next { background: var(--accent); color: var(--ink); border: 0; border-radius: 10px; padding: 10px 18px; font-weight: 700; cursor: pointer; justify-self: end; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+    button, input, select { font: inherit; }
+    h1 { letter-spacing: -.045em; line-height: 1.12; }
+    @media(max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card { padding: 12px; min-width: 0; overflow-wrap: anywhere; } .card-art { height: 110px; padding: 10px; gap: 6px; } .tag { min-width: 0; overflow-wrap: anywhere; } .mono { flex-shrink: 0; } .card-foot { flex-wrap: wrap; gap: 10px; } .container { padding: 20px 0; } }
+    @media(max-width: 360px) { .grid { grid-template-columns: 1fr; } }
+    @media(prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } .card:hover { transform: none; } }
   </style>
 </head>
 <body>
@@ -784,6 +811,12 @@ export function buildPaletteGeneratorHtml(params: PromptParams): string {
     .hex { padding: 10px; text-align: center; font-family: ui-monospace, monospace; font-size: 0.9rem; }
     .grad { height: 96px; border-radius: 14px; border: 1px solid var(--border); display: grid; place-items: center; font-family: ui-monospace, monospace; font-size: 0.85rem; text-shadow: 0 1px 4px rgba(0,0,0,0.65); }
     #note { font-size: 0.88rem; color: var(--accent); min-height: 1.3em; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+    button, input, select { font: inherit; }
+    h1 { letter-spacing: -.045em; line-height: 1.12; }
+    @media(max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card { padding: 12px; min-width: 0; overflow-wrap: anywhere; } .card-art { height: 110px; padding: 10px; gap: 6px; } .tag { min-width: 0; overflow-wrap: anywhere; } .mono { flex-shrink: 0; } .card-foot { flex-wrap: wrap; gap: 10px; } .container { padding: 20px 0; } }
+    @media(max-width: 360px) { .grid { grid-template-columns: 1fr; } }
+    @media(prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } .card:hover { transform: none; } }
   </style>
 </head>
 <body>
@@ -855,6 +888,12 @@ export function buildBlogHtml(params: PromptParams): string {
     .post p { color: var(--muted); font-size: 0.92rem; margin-top: 6px; }
     .reader { background: var(--surface); border: 1px solid var(--accent); border-radius: 14px; padding: 20px; display: none; gap: 10px; }
     .reader.open { display: grid; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+    button, input, select { font: inherit; }
+    h1 { letter-spacing: -.045em; line-height: 1.12; }
+    @media(max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card { padding: 12px; min-width: 0; overflow-wrap: anywhere; } .card-art { height: 110px; padding: 10px; gap: 6px; } .tag { min-width: 0; overflow-wrap: anywhere; } .mono { flex-shrink: 0; } .card-foot { flex-wrap: wrap; gap: 10px; } .container { padding: 20px 0; } }
+    @media(max-width: 360px) { .grid { grid-template-columns: 1fr; } }
+    @media(prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } .card:hover { transform: none; } }
   </style>
 </head>
 <body>
@@ -946,6 +985,12 @@ export function buildBookingFormHtml(params: PromptParams): string {
     button { background: var(--accent); color: var(--ink); border: 0; border-radius: 10px; padding: 11px 16px; font-weight: 700; cursor: pointer; }
     .receipt { background: var(--card); border: 1px solid var(--accent); border-radius: 12px; padding: 14px; display: none; gap: 6px; font-size: 0.9rem; }
     .receipt.open { display: grid; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+    button, input, select { font: inherit; }
+    h1 { letter-spacing: -.045em; line-height: 1.12; }
+    @media(max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card { padding: 12px; min-width: 0; overflow-wrap: anywhere; } .card-art { height: 110px; padding: 10px; gap: 6px; } .tag { min-width: 0; overflow-wrap: anywhere; } .mono { flex-shrink: 0; } .card-foot { flex-wrap: wrap; gap: 10px; } .container { padding: 20px 0; } }
+    @media(max-width: 360px) { .grid { grid-template-columns: 1fr; } }
+    @media(prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } .card:hover { transform: none; } }
   </style>
 </head>
 <body>
@@ -1045,7 +1090,7 @@ export function buildWebFromPrompt(params: PromptParams): {
     const info = selectCatalogItems(params);
     return {
       intent: 'code_index_dynamic_catalog',
-      description: `Generé un \`index.html\` completo para **${info.title}** con **${info.items.length} elementos reales**, buscador en vivo, filtro por categorías y carrito interactivo:`,
+      description: `Generé un \`index.html\` completo para **${info.title}** con **${info.items.length} productos de ejemplo**, buscador en vivo, filtro por categorías y carrito interactivo:`,
       html: buildCatalogStoreHtml(params),
     };
   }

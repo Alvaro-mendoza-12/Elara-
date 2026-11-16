@@ -353,13 +353,13 @@ export function tryConversationalResponse(raw: string): { reply: string; intent:
   }
 
   // Polite conversational turns
-  if (/^(gracias|muchas gracias|excelente|genial|perfecto|buen trabajo|ok gracias)\b/.test(norm)) {
+  if (/^(gracias|muchas gracias|excelente|genial|perfecto|buen trabajo|ok gracias)[.! ]*$/.test(norm)) {
     return {
       reply: 'Con gusto. Si quieres ajustar algún código, probar otra web `index.html` o revisar un error, dime y lo hacemos.',
       intent: 'thanks',
     };
   }
-  if (/^(como estas|todo bien|que haces|estas ahi|sigues ahi)\b/.test(norm)) {
+  if (/^(como estas|todo bien|que haces|estas ahi|sigues ahi)[.!? ]*$/.test(norm)) {
     return {
       reply: 'Aquí estoy, lista para ayudarte. ¿Quieres que armemos un `index.html`, revisar un código o resolver alguna duda técnica?',
       intent: 'smalltalk_status',

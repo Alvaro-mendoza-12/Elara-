@@ -1,34 +1,55 @@
-# ELARA (`E L A R A`)
+# Elara 0.5
 
-Interfaz conversacional web de **ELARA** desarrollada con Next.js 16, React 19, Tailwind CSS v4 y Vercel AI SDK (`useChat` + `createUIMessageStream`), lista para usarse en acceso libre, previsualizar webs `index.html` en vivo y conectarse con tu propio servidor GPU o con el ecosistema **Novvin** (`novvinapp.com`).
+Asistente web independiente en `D:\Elara`, con Next.js 16, React 19 y Vercel AI SDK. Repositorio: https://github.com/Alvaro-mendoza-12/Elara-.
 
-## Características principales
+Sitio de producción: https://elara-mu-mauve.vercel.app
 
-- **Chat en tiempo real + ventana deslizante estable**: conserva hasta 40 turnos de contexto hacia el servidor sin provocar errores HTTP 400 en conversaciones largas y muestra el error exacto si falla la red o la API.
-- **Controles modernos de conversación**: buscador de chats, renombrado inline, vaciado confirmado, exportación a `.md`, edición/reenvío de mensajes, adjuntar archivos locales de código (`.html`, `.js`, `.ts`, `.py`, `.sql`, `.json`…), cuadro de entrada autoajustable y panel interactivo de estado del motor (`Elara Core v0.4`).
-- **Límite en modo invitado y flujo "Continuar con Novvin"**:
-  - Hasta **20 mensajes gratuitos** en acceso libre con barra de progreso en la barra lateral.
-  - Botón **Continuar con Novvin** con paso para crear tu nombre, `@usuario`, enfoque, avatar y vista de sesiones activas para desbloquear conversaciones ilimitadas en el navegador (listo para enlazar OAuth con `novvinapp.com`).
-- **Generación de webs y apps `index.html` ajustadas al tema pedido**:
-  - Sintetiza catálogos/tiendas dinámicas ordenables por precio con carrito y pedido simulado según tema, cantidad, color y moneda (`$`, `S/`, `€`), además de **Blog/Revista**, **Formulario/Reserva**, **Gestor de Tareas (To-Do)**, **Pomodoro**, **Quiz/Trivia**, **Generador de Paletas CSS**, login, panel, portafolio y calculadora.
-- **Tablas Markdown, bloques de código y Visor `index.html` editable en vivo**:
-  - Renderiza tablas Markdown, resaltado de sintaxis con numeración de líneas, copiar, descargar y contraer/expandir.
-  - Visor lateral con selector de versiones (`v1`, `v2`…), edición de HTML en vivo con vista previa inmediata, modos **Escritorio / Tablet / Móvil**, recarga, apertura en pestaña nueva y consola en vivo capturando errores del `<iframe>` en sandbox.
-- **Seguridad prioritaria**: detección inmediata de mensajes de autolesión/crisis devolviendo líneas gratuitas reales de ayuda (Línea 113 Opción 5, SAMU 106, 988, 024, `findahelpline.com`) en lugar de mensajes genéricos de sistema.
+## Qué hace esta versión
 
-## Documentación y guías
+- Chat en streaming, historial en el navegador, exportación Markdown, archivos de código y visor HTML aislado con versiones y tamaños móvil/tablet/escritorio.
+- Acceso real con correo y contraseña de **Novvin**: registro, segundo factor cuando lo exige Novvin, verificación de sesión, persistencia y cierre con revocación en Ubuntu.
+- El navegador recibe una cookie cifrada `HttpOnly`, `Secure` en producción y `SameSite=Lax`. No recibe tokens de Novvin en JSON ni usa perfiles locales como autenticación.
+- Identidad violeta y papel frío, logo orbital, favicon, iconos PNG y manifiesto para instalación. El manifiesto no implica funcionamiento sin conexión.
+- **Elara Core 0.5** es un motor básico especializado de reglas, plantillas y clasificación de intenciones. No es un LLM general entrenado desde cero. Genera prototipos, calcula, consulta guías limitadas y admite algunos seguimientos de contexto. Reconoce consultas que no sabe resolver.
+- Los sitios generados incluyen datos de ejemplo. Las reservas, pagos y accesos de esos prototipos necesitan su propio backend.
 
-- [Arquitectura de ELARA](docs/ARQUITECTURA.md)
-- [Guía del sistema de diseño, resaltado y Visor de `index.html`](docs/GUIA_DISENO_Y_VISOR.md)
-- [Guía de integración "Continuar con Novvin" (OAuth + App Android)](docs/GUIA_CONEXION_NOVVIN.md)
-- [Guía para conectar tu servidor propio / Ubuntu / GPU](docs/GUIA_SERVIDOR_PROPIO.md)
-- [Despliegue del servicio compañero en Ubuntu](server/README_UBUNTU.md)
+## Infraestructura
 
-## Comandos locales
+Frontend y API de Elara se ejecutan en Vercel. Las cuentas se validan en el servidor Ubuntu de Novvin mediante su contrato de sesiones web existente. Ninguno necesita este portátil encendido. Ubuntu sí debe permanecer disponible para iniciar, verificar y cerrar sesiones; el chat anónimo básico se ejecuta íntegramente en Vercel.
 
-```bash
-npm install
+No se instalaron servicios nuevos en Ubuntu ni se modificó el código de la red social. Elara usa la infraestructura de autenticación existente. No se activó ningún proveedor de IA de pago.
+
+## Configuración
+
+Crea `.env.local` para desarrollo o variables protegidas en Vercel:
+
+```dotenv
+ELARA_SESSION_SECRET=<secreto aleatorio de al menos 32 caracteres>
+# NOVVIN_API_URL=https://conectate.tail9b267c.ts.net
+# ELARA_UPSTREAM_URL=https://tu-servidor/v1
+# ELARA_UPSTREAM_API_KEY=
+# ELARA_UPSTREAM_MODEL=
+# AI_GATEWAY_API_KEY=
+# ELARA_GATEWAY_MODEL=
+```
+
+No publiques `.env.local` ni `.vercel/`. Rotar el secreto invalida las cookies de Elara; revoca también las sesiones que lo requieran en Novvin.
+
+```sh
+npm ci
 npm test
 npm run lint
 npm run build
+npm run dev
 ```
+
+Para la comprobación HTTP, `node scripts/smoke.mjs` usa por defecto `http://127.0.0.1:3107`. `ELARA_TEST_URL` permite seleccionar el despliegue. **Esta comprobación crea una cuenta sintética real** con dominio `example.invalid`, almacena su fixture privado en `.vercel/qa-account.json` y comprueba acceso, revocación y streaming. No usarla contra servicios ajenos. El fixture debe retirarse del servidor al terminar la validación.
+
+## Documentación
+
+- [Estado de entrega, pruebas y límites](docs/ENTREGA_2026-11-16.md)
+- [Arquitectura](docs/ARQUITECTURA.md)
+- [Autenticación Novvin](docs/GUIA_CONEXION_NOVVIN.md)
+- [Identidad visual](docs/DISENO.md)
+
+Los archivos de `server/` y las guías de GPU describen una opción anterior de servidor compañero. No son necesarios para esta producción en Vercel.

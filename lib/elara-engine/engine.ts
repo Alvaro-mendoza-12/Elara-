@@ -1,3 +1,4 @@
+import { contextualReply } from './context';
 import { inspectCodeSnippet } from './code-analyzer';
 import {
   buildCalculatorIndexHtml,
@@ -69,7 +70,10 @@ function findPreviousHtml(turns: SimpleTurn[]): { prompt: string; html: string }
     if (turns[i].role === 'assistant') {
       const htmlBlock = extractFencedCodeBlocks(turns[i].text).find((b) => b.lang === 'html');
       if (htmlBlock) {
-        const prevUser = i > 0 && turns[i - 1].role === 'user' ? turns[i - 1].text : '';
+        const previousUsers = turns.slice(0, i).filter((t) => t.role === 'user');
+        const reverseRoot = [...previousUsers].reverse().findIndex((t) => /\b(crea|genera|generame|haz|hazme|construye|disena|organiza)\b/.test(extractPromptParams(t.text).normalized));
+        const root = reverseRoot < 0 ? 0 : previousUsers.length - 1 - reverseRoot;
+        const prevUser = previousUsers.slice(Math.max(0, root)).slice(-8).map((t) => t.text).join(' ');
         return { prompt: prevUser, html: htmlBlock.code };
       }
     }
@@ -81,7 +85,7 @@ function formatStaticReview(text: string, codeBlocks: Array<{ lang: string; code
   const target = codeBlocks[0] ?? { lang: 'auto', code: text };
   const inspection = inspectCodeSnippet(target.lang, target.code);
   if (inspection.findings.length === 0) {
-    return `Revisé el fragmento (${inspection.detectedKind.toUpperCase()}) y **no detecté errores de sintaxis ni delimitadores sin cerrar**. Si tienes un fallo en ejecución, pega el mensaje exacto del error para revisarlo.`;
+    return `Revisé el fragmento (${inspection.detectedKind.toUpperCase()}) y **no encontré problemas con las comprobaciones estáticas disponibles; esto no garantiza que el código compile o funcione**. Si tienes un fallo en ejecución, pega el mensaje exacto del error para revisarlo.`;
   }
   const lines = inspection.findings.map((f) => {
     const tag = f.severity === 'error' ? 'Error' : f.severity === 'warning' ? 'Advertencia' : 'Sugerencia';
@@ -93,19 +97,20 @@ function formatStaticReview(text: string, codeBlocks: Array<{ lang: string; code
 function buildContextualFollowUp(userText: string, prevHtml: { prompt: string; html: string }): string | null {
   const params = extractPromptParams(userText);
   const norm = params.normalized;
-  if (
-    !/(cambia|ponle|ponlo|actualiza|modifica|agrega|anade|color|tema\s+claro|tema\s+oscuro|blanco|oscuro|soles|euros|dolares|titulo|nombre|explica|corrige|error)/.test(
-      norm,
-    )
-  ) {
-    return null;
-  }
-
+  if (!/^(?:por favor )?(?:cambia|cambial[oa]|ponle|ponlo|actualiza|modifica|agrega|anade|quita|color|tema|hazl[oa]|explica|corrige)\b/.test(norm)) return null;
+  if (/\bexplica\b/.test(norm) && !/\b(esto|eso|anterior|codigo|html|pagina|sitio|estructura)\b/.test(norm)) return null;
+  if (/\b(crea|genera|construye|disena|hazme)\b/.test(norm)) return null;
   if (/\bexplica\b/.test(norm)) {
     return 'El `index.html` anterior está organizado en tres bloques autocontenidos:\n\n1. **`<style>` con variables `:root`**: centraliza fondo, bordes y color principal.\n2. **HTML5 semántico**: diseño adaptable a escritorio y móvil sin librerías externas.\n3. **`<script>` seguro**: conecta los eventos con `addEventListener` y actualiza textos con `textContent`.';
   }
 
   const prevParams = extractPromptParams(prevHtml.prompt);
+  prevParams.accentColor = prevHtml.html.match(/--accent:\s*(#[a-fA-F0-9]{3,6})/)?.[1] || prevParams.accentColor;
+  prevParams.preferredTheme = /--bg:\s*#(?:f8fafc|f7f8fc)/i.test(prevHtml.html) ? 'light' : 'dark';
+  const oldItems = prevHtml.html.match(/const ITEMS = (\[[\s\S]*?\]);/);
+  if (oldItems) { try { prevParams.requestedCount = JSON.parse(oldItems[1]).length; } catch {} }
+  const oldCurrency = prevHtml.html.match(/const CURRENCY = "([^"\n]+)"/);
+  if (oldCurrency) prevParams.currencySymbol = oldCurrency[1].trim();
   const combinedPrompt = `${prevHtml.prompt} ${userText}`;
   const merged = extractPromptParams(combinedPrompt);
   const wantsLight = /\b(clar[ao]|blanc[ao]|light)\b/.test(norm)
@@ -184,6 +189,9 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
     };
   }
 
+  const contextResponse = contextualReply(turns);
+  if (contextResponse) return contextResponse;
+
   const params = extractPromptParams(latestUser);
   const norm = params.normalized;
 
@@ -218,6 +226,16 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
     };
   }
 
+  // 4. Follow-up tweaks to previously generated HTML in the conversation
+  const previousHtml = findPreviousHtml(turns);
+  if (previousHtml) {
+    const followUp = buildContextualFollowUp(latestUser, previousHtml);
+    if (followUp) {
+      return { reply: followUp, intent: 'code_index_followup', confidence: 0.92 };
+    }
+  }
+
+
   // 3. Arithmetic, percentages, HTTP codes, small talk, time
   const directConv = tryConversationalResponse(latestUser);
   if (directConv) {
@@ -228,24 +246,16 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
     };
   }
 
-  // 4. Follow-up tweaks to previously generated HTML in the conversation
-  const previousHtml = findPreviousHtml(turns);
-  if (previousHtml) {
-    const followUp = buildContextualFollowUp(latestUser, previousHtml);
-    if (followUp) {
-      return { reply: followUp, intent: 'code_index_followup', confidence: 0.92 };
-    }
-  }
-
   // 5. Explicit web/app generation with real topic/item synthesis (e.g. "20 juguetes de perritos")
   const wantsWeb =
     /\b(web|webs|pagina|paginas|sitio|sitios|index|index\.html|html|tiendas?|catalogos?|landing|login|dashboard|panel|calculadoras?|portafolios?|portfolio|pomodoro|temporizador(?:es)?|quiz(?:zes)?|trivias?|paletas?|gradientes?|blog|revista|noticias|formulario|formularios|reserva|cita|encuesta)\b/.test(
       norm,
     ) ||
-    /\b(crea|genera|haz|hazme|dame|construye|arma|quiero)\b.*\b(todo|to-do|tareas|lista\s+de\s+tareas|kanban|cronometro|cuestionario|generador)\b/.test(
+    /\b(crea|genera|haz|hazme|dame|construye|arma|quiero|organiza|disena)\b.*\b(todo|to-do|tareas|lista\s+de\s+tareas|kanban|cronometro|cuestionario|generador|app)\b/.test(
       norm,
     );
-  if (wantsWeb) {
+  const creationRequest = /\b(crea|creame|crear|genera|generame|generar|haz|hazme|dame|construye|arma|quiero|necesito|disena|disename|organiza)\b/.test(norm);
+  if (wantsWeb && creationRequest) {
     if (/\b(login|iniciar\s+sesion|acceso|registro)\b/.test(norm)) {
       return {
         reply: buildHtmlResponse('Aquí tienes el `index.html` de inicio de sesión listo para copiar y previsualizar:', buildLoginIndexHtml(params), params.wantsCodeOnly),
@@ -296,9 +306,10 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
   // 6. Neural intent classification for greetings, ELARA info, Novvin & code guides
   const net = getIntentNetwork();
   const prediction = net.predict(latestUser);
-  if (prediction.confidence >= 0.45) {
+  if (prediction.confidence >= 0.72 && prediction.confidence - prediction.runnerUpConfidence >= 0.2) {
     switch (prediction.label) {
       case 'greeting_help':
+        if (!/^(hola(?: elara)?|buen[oa]s?(?: dias| tardes| noches)?|que tal(?: como estas)?|necesito ayuda|que puedes hacer|como empiezo)[.!? ]*$/.test(norm)) break;
         return {
           reply:
             '¡Hola! Soy **ELARA**. Dime qué necesitas y vamos directo a ello:\n\n- **Crear páginas y apps (`index.html`)** sobre cualquier tema (catálogos, laptops, comida, juguetes, **gestor de tareas**, **Pomodoro**, **trivia** o **paletas** — puedes pedir tema claro/oscuro, color y moneda `S/` o `$`).\n- **Utilidades rápidas**: convierte unidades (`km a millas`, `°C a °F`), colores (`#38bdf8` a RGB), genera **UUIDs / contraseñas** o calcula porcentajes.\n- **Guías y revisión de código**: React/TS, CSS Flexbox/Grid, Regex, REST/JWT, Python, SQL y análisis estático.',
@@ -306,16 +317,18 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
           confidence: prediction.confidence,
         };
       case 'identity_elara':
+        if (!/elara|quien eres|como te llamas|tu motor|quien te creo|eres una inteligencia/.test(norm)) break;
         return {
           reply:
-            'Soy **ELARA** (`E L A R A`), tu asistente web de programación y prototipado rápido.\n\nEn esta etapa corro con **Elara Core v0.4** (motor propio en el servidor para construir sitios `index.html` interactivos, utilidades de desarrollo y guías técnicas). Puedes conectar un modelo completo mediante `ELARA_UPSTREAM_URL`.',
+            'Soy **ELARA** (`E L A R A`), tu asistente web de programación y prototipado rápido.\n\nEn esta etapa corro con **Elara Core 0.5**, un motor especializado de reglas, plantillas y clasificación de intenciones que funciona en el servidor. No es un modelo de lenguaje general: crea prototipos web, calcula y consulta guías técnicas limitadas. No navego por internet ni tengo acceso a tus archivos salvo los que adjuntes.',
           intent: prediction.label,
           confidence: prediction.confidence,
         };
       case 'novvin_ecosystem':
+        if (!/novvin|login|sesion/.test(norm)) break;
         return {
           reply:
-            'Puedes usar **ELARA** gratis sin login (hasta 20 mensajes en acceso libre). Para seguir sin límite o guardar tu perfil, pulsa **Continuar con Novvin** en la barra izquierda para crear tu nombre y `@usuario` (preparado para conectar con `novvinapp.com`).',
+            'Puedes usar **ELARA** en acceso libre. Pulsa **Continuar con Novvin** para entrar con tu correo y contraseña reales de Novvin, o crear una cuenta. La sesión se verifica en el servidor y puedes cerrarla desde tu perfil. El historial se guarda en este navegador; todavía no se sincroniza entre dispositivos.',
           intent: prediction.label,
           confidence: prediction.confidence,
         };
@@ -340,7 +353,7 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
           guide_js_arrays: 'js_arrays',
         };
         const article = KNOWLEDGE_ARTICLES.find((a) => a.id === keyMap[prediction.label]);
-        if (article) {
+        if (article && scoreArticleOverlap(tokenize(latestUser), article.keywords) >= 2) {
           return { reply: article.answer, intent: prediction.label, confidence: prediction.confidence };
         }
         break;
@@ -361,15 +374,14 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
       bestArticle = article;
     }
   }
-  if (bestHits >= 1) {
+  if (bestHits >= 2) {
     return { reply: bestArticle.answer, intent: `kb_${bestArticle.id}`, confidence: 0.68 };
   }
 
-  // 8. Honest, specific fallback acknowledging what was asked without robotic wall of text
-  const preview = latestUser.length > 72 ? `${latestUser.slice(0, 72)}…` : latestUser;
+  // Acknowledge unsupported requests without switching to unrelated templates.
+  const preview = latestUser.replace(/[`*_<>\[\]]/g, '').slice(0, 150);
   return {
-    reply: `No tengo suficiente contexto entrenado en **Elara Core v0.4** para responder directamente *"${preview}"* sin inventar información.\n\nSi quieres aprovechar lo que ya ejecuta en tiempo real, puedes pedirme:\n- *"Crea una web de 10 laptops gamer en color morado en soles"* o un **Blog**, **Formulario**, **Gestor de tareas**, **Pomodoro**, **Trivia** o **Login** en \`index.html\`.\n- Utilidades: *"Convierte 25 km a millas"*, *"Base64 de Hola ELARA"*, *"Timestamp actual"*, *"Formatea json { ... }"*, *"Genera un UUID"* o *"15% de 800"*.\n- Pegar o adjuntar un archivo de código para analizarlo.`,
-    intent: '__fallback_honest__',
-    confidence: prediction.confidence,
+    reply: `Sobre «${preview}${latestUser.length > 150 ? '…' : ''}»: no tengo una respuesta fiable con el motor básico actual. No quiero inventarte una.\n\n¿Puedes concretar qué necesitas resolver o compartir un ejemplo? Si buscas información general o actual, necesitarás contrastarla con una fuente especializada.`,
+    intent: '__fallback_honest__', confidence: 0,
   };
 }

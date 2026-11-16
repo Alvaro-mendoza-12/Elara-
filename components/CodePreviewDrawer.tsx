@@ -19,7 +19,7 @@ import {
   Wrench,
   X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { downloadTextFile } from './MessageMarkdown';
 
 export interface HtmlArtifactVersion {
@@ -57,6 +57,7 @@ export function CodePreviewDrawer({
   onFixErrorPrompt?: (errorMsg: string) => void;
   onClose: () => void;
 }) {
+  const previewRef = useRef<HTMLIFrameElement>(null);
   const [tab, setTab] = useState<'preview' | 'code'>('preview');
   const [editingCode, setEditingCode] = useState(false);
   const [viewport, setViewport] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
@@ -72,6 +73,7 @@ export function CodePreviewDrawer({
   useEffect(() => {
     const handler = (event: MessageEvent) => {
       const data = event.data as { source?: string; level?: ConsoleEntry['level']; text?: string } | null;
+      if (event.source !== previewRef.current?.contentWindow) return;
       if (!data || data.source !== 'elara-preview' || !data.text) return;
       const entry: ConsoleEntry = { level: data.level || 'log', text: String(data.text).slice(0, 240) };
       setLogs((prev) => [...prev.slice(-24), entry]);
@@ -106,19 +108,19 @@ export function CodePreviewDrawer({
     <aside
       className={
         expanded
-          ? 'fixed inset-0 z-40 flex flex-col bg-[#080B12]'
-          : 'fixed inset-0 z-40 flex flex-col bg-[#080B12] lg:static lg:inset-auto lg:h-full lg:w-[45%] lg:min-w-[380px] xl:w-[47%] lg:max-w-[740px] lg:border-l lg:border-[#1D263A]'
+          ? 'fixed inset-0 z-40 flex flex-col bg-[#EEEAF7]'
+          : 'fixed inset-0 z-40 flex flex-col bg-[#EEEAF7] lg:static lg:inset-auto lg:h-full lg:w-[45%] lg:min-w-[380px] xl:w-[47%] lg:max-w-[740px] lg:border-l lg:border-[#EEEAF7]'
       }
     >
       {/* Top Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1D263A] bg-[#0D121D] px-3.5 py-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#EEEAF7] bg-[#EEEAF7] px-3.5 py-2.5">
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-0.5 rounded-xl border border-[#212C44] bg-[#070A10] p-0.5 text-xs">
+          <div className="flex items-center gap-0.5 rounded-xl border border-[#EEEAF7] bg-[#EEEAF7] p-0.5 text-xs">
             <button
               type="button"
               onClick={() => setTab('preview')}
               className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-medium transition-colors ${
-                tab === 'preview' ? 'bg-[#172236] text-[#38BDF8]' : 'text-[#94A3B8] hover:text-white'
+                tab === 'preview' ? 'bg-[#EEEAF7] text-[#6654D9]' : 'text-[#66697F] hover:text-[#292D47]'
               }`}
             >
               <Eye className="h-3.5 w-3.5" />
@@ -128,7 +130,7 @@ export function CodePreviewDrawer({
               type="button"
               onClick={() => setTab('code')}
               className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-medium transition-colors ${
-                tab === 'code' ? 'bg-[#172236] text-[#38BDF8]' : 'text-[#94A3B8] hover:text-white'
+                tab === 'code' ? 'bg-[#EEEAF7] text-[#6654D9]' : 'text-[#66697F] hover:text-[#292D47]'
               }`}
             >
               <Code2 className="h-3.5 w-3.5" />
@@ -148,8 +150,8 @@ export function CodePreviewDrawer({
                   }}
                   className={`rounded-md px-2 py-1 font-mono text-[11px] transition-colors ${
                     art.html === selectedHtml
-                      ? 'bg-[#38BDF8]/20 text-[#38BDF8]'
-                      : 'bg-[#131A29] text-[#64748B] hover:text-white'
+                      ? 'bg-[#6654D9]/20 text-[#6654D9]'
+                      : 'bg-[#F1EFF9] text-[#74758B] hover:text-[#292D47]'
                   }`}
                 >
                   {art.label}
@@ -161,12 +163,12 @@ export function CodePreviewDrawer({
 
         <div className="flex items-center gap-1">
           {tab === 'preview' && (
-            <div className="mr-1 hidden items-center gap-0.5 rounded-lg border border-[#1E283D] bg-[#070A10] p-0.5 sm:flex">
+            <div className="mr-1 hidden items-center gap-0.5 rounded-lg border border-[#DED8EB] bg-[#EEEAF7] p-0.5 sm:flex">
               <button
                 type="button"
                 onClick={() => setViewport('desktop')}
                 title="Escritorio"
-                className={`rounded-md p-1.5 ${viewport === 'desktop' ? 'bg-[#182236] text-[#38BDF8]' : 'text-[#64748B] hover:text-white'}`}
+                className={`rounded-md p-1.5 ${viewport === 'desktop' ? 'bg-[#EEEAF7] text-[#6654D9]' : 'text-[#74758B] hover:text-[#292D47]'}`}
               >
                 <Monitor className="h-3.5 w-3.5" />
               </button>
@@ -174,7 +176,7 @@ export function CodePreviewDrawer({
                 type="button"
                 onClick={() => setViewport('tablet')}
                 title="Tablet (768px)"
-                className={`rounded-md p-1.5 ${viewport === 'tablet' ? 'bg-[#182236] text-[#38BDF8]' : 'text-[#64748B] hover:text-white'}`}
+                className={`rounded-md p-1.5 ${viewport === 'tablet' ? 'bg-[#EEEAF7] text-[#6654D9]' : 'text-[#74758B] hover:text-[#292D47]'}`}
               >
                 <Tablet className="h-3.5 w-3.5" />
               </button>
@@ -182,7 +184,7 @@ export function CodePreviewDrawer({
                 type="button"
                 onClick={() => setViewport('mobile')}
                 title="Móvil (375px)"
-                className={`rounded-md p-1.5 ${viewport === 'mobile' ? 'bg-[#182236] text-[#38BDF8]' : 'text-[#64748B] hover:text-white'}`}
+                className={`rounded-md p-1.5 ${viewport === 'mobile' ? 'bg-[#EEEAF7] text-[#6654D9]' : 'text-[#74758B] hover:text-[#292D47]'}`}
               >
                 <Smartphone className="h-3.5 w-3.5" />
               </button>
@@ -196,7 +198,7 @@ export function CodePreviewDrawer({
               setReloadNonce((n) => n + 1);
             }}
             title="Recargar vista previa"
-            className="rounded-lg p-1.5 text-[#94A3B8] transition-colors hover:bg-[#172133] hover:text-white"
+            className="rounded-lg p-1.5 text-[#66697F] transition-colors hover:bg-[#EEEAF7] hover:text-[#292D47]"
           >
             <RotateCw className="h-3.5 w-3.5" />
           </button>
@@ -204,14 +206,14 @@ export function CodePreviewDrawer({
             type="button"
             onClick={openInNewTab}
             title="Abrir en nueva pestaña"
-            className="rounded-lg p-1.5 text-[#94A3B8] transition-colors hover:bg-[#172133] hover:text-white"
+            className="rounded-lg p-1.5 text-[#66697F] transition-colors hover:bg-[#EEEAF7] hover:text-[#292D47]"
           >
             <ExternalLink className="h-3.5 w-3.5" />
           </button>
           <button
             type="button"
             onClick={copyCode}
-            className="inline-flex items-center gap-1 rounded-lg border border-[#222E46] bg-[#131A29] px-2.5 py-1 text-xs text-[#CBD5E1] hover:text-white"
+            className="inline-flex items-center gap-1 rounded-lg border border-[#DDD7ED] bg-[#F1EFF9] px-2.5 py-1 text-xs text-[#494D66] hover:text-[#292D47]"
           >
             {copied ? <Check className="h-3.5 w-3.5 text-[#34D399]" /> : <Copy className="h-3.5 w-3.5" />}
             <span className="hidden sm:inline">{copied ? 'Copiado' : 'Copiar'}</span>
@@ -220,7 +222,7 @@ export function CodePreviewDrawer({
             type="button"
             onClick={() => downloadTextFile('index.html', selectedHtml)}
             title="Descargar index.html"
-            className="rounded-lg border border-[#222E46] bg-[#131A29] p-1.5 text-[#CBD5E1] hover:text-white"
+            className="rounded-lg border border-[#DDD7ED] bg-[#F1EFF9] p-1.5 text-[#494D66] hover:text-[#292D47]"
           >
             <Download className="h-3.5 w-3.5" />
           </button>
@@ -228,7 +230,7 @@ export function CodePreviewDrawer({
             type="button"
             onClick={() => setExpanded((e) => !e)}
             title={expanded ? 'Salir de pantalla completa' : 'Pantalla completa'}
-            className="hidden rounded-lg p-1.5 text-[#94A3B8] hover:bg-[#172133] hover:text-white lg:inline-flex"
+            className="hidden rounded-lg p-1.5 text-[#66697F] hover:bg-[#EEEAF7] hover:text-[#292D47] lg:inline-flex"
           >
             {expanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
           </button>
@@ -236,7 +238,7 @@ export function CodePreviewDrawer({
             type="button"
             onClick={onClose}
             aria-label="Cerrar visor"
-            className="rounded-lg p-1.5 text-[#94A3B8] hover:bg-[#172133] hover:text-white"
+            className="rounded-lg p-1.5 text-[#66697F] hover:bg-[#EEEAF7] hover:text-[#292D47]"
           >
             <X className="h-4 w-4" />
           </button>
@@ -244,13 +246,14 @@ export function CodePreviewDrawer({
       </div>
 
       {/* Main Preview or Highlighted Code Stage */}
-      <div className="min-h-0 flex-1 overflow-auto bg-[#06090F]">
+      <div className="min-h-0 flex-1 overflow-auto bg-[#EEEAF7]">
         {tab === 'preview' ? (
           <div className="flex h-full w-full items-stretch justify-center p-2 sm:p-3">
             <div
-              className={`${stageWidthClass} flex h-full flex-col overflow-hidden rounded-xl border border-[#212B40] bg-white shadow-2xl transition-all duration-200`}
+              className={`${stageWidthClass} flex h-full flex-col overflow-hidden rounded-xl border border-[#EEEAF7] bg-white shadow-2xl transition-all duration-200`}
             >
               <iframe
+                ref={previewRef}
                 key={reloadNonce}
                 title="Vista previa en vivo de ELARA"
                 srcDoc={bridgedSrcDoc}
@@ -260,9 +263,9 @@ export function CodePreviewDrawer({
             </div>
           </div>
         ) : (
-          <div className="flex h-full flex-col bg-[#070A10]">
-            <div className="flex items-center justify-between border-b border-[#182135] bg-[#0B0F18] px-3.5 py-2 text-xs">
-              <span className="font-mono text-[#64748B]">
+          <div className="flex h-full flex-col bg-[#EEEAF7]">
+            <div className="flex items-center justify-between border-b border-[#EEEAF7] bg-[#EFEDF7] px-3.5 py-2 text-xs">
+              <span className="font-mono text-[#74758B]">
                 {highlightedLines.length} líneas · {selectedHtml.length.toLocaleString('es-PE')} caracteres
               </span>
               {onUpdateHtml && (
@@ -272,8 +275,8 @@ export function CodePreviewDrawer({
                     onClick={() => setEditingCode((v) => !v)}
                     className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors ${
                       editingCode
-                        ? 'border-[#38BDF8]/60 bg-[#172236] text-[#38BDF8]'
-                        : 'border-[#222E46] bg-[#131A29] text-[#CBD5E1] hover:text-white'
+                        ? 'border-[#6654D9]/60 bg-[#EEEAF7] text-[#6654D9]'
+                        : 'border-[#DDD7ED] bg-[#F1EFF9] text-[#494D66] hover:text-[#292D47]'
                     }`}
                   >
                     <Pencil className="h-3 w-3" />
@@ -286,7 +289,7 @@ export function CodePreviewDrawer({
                         setLogs([]);
                         setTab('preview');
                       }}
-                      className="inline-flex items-center gap-1 rounded-lg bg-[#38BDF8] px-2.5 py-1 text-xs font-semibold text-[#061018] hover:opacity-90"
+                      className="inline-flex items-center gap-1 rounded-lg bg-[#6654D9] px-2.5 py-1 text-xs font-semibold text-[#FFFFFF] hover:opacity-90"
                     >
                       <Eye className="h-3 w-3" />
                       Ver resultado
@@ -302,14 +305,14 @@ export function CodePreviewDrawer({
                 spellCheck={false}
                 value={selectedHtml}
                 onChange={(e) => onUpdateHtml(e.target.value)}
-                className="min-h-0 flex-1 resize-none bg-[#070A10] p-4 font-mono text-[12.5px] leading-6 text-[#E2E8F0] focus:outline-none"
+                className="min-h-0 flex-1 resize-none bg-[#EEEAF7] p-4 font-mono text-[12.5px] leading-6 text-[#3E425C] focus:outline-none"
               />
             ) : (
               <div className="min-h-0 flex-1 overflow-auto p-3 font-mono text-[12.5px] leading-6">
                 <table className="w-full border-collapse">
                   <tbody>
                     {highlightedLines.map((tokens, idx) => (
-                      <tr key={idx} className="hover:bg-[#101624]/60">
+                      <tr key={idx} className="hover:bg-[#EEEAF7]/60">
                         <td className="w-10 select-none pr-3 text-right text-[11px] text-[#475569]">{idx + 1}</td>
                         <td className="whitespace-pre pr-4">
                           {tokens.map((tok, ti) => (
@@ -329,14 +332,14 @@ export function CodePreviewDrawer({
       </div>
 
       {/* Live Sandbox Console Bar */}
-      <div className="border-t border-[#1D263A] bg-[#0B0F18]">
+      <div className="border-t border-[#EEEAF7] bg-[#EFEDF7]">
         <div className="flex items-center justify-between px-3.5 py-1.5 text-xs">
           <button
             type="button"
             onClick={() => setConsoleOpen((o) => !o)}
-            className="inline-flex items-center gap-1.5 text-[#94A3B8] hover:text-white"
+            className="inline-flex items-center gap-1.5 text-[#66697F] hover:text-[#292D47]"
           >
-            <Terminal className="h-3.5 w-3.5 text-[#38BDF8]" />
+            <Terminal className="h-3.5 w-3.5 text-[#6654D9]" />
             <span>Consola ({logs.length})</span>
             {errorCount > 0 && (
               <span className="rounded-full bg-[#EF4444]/20 px-2 py-0.5 text-[11px] font-medium text-[#FCA5A5]">
@@ -361,9 +364,9 @@ export function CodePreviewDrawer({
         </div>
 
         {consoleOpen && (
-          <div className="max-h-28 overflow-y-auto border-t border-[#161F31] bg-[#07090F] px-3.5 py-2 font-mono text-[11.5px]">
+          <div className="max-h-28 overflow-y-auto border-t border-[#EEEAF7] bg-[#EEEAF7] px-3.5 py-2 font-mono text-[11.5px]">
             {logs.length === 0 ? (
-              <p className="text-[#64748B]">Sin mensajes de consola en la vista previa actual.</p>
+              <p className="text-[#74758B]">Sin mensajes de consola en la vista previa actual.</p>
             ) : (
               logs.map((entry, idx) => (
                 <div
@@ -373,7 +376,7 @@ export function CodePreviewDrawer({
                       ? 'text-[#FCA5A5]'
                       : entry.level === 'warn'
                         ? 'text-[#FCD34D]'
-                        : 'text-[#CBD5E1]'
+                        : 'text-[#494D66]'
                   }
                 >
                   [{entry.level}] {entry.text}

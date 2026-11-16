@@ -1,30 +1,59 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: #06080e;
-  --color-surface: #0d121d;
-  --color-elevated: #141c2c;
-  --color-border: #1e2940;
-  --color-foreground: #f1f5f9;
-  --color-muted: #94a3b8;
-  --color-accent: #38bdf8;
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-mono);
+  --color-background: #f7f8fc;
+  --color-surface: #ffffff;
+  --color-elevated: #f0eef8;
+  --color-border: #dfddeb;
+  --color-foreground: #292d47;
+  --color-muted: #66697f;
+  --color-accent: #6654d9;
+  --font-sans: var(--font-elara-sans);
+  --font-mono: var(--font-elara-mono);
 }
-
-html,
-body {
-  background-color: #06080e;
-  color: #f1f5f9;
+html, body { background: #f7f8fc; color: #292d47; }
+* { scrollbar-width: thin; scrollbar-color: #d4cde6 transparent; }
+button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
+button:not(:disabled), a { cursor: pointer; }
+:focus-visible { outline: 3px solid #8c7be0; outline-offset: 3px; }
+.elara-ambient { background-image: radial-gradient(ellipse 65% 55% at 55% 30%, #f0edfa88, transparent); }
+.welcome-heading { font-size: clamp(2rem, 4.2vw, 3.5rem); line-height: 1.14; letter-spacing: -.055em; max-width: 620px; }
+.welcome-mark { margin-bottom: 12px; transform: rotate(-7deg); }
+.welcome-mark svg { width: 64px; height: 64px; filter: drop-shadow(0 12px 18px #6654d91c); }
+.starter-grid { max-width: 640px; }
+.starter-grid > button { min-height: 86px; box-shadow: 0 3px 0 #e8e4f244; border-radius: 14px; padding: 19px; }
+.starter-grid > button:hover { transform: translateY(-2px); }
+.composer { box-shadow: 0 5px 24px #33304b08; border-radius: 20px; padding: 12px; }
+.composer textarea { min-width: 0; }
+footer { padding-bottom: max(14px, env(safe-area-inset-bottom)) !important; }
+.auth-dialog { width: min(440px, calc(100% - 32px)); max-height: calc(100dvh - 32px); margin: auto; padding: 0; border: 1px solid #e0daef; border-radius: 24px; color: #292d47; background: white; box-shadow: 0 25px 100px #30264b30; }
+.auth-dialog::backdrop { background: #27203f70; backdrop-filter: blur(6px); }
+.auth-content { position: relative; padding: 32px; }
+.auth-content h2 { font-size: 26px; font-weight: 600; line-height: 1.18; letter-spacing: -.035em; margin: 22px 0 12px; }
+.auth-close { position: absolute; right: 18px; top: 18px; padding: 8px; border-radius: 50%; }
+.auth-close:hover { background: #f0edf8; }
+.auth-description { color: #66697f; font-size: 13px; line-height: 1.65; }
+.auth-description a { text-decoration: underline; }
+.auth-form { display: grid; gap: 16px; margin-top: 24px; }
+.auth-form label { display: grid; gap: 7px; font-size: 13px; font-weight: 500; }
+.auth-form input { width: 100%; background: #faf9fd; border: 1px solid #ddd8eb; border-radius: 10px; padding: 11px 13px; font-size: 16px; }
+.auth-primary { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; border-radius: 11px; padding: 13px 16px; color: white; background: #6654d9; font-size: 14px; font-weight: 600; }
+.auth-primary:hover { background: #5947c8; }
+.auth-primary:disabled { opacity: .6; cursor: wait; }
+.auth-switch { color: #6654b8; font-size: 13px; padding: 3px; }
+.auth-recovery { display: flex; align-items: center; justify-content: center; gap: 5px; color: #66697f; font-size: 12px; }
+.auth-error { color: #a42648; background: #fff0f4; padding: 12px; border-radius: 10px; font-size: 13px; line-height: 1.5; }
+.auth-profile { margin-top: 24px; display: grid; gap: 18px; }
+.auth-profile > p:first-child { display: flex; gap: 8px; color: #187356; font-size: 13px; }
+@media (max-width: 640px) {
+  .welcome-space { justify-content: flex-start; padding-top: 32px; height: auto; }
+  .welcome-heading { font-size: 34px; max-width: 320px; }
+  .starter-grid > button { min-height: 62px; padding: 14px; }
+  .welcome-mark svg { width: 50px; height: 50px; }
+  .composer { padding: 7px; }
+  .auth-content { padding: 26px; }
 }
-
-.elara-ambient {
-  background-image:
-    radial-gradient(ellipse 65% 40% at 50% -10%, rgba(56, 189, 248, 0.11), transparent 70%),
-    radial-gradient(ellipse 45% 30% at 85% 0%, rgba(129, 140, 248, 0.08), transparent 70%);
-}
-
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #243047 transparent;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
+  .starter-grid > button:hover { transform: none; }
 }

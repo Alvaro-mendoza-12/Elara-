@@ -98,7 +98,7 @@ export function extractTopicSubject(raw: string): string | null {
 }
 
 export function extractBrandName(raw: string): string | null {
-  const quoted = raw.match(/["“]([^"”]{2,40})["”]/);
+  const quoted = [...raw.matchAll(/["“]([^"”]{2,40})["”]/g)].at(-1);
   if (quoted?.[1]) return quoted[1].trim();
 
   const called = raw.match(

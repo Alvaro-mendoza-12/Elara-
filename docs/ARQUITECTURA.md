@@ -1,26 +1,29 @@
-# Arquitectura Técnica de ELARA (`elara-web`)
-
-## 1. Visión general de capas
+# Arquitectura de Elara 0.5
 
 ```text
-Navegador (ElaraChatApp)
-  ├── Estado local (localStorage): conversaciones, perfil Novvin/local, cuota gratuita (20 msgs)
-  ├── Hook useChat (@ai-sdk/react + DefaultChatTransport) ──POST──> /api/chat
-  └── Visor lateral (CodePreviewDrawer) <──postMessage consola── <iframe sandbox="allow-scripts">
+Navegador
+  ├─ Conversaciones locales y exportación Markdown
+  ├─ /api/chat → validación Zod → ventana de 40 mensajes / 100.000 caracteres → streaming
+  ├─ /api/auth/login, register, session, logout
+  └─ Visor HTML sandbox allow-scripts (sin acceso al origen de Elara)
 
-Servidor Next.js (Node.js Fluid Compute)
-  ├── /api/health  ──> expone modo activo (Elara Core v0.4 | Servidor Propio | AI Gateway)
-  └── /api/chat    ──> enruta según variables de entorno:
-                        1) ELARA_UPSTREAM_URL (servidor propio OpenAI-compatible / Ollama / vLLM)
-                        2) AI_GATEWAY_API_KEY + ELARA_GATEWAY_MODEL (opcional)
-                        3) Elara Core v0.4 integrado (por defecto, cero claves externas)
+Vercel / Next.js
+  ├─ Core 0.5: reglas + clasificación de intenciones + utilidades + plantillas
+  ├─ Proveedor OpenAI-compatible o AI Gateway opcional; no configurados en esta entrega
+  └─ BFF de Novvin → HTTPS → Ubuntu Novvin
+        ├─ login / register con contrato web existente
+        ├─ refresh comprueba revocación y suspensión en servidor
+        └─ logout revoca exactamente la sesión del navegador
 ```
 
-## 2. Flujo del motor `Elara Core v0.4` ([lib/elara-engine/](../lib/elara-engine/))
+El secreto de Elara cifra la credencial de renovación de Novvin mediante AES-256-GCM. La cookie del navegador es HttpOnly, SameSite=Lax y Secure en producción; nunca se confía en un nombre local como identidad autenticada. Las mutaciones comprueban Origin contra Host y rechazan contextos cross-site. El proxy servidor habla el contrato web de primera parte de Novvin, con su origen canónico y etiqueta `ELARA Web`; no es OAuth ni inicia automáticamente una sesión ya abierta en otro dominio.
 
-1. **Salvaguarda de crisis ([safety.ts](../lib/elara-engine/safety.ts)):** se evalúa antes que cualquier router. Ante señales de autolesión o crisis responde de inmediato con líneas de atención reales (Línea 113 Opción 5 en Perú, 106 SAMU, 988, 024, `findahelpline.com`).
-2. **Inspector estático de código ([code-analyzer.ts](../lib/elara-engine/code-analyzer.ts)):** valida llaves/comillas balanceadas, sintaxis JSON (incluyendo archivos adjuntos), etiquetas HTML sin cerrar y riesgos frecuentes (`innerHTML`, `UPDATE`/`DELETE` sin `WHERE`, `fetch` sin comprobar `.ok`).
-3. **Resolución directa ([conversational.ts](../lib/elara-engine/conversational.ts)):** evalúa aritmética segura, porcentajes, conversión de unidades (`km/mi`, `kg/lb`, `°C/°F`, `GB/MB`), conversión `HEX↔RGB`, **formateo JSON**, **Base64**, **Unix timestamps**, UUIDs/contraseñas y códigos HTTP (`400`–`503`).
-4. **Sintetizador web dinámico ([web-builder.ts](../lib/elara-engine/web-builder.ts) y [code-synthesizer.ts](../lib/elara-engine/code-synthesizer.ts)):** extrae tema, cantidad solicitada (`N`), marca, color de acento, moneda (`$`, `S/`, `€`) y tema claro/oscuro para generar un `index.html` interactivo (catálogos ordenables con pedido simulado, blog/revista, formulario de reserva, To-Do, Pomodoro, Quiz, generador de paletas, login, panel, calculadora o landing).
-5. **Router neuronal MLP y base semántica ([neural-net.ts](../lib/elara-engine/neural-net.ts) y [dataset.ts](../lib/elara-engine/dataset.ts)):** red neuronal ligera entrenada de forma determinística + emparejamiento de palabras clave para snippets React, CSS Grid/Flexbox, Regex, REST/JWT, JS Arrays, Python, PostgreSQL y Git/Docker.
-6. **Ventana deslizante en API ([app/api/chat/route.ts](../app/api/chat/route.ts)):** toma `messages.slice(-40)` para que conversaciones largas sigan funcionando sin fallar por límite de turnos.
+La cookie no conserva contraseña ni perfil. Cada lectura de sesión consulta a Novvin, que valida su vigencia. El perfil público solo contiene los campos de presentación. Los fallos de disponibilidad conservan el estado para permitir un reintento. El cierre se confirma únicamente tras recibir respuesta de Novvin.
+
+Los mensajes aceptados son user/assistant con partes de texto. Se permite y elimina `step-start`, metadato generado por el AI SDK. Las instrucciones system enviadas por el cliente se rechazan. Se limita el cuerpo a 1 MB, cada parte a 50.000 caracteres y el contexto completo a 100.000 caracteres sin cortar bloques de código.
+
+El motor básico conserva marca, color, cantidad y moneda de los catálogos al editarlos. Rechaza coincidencias débiles del clasificador y reconoce cambios de tema. La memoria de nombres procede de mensajes del usuario en la conversación actual. No sincroniza conversaciones entre dispositivos y no consulta internet.
+
+El visor valida que postMessage proceda de su iframe. Los prototipos usan textContent para el catálogo; los datos JSON se escapan antes de insertarlos en script. Abrir HTML en una pestaña independiente ejecuta ese código: debe revisarse antes de publicarlo o proporcionar datos reales.
+
+No hay cuota comercial de 20 mensajes ni promesas de consumo ilimitado de proveedores. El acceso libre usa el motor básico. Antes de habilitar un proveedor de pago se requiere una política de consumo con almacenamiento compartido y límites de presupuesto.
