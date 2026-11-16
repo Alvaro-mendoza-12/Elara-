@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import sharp from 'sharp';
+const source = fs.readFileSync('components/ElaraLogo.tsx','utf8');
+const paths = [...source.matchAll(/<path[^>]+d="([^"]+)"[^>]*>/g)].map(match => `<path d="${match[1]}"${match[0].match(/transform="[^"]+"/)?.[0] ? ' '+match[0].match(/transform="[^"]+"/)[0] : ''}/>`).join('');
+if(!paths) throw new Error('Logo paths missing');
+const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 64 64"><rect width="64" height="64" rx="19" fill="#6654D9"/><g fill="white">${paths}</g></svg>`;
+fs.writeFileSync('public/elara-logo.svg',svg); fs.writeFileSync('app/icon.svg',svg);
+for(const size of [192,512]) await sharp(Buffer.from(svg)).resize(size,size).png().toFile(`public/icon-${size}.png`);
+await sharp(Buffer.from(svg)).resize(180,180).png().toFile('public/apple-icon.png');
+const png = await sharp(Buffer.from(svg)).resize(32,32).png().toBuffer(), header = Buffer.alloc(22);
+header.writeUInt16LE(1,2);header.writeUInt16LE(1,4);header[6]=32;header[7]=32;header.writeUInt16LE(1,10);header.writeUInt16LE(32,12);header.writeUInt32LE(png.length,14);header.writeUInt32LE(22,18);
+fs.writeFileSync('app/favicon.ico',Buffer.concat([header,png]));
+console.log('SVG, favicon y cuatro iconos generados desde el mismo símbolo.');

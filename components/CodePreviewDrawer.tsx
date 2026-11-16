@@ -13,6 +13,7 @@ import {
   Monitor,
   Pencil,
   RotateCw,
+  RotateCcw,
   Smartphone,
   Tablet,
   Terminal,
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { downloadTextFile } from './MessageMarkdown';
+import { DevicePreview } from './DevicePreview';
 
 export interface HtmlArtifactVersion {
   id: string;
@@ -45,17 +47,23 @@ function injectConsoleBridge(html: string): string {
 export function CodePreviewDrawer({
   artifacts,
   selectedHtml,
+  selectedId,
   onSelectHtml,
   onUpdateHtml,
   onFixErrorPrompt,
   onClose,
+  width = 520,
+  onResetLayout,
 }: {
   artifacts: HtmlArtifactVersion[];
   selectedHtml: string;
-  onSelectHtml: (html: string) => void;
+  selectedId: string;
+  onSelectHtml: (html: string, id?: string) => void;
   onUpdateHtml?: (html: string) => void;
   onFixErrorPrompt?: (errorMsg: string) => void;
   onClose: () => void;
+  width?: number;
+  onResetLayout?: () => void;
 }) {
   const previewRef = useRef<HTMLIFrameElement>(null);
   const [tab, setTab] = useState<'preview' | 'code'>('preview');
@@ -101,26 +109,25 @@ export function CodePreviewDrawer({
   };
 
   const errorCount = logs.filter((l) => l.level === 'error').length;
-  const stageWidthClass =
-    viewport === 'mobile' ? 'w-[375px] max-w-full' : viewport === 'tablet' ? 'w-[768px] max-w-full' : 'w-full';
 
   return (
     <aside
+      style={expanded ? undefined : { width: undefined, '--preview-width': `${width}px` } as React.CSSProperties}
       className={
         expanded
-          ? 'fixed inset-0 z-40 flex flex-col bg-[#EEEAF7]'
-          : 'fixed inset-0 z-40 flex flex-col bg-[#EEEAF7] lg:static lg:inset-auto lg:h-full lg:w-[45%] lg:min-w-[380px] xl:w-[47%] lg:max-w-[740px] lg:border-l lg:border-[#EEEAF7]'
+          ? 'preview-drawer preview-expanded fixed inset-0 z-40 flex flex-col bg-[var(--surface-2)]'
+          : 'preview-drawer fixed inset-0 z-40 flex flex-col bg-[var(--surface-2)] lg:static lg:inset-auto lg:h-full lg:w-[45%] lg:min-w-[380px] xl:w-[47%] lg:max-w-[740px] lg:border-l lg:border-[var(--surface-2)]'
       }
     >
       {/* Top Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#EEEAF7] bg-[#EEEAF7] px-3.5 py-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--surface-2)] bg-[var(--surface-2)] px-3.5 py-2.5">
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-0.5 rounded-xl border border-[#EEEAF7] bg-[#EEEAF7] p-0.5 text-xs">
+          <div className="flex items-center gap-0.5 rounded-xl border border-[var(--surface-2)] bg-[var(--surface-2)] p-0.5 text-xs">
             <button
               type="button"
               onClick={() => setTab('preview')}
               className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-medium transition-colors ${
-                tab === 'preview' ? 'bg-[#EEEAF7] text-[#6654D9]' : 'text-[#66697F] hover:text-[#292D47]'
+                tab === 'preview' ? 'bg-[var(--surface-2)] text-[var(--accent)]' : 'text-[var(--muted)] hover:text-[var(--ink)]'
               }`}
             >
               <Eye className="h-3.5 w-3.5" />
@@ -130,7 +137,7 @@ export function CodePreviewDrawer({
               type="button"
               onClick={() => setTab('code')}
               className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-medium transition-colors ${
-                tab === 'code' ? 'bg-[#EEEAF7] text-[#6654D9]' : 'text-[#66697F] hover:text-[#292D47]'
+                tab === 'code' ? 'bg-[var(--surface-2)] text-[var(--accent)]' : 'text-[var(--muted)] hover:text-[var(--ink)]'
               }`}
             >
               <Code2 className="h-3.5 w-3.5" />
@@ -138,59 +145,40 @@ export function CodePreviewDrawer({
             </button>
           </div>
 
-          {artifacts.length > 1 && (
-            <div className="hidden items-center gap-1 sm:flex">
-              {artifacts.map((art) => (
-                <button
-                  key={art.id}
-                  type="button"
-                  onClick={() => {
-                    setLogs([]);
-                    onSelectHtml(art.html);
-                  }}
-                  className={`rounded-md px-2 py-1 font-mono text-[11px] transition-colors ${
-                    art.html === selectedHtml
-                      ? 'bg-[#6654D9]/20 text-[#6654D9]'
-                      : 'bg-[#F1EFF9] text-[#74758B] hover:text-[#292D47]'
-                  }`}
-                >
-                  {art.label}
-                </button>
-              ))}
-            </div>
-          )}
+          <label className="preview-version"><span className="sr-only">Versión del prototipo</span><select aria-label="Versión del prototipo" value={selectedId} onChange={(event) => { const artifact = artifacts.find((item) => item.id === event.target.value); if (artifact) { setLogs([]); onSelectHtml(artifact.html, artifact.id); } }}>{artifacts.map((artifact) => <option key={artifact.id} value={artifact.id}>{artifact.label}</option>)}</select></label>
         </div>
 
         <div className="flex items-center gap-1">
           {tab === 'preview' && (
-            <div className="mr-1 hidden items-center gap-0.5 rounded-lg border border-[#DED8EB] bg-[#EEEAF7] p-0.5 sm:flex">
+            <div className="mr-1 flex items-center gap-0.5 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-0.5">
               <button
                 type="button"
                 onClick={() => setViewport('desktop')}
-                title="Escritorio"
-                className={`rounded-md p-1.5 ${viewport === 'desktop' ? 'bg-[#EEEAF7] text-[#6654D9]' : 'text-[#74758B] hover:text-[#292D47]'}`}
+                title="Laptop (1280 × 800)" aria-label="Laptop" aria-pressed={viewport === 'desktop'}
+                className={`rounded-md p-1.5 ${viewport === 'desktop' ? 'bg-[var(--surface-2)] text-[var(--accent)]' : 'text-[var(--muted)] hover:text-[var(--ink)]'}`}
               >
                 <Monitor className="h-3.5 w-3.5" />
               </button>
               <button
                 type="button"
                 onClick={() => setViewport('tablet')}
-                title="Tablet (768px)"
-                className={`rounded-md p-1.5 ${viewport === 'tablet' ? 'bg-[#EEEAF7] text-[#6654D9]' : 'text-[#74758B] hover:text-[#292D47]'}`}
+                title="Tablet (768 × 1024)" aria-label="Tablet" aria-pressed={viewport === 'tablet'}
+                className={`rounded-md p-1.5 ${viewport === 'tablet' ? 'bg-[var(--surface-2)] text-[var(--accent)]' : 'text-[var(--muted)] hover:text-[var(--ink)]'}`}
               >
                 <Tablet className="h-3.5 w-3.5" />
               </button>
               <button
                 type="button"
                 onClick={() => setViewport('mobile')}
-                title="Móvil (375px)"
-                className={`rounded-md p-1.5 ${viewport === 'mobile' ? 'bg-[#EEEAF7] text-[#6654D9]' : 'text-[#74758B] hover:text-[#292D47]'}`}
+                title="Celular (390 × 844)" aria-label="Celular" aria-pressed={viewport === 'mobile'}
+                className={`rounded-md p-1.5 ${viewport === 'mobile' ? 'bg-[var(--surface-2)] text-[var(--accent)]' : 'text-[var(--muted)] hover:text-[var(--ink)]'}`}
               >
                 <Smartphone className="h-3.5 w-3.5" />
               </button>
             </div>
           )}
 
+          <button type="button" title="Restablecer vista" aria-label="Restablecer vista" className="rounded-lg p-1.5 text-[var(--secondary)] hover:bg-[var(--hover)]" onClick={() => { setViewport('desktop'); setExpanded(false); setTab('preview'); setReloadNonce((n) => n + 1); setLogs([]); onResetLayout?.(); }}><RotateCcw size={15} /></button>
           <button
             type="button"
             onClick={() => {
@@ -198,7 +186,7 @@ export function CodePreviewDrawer({
               setReloadNonce((n) => n + 1);
             }}
             title="Recargar vista previa"
-            className="rounded-lg p-1.5 text-[#66697F] transition-colors hover:bg-[#EEEAF7] hover:text-[#292D47]"
+            className="rounded-lg p-1.5 text-[var(--muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
           >
             <RotateCw className="h-3.5 w-3.5" />
           </button>
@@ -206,23 +194,24 @@ export function CodePreviewDrawer({
             type="button"
             onClick={openInNewTab}
             title="Abrir en nueva pestaña"
-            className="rounded-lg p-1.5 text-[#66697F] transition-colors hover:bg-[#EEEAF7] hover:text-[#292D47]"
+            className="rounded-lg p-1.5 text-[var(--muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
           >
             <ExternalLink className="h-3.5 w-3.5" />
           </button>
           <button
             type="button"
             onClick={copyCode}
-            className="inline-flex items-center gap-1 rounded-lg border border-[#DDD7ED] bg-[#F1EFF9] px-2.5 py-1 text-xs text-[#494D66] hover:text-[#292D47]"
+            aria-label={copied ? 'Código copiado' : 'Copiar código'}
+            className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-xs text-[var(--secondary)] hover:text-[var(--ink)]"
           >
-            {copied ? <Check className="h-3.5 w-3.5 text-[#34D399]" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? <Check className="h-3.5 w-3.5 text-[var(--success)]" /> : <Copy className="h-3.5 w-3.5" />}
             <span className="hidden sm:inline">{copied ? 'Copiado' : 'Copiar'}</span>
           </button>
           <button
             type="button"
             onClick={() => downloadTextFile('index.html', selectedHtml)}
             title="Descargar index.html"
-            className="rounded-lg border border-[#DDD7ED] bg-[#F1EFF9] p-1.5 text-[#494D66] hover:text-[#292D47]"
+            className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-1.5 text-[var(--secondary)] hover:text-[var(--ink)]"
           >
             <Download className="h-3.5 w-3.5" />
           </button>
@@ -230,7 +219,7 @@ export function CodePreviewDrawer({
             type="button"
             onClick={() => setExpanded((e) => !e)}
             title={expanded ? 'Salir de pantalla completa' : 'Pantalla completa'}
-            className="hidden rounded-lg p-1.5 text-[#66697F] hover:bg-[#EEEAF7] hover:text-[#292D47] lg:inline-flex"
+            className="rounded-lg p-1.5 text-[var(--muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
           >
             {expanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
           </button>
@@ -238,7 +227,7 @@ export function CodePreviewDrawer({
             type="button"
             onClick={onClose}
             aria-label="Cerrar visor"
-            className="rounded-lg p-1.5 text-[#66697F] hover:bg-[#EEEAF7] hover:text-[#292D47]"
+            className="rounded-lg p-1.5 text-[var(--muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
           >
             <X className="h-4 w-4" />
           </button>
@@ -246,26 +235,13 @@ export function CodePreviewDrawer({
       </div>
 
       {/* Main Preview or Highlighted Code Stage */}
-      <div className="min-h-0 flex-1 overflow-auto bg-[#EEEAF7]">
+      <div className="min-h-0 flex-1 overflow-auto bg-[var(--surface-2)]">
         {tab === 'preview' ? (
-          <div className="flex h-full w-full items-stretch justify-center p-2 sm:p-3">
-            <div
-              className={`${stageWidthClass} flex h-full flex-col overflow-hidden rounded-xl border border-[#EEEAF7] bg-white shadow-2xl transition-all duration-200`}
-            >
-              <iframe
-                ref={previewRef}
-                key={reloadNonce}
-                title="Vista previa en vivo de ELARA"
-                srcDoc={bridgedSrcDoc}
-                sandbox="allow-scripts"
-                className="h-full w-full flex-1 bg-white"
-              />
-            </div>
-          </div>
+          <DevicePreview key={reloadNonce} viewport={viewport} srcDoc={bridgedSrcDoc} selectedId={selectedId} reloadNonce={reloadNonce} previewRef={previewRef} />
         ) : (
-          <div className="flex h-full flex-col bg-[#EEEAF7]">
-            <div className="flex items-center justify-between border-b border-[#EEEAF7] bg-[#EFEDF7] px-3.5 py-2 text-xs">
-              <span className="font-mono text-[#74758B]">
+          <div className="flex h-full flex-col bg-[var(--surface-2)]">
+            <div className="flex items-center justify-between border-b border-[var(--surface-2)] bg-[var(--surface-2)] px-3.5 py-2 text-xs">
+              <span className="font-mono text-[var(--muted)]">
                 {highlightedLines.length} líneas · {selectedHtml.length.toLocaleString('es-PE')} caracteres
               </span>
               {onUpdateHtml && (
@@ -275,8 +251,8 @@ export function CodePreviewDrawer({
                     onClick={() => setEditingCode((v) => !v)}
                     className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors ${
                       editingCode
-                        ? 'border-[#6654D9]/60 bg-[#EEEAF7] text-[#6654D9]'
-                        : 'border-[#DDD7ED] bg-[#F1EFF9] text-[#494D66] hover:text-[#292D47]'
+                        ? 'border-[var(--accent)]/60 bg-[var(--surface-2)] text-[var(--accent)]'
+                        : 'border-[var(--border)] bg-[var(--surface-2)] text-[var(--secondary)] hover:text-[var(--ink)]'
                     }`}
                   >
                     <Pencil className="h-3 w-3" />
@@ -289,7 +265,7 @@ export function CodePreviewDrawer({
                         setLogs([]);
                         setTab('preview');
                       }}
-                      className="inline-flex items-center gap-1 rounded-lg bg-[#6654D9] px-2.5 py-1 text-xs font-semibold text-[#FFFFFF] hover:opacity-90"
+                      className="inline-flex items-center gap-1 rounded-lg bg-[var(--accent)] px-2.5 py-1 text-xs font-semibold text-[var(--on-accent)] hover:opacity-90"
                     >
                       <Eye className="h-3 w-3" />
                       Ver resultado
@@ -305,15 +281,15 @@ export function CodePreviewDrawer({
                 spellCheck={false}
                 value={selectedHtml}
                 onChange={(e) => onUpdateHtml(e.target.value)}
-                className="min-h-0 flex-1 resize-none bg-[#EEEAF7] p-4 font-mono text-[12.5px] leading-6 text-[#3E425C] focus:outline-none"
+                className="min-h-0 flex-1 resize-none bg-[var(--surface-2)] p-4 font-mono text-[12.5px] leading-6 text-[var(--ink)] focus:outline-none"
               />
             ) : (
               <div className="min-h-0 flex-1 overflow-auto p-3 font-mono text-[12.5px] leading-6">
                 <table className="w-full border-collapse">
                   <tbody>
                     {highlightedLines.map((tokens, idx) => (
-                      <tr key={idx} className="hover:bg-[#EEEAF7]/60">
-                        <td className="w-10 select-none pr-3 text-right text-[11px] text-[#475569]">{idx + 1}</td>
+                      <tr key={idx} className="hover:bg-[var(--surface-2)]/60">
+                        <td className="w-10 select-none pr-3 text-right text-[11px] text-[var(--muted)]">{idx + 1}</td>
                         <td className="whitespace-pre pr-4">
                           {tokens.map((tok, ti) => (
                             <span key={ti} className={tokenClassName(tok.kind)}>
@@ -332,17 +308,17 @@ export function CodePreviewDrawer({
       </div>
 
       {/* Live Sandbox Console Bar */}
-      <div className="border-t border-[#EEEAF7] bg-[#EFEDF7]">
+      <div className="border-t border-[var(--surface-2)] bg-[var(--surface-2)]">
         <div className="flex items-center justify-between px-3.5 py-1.5 text-xs">
           <button
             type="button"
             onClick={() => setConsoleOpen((o) => !o)}
-            className="inline-flex items-center gap-1.5 text-[#66697F] hover:text-[#292D47]"
+            className="inline-flex items-center gap-1.5 text-[var(--muted)] hover:text-[var(--ink)]"
           >
-            <Terminal className="h-3.5 w-3.5 text-[#6654D9]" />
+            <Terminal className="h-3.5 w-3.5 text-[var(--accent)]" />
             <span>Consola ({logs.length})</span>
             {errorCount > 0 && (
-              <span className="rounded-full bg-[#EF4444]/20 px-2 py-0.5 text-[11px] font-medium text-[#FCA5A5]">
+              <span className="rounded-full bg-[var(--danger)]/20 px-2 py-0.5 text-[11px] font-medium text-[var(--danger)]">
                 {errorCount} error
               </span>
             )}
@@ -355,7 +331,7 @@ export function CodePreviewDrawer({
                 const lastErr = logs.filter((l) => l.level === 'error').pop()?.text || '';
                 onFixErrorPrompt(`El visor reportó este error en index.html: ${lastErr}. Revísalo.`);
               }}
-              className="inline-flex items-center gap-1 rounded-md bg-[#EF4444]/15 px-2.5 py-0.5 text-[11px] font-medium text-[#FCA5A5] hover:bg-[#EF4444]/25"
+              className="inline-flex items-center gap-1 rounded-md bg-[var(--danger)]/15 px-2.5 py-0.5 text-[11px] font-medium text-[var(--danger)] hover:bg-[var(--danger)]/25"
             >
               <Wrench className="h-3 w-3" />
               Pedir a ELARA revisar
@@ -364,19 +340,19 @@ export function CodePreviewDrawer({
         </div>
 
         {consoleOpen && (
-          <div className="max-h-28 overflow-y-auto border-t border-[#EEEAF7] bg-[#EEEAF7] px-3.5 py-2 font-mono text-[11.5px]">
+          <div className="max-h-28 overflow-y-auto border-t border-[var(--surface-2)] bg-[var(--surface-2)] px-3.5 py-2 font-mono text-[11.5px]">
             {logs.length === 0 ? (
-              <p className="text-[#74758B]">Sin mensajes de consola en la vista previa actual.</p>
+              <p className="text-[var(--muted)]">Sin mensajes de consola en la vista previa actual.</p>
             ) : (
               logs.map((entry, idx) => (
                 <div
                   key={idx}
                   className={
                     entry.level === 'error'
-                      ? 'text-[#FCA5A5]'
+                      ? 'text-[var(--danger)]'
                       : entry.level === 'warn'
-                        ? 'text-[#FCD34D]'
-                        : 'text-[#494D66]'
+                        ? 'text-[var(--warning)]'
+                        : 'text-[var(--secondary)]'
                   }
                 >
                   [{entry.level}] {entry.text}

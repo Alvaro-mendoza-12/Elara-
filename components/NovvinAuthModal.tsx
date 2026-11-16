@@ -1,21 +1,22 @@
 'use client';
 
-import { ArrowUpRight, Check, LoaderCircle, LogOut, ShieldCheck, X } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, LoaderCircle, LogIn, LogOut, ShieldCheck, UserRound, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { ElaraLogo } from './ElaraLogo';
+import { NovvinAvatar, NovvinLogo } from './NovvinIdentity';
+import { NOVVIN_REGISTER_URL } from '@/lib/novvin-profile';
 
 export interface ElaraUserProfile {
-  displayName: string; handle: string; focus: string; avatarColor: string;
-  linkedMethod: 'novvin-session'; createdAt: number;
+  id: string; email: string; displayName: string; handle: string; focus: string; avatarColor: string;
+  avatarUrl: string | null; avatarKind: 'image' | 'video'; novvinProfileUrl: string; linkedMethod: 'novvin-session'; createdAt: number;
 }
 
 export function NovvinAuthModal({ open, existingProfile, onSaveProfile, onSignOut, onClose }: {
-  open: boolean; limitReached: boolean; guestUsed: number; guestLimit: number;
-  existingProfile: ElaraUserProfile | null;
+  open: boolean; existingProfile: ElaraUserProfile | null;
   onSaveProfile: (profile: ElaraUserProfile) => void;
-  onSignOut: () => void; onClose: () => void;
+  onSignOut: () => Promise<void>; onClose: () => void;
 }) {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [stage, setStage] = useState<'choice' | 'login'>('choice');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [twoFactor, setTwoFactor] = useState(false);
@@ -30,7 +31,7 @@ export function NovvinAuthModal({ open, existingProfile, onSaveProfile, onSignOu
     event.preventDefault(); setError(''); setBusy(true);
     const values = Object.fromEntries(new FormData(event.currentTarget));
     try {
-      const response = await fetch(`/api/auth/${mode}`, {
+      const response = await fetch('/api/auth/login', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values),
       });
       const data = await response.json();
@@ -38,51 +39,44 @@ export function NovvinAuthModal({ open, existingProfile, onSaveProfile, onSignOu
         if (data.requiresTwoFactor) setTwoFactor(true);
         throw new Error(data.error || 'No se pudo iniciar sesión.');
       }
-      onSaveProfile(data.profile); onClose();
-    } catch (caught) { setError(caught instanceof Error ? caught.message : 'Comprueba tu conexión.'); }
-    finally { setBusy(false); }
+      onSaveProfile(data.profile);
+      window.location.reload();
+    } catch (caught) { setError(caught instanceof Error ? caught.message : 'Comprueba tu conexión.'); setBusy(false); }
   }
   async function signOut() {
     setBusy(true); setError('');
-    try {
-      const response = await fetch('/api/auth/logout', { method: 'POST' });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
-      onSignOut(); onClose();
-    } catch (caught) { setError(caught instanceof Error ? caught.message : 'No se pudo cerrar sesión.'); }
-    finally { setBusy(false); }
+    try { await onSignOut(); }
+    catch (caught) { setError(caught instanceof Error ? caught.message : 'No se pudo cerrar sesión.'); setBusy(false); }
   }
-  return (
-    <dialog ref={dialog} onCancel={(e) => { if (busy) e.preventDefault(); else onClose(); }} onClick={(e) => { if (e.target === dialog.current && !busy) onClose(); }} className="auth-dialog">
-      <div className="auth-content">
-        <button type="button" onClick={onClose} aria-label="Cerrar ventana" className="auth-close" disabled={busy}><X size={20} /></button>
-        <ElaraLogo size={48} />
-        <h2>{existingProfile ? `Hola, ${existingProfile.displayName}` : mode === 'login' ? 'Tu cuenta de Novvin, en Elara.' : 'Crea tu cuenta de Novvin'}</h2>
-        <p className="auth-description">{existingProfile ? `Conectado como @${existingProfile.handle}. Esta sesión se verifica con Novvin.` : 'Usa el mismo correo y contraseña de tu red social para continuar.'}</p>
-        {existingProfile ? (
-          <div className="auth-profile">
-            <p><ShieldCheck size={18} /> Sesión de Novvin verificada</p>
-            <p className="auth-description">Las conversaciones se guardan en este navegador. Exporta las que quieras conservar antes de cambiar de equipo.</p>
-            <button type="button" className="auth-primary" onClick={signOut} disabled={busy}>{busy ? <LoaderCircle size={18} className="animate-spin" /> : <LogOut size={18} />} Cerrar sesión</button>
-          </div>
-        ) : (
-          <form onSubmit={submit} className="auth-form">
-            {mode === 'register' && <>
-              <label htmlFor="auth-name">Tu nombre<input id="auth-name" name="displayName" required minLength={2} maxLength={20} autoComplete="name" /></label>
-              <label htmlFor="auth-username">Nombre de usuario<input id="auth-username" name="username" required pattern="[a-zA-Z0-9_]{3,20}" minLength={3} maxLength={20} autoComplete="username" placeholder="ejemplo_usuario" /></label>
-            </>}
-            <label htmlFor="auth-email">Correo de Novvin<input id="auth-email" name="email" type="email" autoComplete="email" required maxLength={254} placeholder="tu@correo.com" autoFocus /></label>
-            <label htmlFor="auth-password">Contraseña<input id="auth-password" name="password" type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required minLength={mode === 'register' ? 8 : 1} maxLength={256} /></label>
-            {twoFactor && <label htmlFor="auth-factor">Código de verificación o respaldo<input id="auth-factor" name="secondFactor" autoComplete="one-time-code" required maxLength={100} /></label>}
-            {mode === 'register' && <p className="auth-description">Crearás una cuenta real compartida con Novvin. Consulta su <a href="https://novvinapp.com/privacidad" target="_blank" rel="noreferrer">privacidad</a>.</p>}
-            {error && <p role="alert" className="auth-error">{error}</p>}
-            <button className="auth-primary" type="submit" disabled={busy}>{busy ? <LoaderCircle size={18} className="animate-spin" /> : <Check size={18} />}{busy ? 'Verificando…' : mode === 'login' ? 'Iniciar sesión con Novvin' : 'Crear cuenta y continuar'}</button>
-            <button className="auth-switch" type="button" disabled={busy} onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); setTwoFactor(false); }}>{mode === 'login' ? '¿Aún no tienes cuenta? Crear una cuenta' : 'Ya tengo cuenta. Iniciar sesión'}</button>
-            <a className="auth-recovery" href="https://novvinapp.com/login" target="_blank" rel="noreferrer">Recuperar mi acceso en Novvin <ArrowUpRight size={14} /></a>
-          </form>
-        )}
-        {existingProfile && error && <p className="auth-error" role="alert">{error}</p>}
-      </div>
-    </dialog>
-  );
+  return <dialog ref={dialog} onCancel={(e) => { if (busy) e.preventDefault(); else onClose(); }} onClick={(e) => { if (e.target === dialog.current && !busy) onClose(); }} className="auth-dialog">
+    <div className="auth-content">
+      <button type="button" onClick={onClose} aria-label="Cerrar ventana" className="auth-close" disabled={busy}><X size={20} /></button>
+      {existingProfile ? <div className="auth-profile-heading"><NovvinAvatar profile={existingProfile} size={56} /><NovvinLogo size={32} /></div> : <ElaraLogo size={48} />}
+      <h2>{existingProfile ? existingProfile.displayName : stage === 'choice' ? 'Tu espacio, a tu manera.' : 'Inicia sesión con Novvin'}</h2>
+      <p className="auth-description">{existingProfile ? existingProfile.email || `@${existingProfile.handle}` : stage === 'choice' ? 'Puedes empezar como invitado o conectar tu cuenta de Novvin.' : 'Introduce el correo y la contraseña que ya usas en Novvin.'}</p>
+      {existingProfile ? <div className="auth-profile">
+        <p><ShieldCheck size={18} /> Conectado con Novvin</p>
+        <a className="auth-secondary" href={existingProfile.novvinProfileUrl} target="_blank" rel="noreferrer"><NovvinLogo size={24} /> Ver mi perfil de Novvin <ArrowUpRight size={16} /></a>
+        <p className="auth-description">Tus conversaciones se guardan en este navegador. Puedes exportarlas desde el chat.</p>
+        <button type="button" className="auth-secondary" onClick={signOut} disabled={busy}>{busy ? <LoaderCircle size={18} className="animate-spin" /> : <LogOut size={18} />} {busy ? 'Cerrando sesión…' : 'Cerrar sesión'}</button>
+      </div> : stage === 'choice' ? <div className="auth-choices">
+        <button className="auth-primary" type="button" onClick={() => setStage('login')}><NovvinLogo size={26} /> Iniciar con Novvin</button>
+        <button className="auth-secondary" type="button" onClick={onClose}><UserRound size={18} /> Continuar como invitado</button>
+        <p className="auth-description">¿Aún no tienes cuenta? <a href={NOVVIN_REGISTER_URL} target="_blank" rel="noreferrer">Crear una cuenta en Novvin <ArrowUpRight className="inline" size={13} /></a></p>
+      </div> : <>
+        <div className="auth-provider"><NovvinLogo size={32} /><span>Conecta tu identidad de Novvin</span></div>
+        <form onSubmit={submit} className="auth-form">
+          <label htmlFor="auth-email">Correo de Novvin<input id="auth-email" name="email" type="email" autoComplete="username" required maxLength={254} placeholder="tu@correo.com" autoFocus disabled={busy} /></label>
+          <label htmlFor="auth-password">Contraseña<input id="auth-password" name="password" type="password" autoComplete="current-password" required minLength={1} maxLength={256} disabled={busy} /></label>
+          {twoFactor && <label htmlFor="auth-factor">Código de verificación o respaldo<input id="auth-factor" name="secondFactor" autoComplete="one-time-code" required maxLength={100} disabled={busy} /></label>}
+          {error && <p role="alert" className="auth-error">{error}</p>}
+          <button className="auth-primary" type="submit" disabled={busy}>{busy ? <LoaderCircle size={18} className="animate-spin" /> : <LogIn size={18} />}{busy ? 'Verificando tu cuenta…' : 'Iniciar sesión con Novvin'}</button>
+          <a className="auth-recovery" href="https://novvinapp.com/login" target="_blank" rel="noreferrer">Recuperar mi acceso en Novvin <ArrowUpRight size={14} /></a>
+          <p className="auth-description">¿Aún no tienes cuenta? <a href={NOVVIN_REGISTER_URL} target="_blank" rel="noreferrer">Crear una cuenta en Novvin</a></p>
+          <button className="auth-switch inline-flex items-center justify-center gap-2" type="button" disabled={busy} onClick={() => { setStage('choice'); setError(''); }}><ArrowLeft size={14} /> Volver</button>
+        </form>
+      </>}
+      {existingProfile && error && <p className="auth-error mt-4" role="alert">{error}</p>}
+    </div>
+  </dialog>;
 }

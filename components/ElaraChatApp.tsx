@@ -11,6 +11,8 @@ import {
   Cpu,
   Download,
   ExternalLink,
+  LogOut,
+  LoaderCircle,
   FileCode2,
   Menu,
   MessageSquare,
@@ -29,8 +31,14 @@ import {
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { CodePreviewDrawer, type HtmlArtifactVersion } from './CodePreviewDrawer';
 import { ElaraLogo } from './ElaraLogo';
+import { NovvinAvatar, NovvinLogo } from './NovvinIdentity';
+import { AppearanceControl } from './AppearanceControl';
+import { TypingDots, WorkspaceLoading } from './WorkspaceLoading';
 import { downloadTextFile, MessageMarkdown } from './MessageMarkdown';
 import { NovvinAuthModal, type ElaraUserProfile } from './NovvinAuthModal';
+import { ModelSelector } from './ModelSelector';
+import { useServerDictation } from './useServerDictation';
+import { conversationStorageKey, DEFAULT_MODEL_PREFERENCES, parseModelPreferences, type ModelPreferences } from '@/lib/models';
 
 interface StoredConversation {
   id: string;
@@ -45,10 +53,6 @@ interface HealthInfo {
   mode: string;
   model: string;
 }
-
-const STORAGE_KEY = 'elara_conversations_v1';
-const GUEST_COUNT_KEY = 'elara_guest_count_v1';
-const GUEST_MESSAGE_LIMIT = 20;
 
 type StarterCategory = 'Destacados' | 'Webs' | 'Apps' | 'Código' | 'Utilidades';
 
@@ -108,26 +112,6 @@ interface AttachedCodeFile {
   content: string;
 }
 
-type SpeechRecognitionCtor = new () => {
-  lang: string;
-  interimResults: boolean;
-  maxAlternatives: number;
-  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
-  onerror: (() => void) | null;
-  onend: (() => void) | null;
-  start: () => void;
-  stop: () => void;
-};
-
-function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
-  if (typeof window === 'undefined') return null;
-  const w = window as unknown as {
-    SpeechRecognition?: SpeechRecognitionCtor;
-    webkitSpeechRecognition?: SpeechRecognitionCtor;
-  };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-}
-
 const noopSubscribe = () => () => {};
 
 function extractMessageText(message: UIMessage): string {
@@ -177,9 +161,9 @@ function createEmptyConversation(): StoredConversation {
   };
 }
 
-function loadStoredConversations(): StoredConversation[] {
+function loadStoredConversations(storageKey: string): StoredConversation[] {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(storageKey);
     if (raw) {
       const parsed = JSON.parse(raw) as StoredConversation[];
       if (Array.isArray(parsed)) {
@@ -193,20 +177,11 @@ function loadStoredConversations(): StoredConversation[] {
   return [createEmptyConversation()];
 }
 
-function writeStoredConversations(list: StoredConversation[]) {
+function writeStoredConversations(list: StoredConversation[], storageKey: string) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(list.slice(0, 30)));
+    window.localStorage.setItem(storageKey, JSON.stringify(list.slice(0, 30)));
   } catch {
     // Ignore storage quota limits.
-  }
-}
-
-function loadGuestCount(): number {
-  try {
-    const n = Number(window.localStorage.getItem(GUEST_COUNT_KEY) || '0');
-    return Number.isFinite(n) && n >= 0 ? Math.floor(n) : 0;
-  } catch {
-    return 0;
   }
 }
 
@@ -232,24 +207,48 @@ export function ElaraChatApp() {
   );
 
   if (!isClient) {
-    return (
-      <div className="elara-ambient flex h-dvh w-full items-center justify-center bg-[#F7F8FC] text-[#66697F]">
-        <div className="flex items-center gap-3">
-          <ElaraLogo size={32} />
-          <span className="text-sm font-semibold tracking-wider text-[#292D47]">ELARA</span>
-        </div>
-      </div>
-    );
+    return <WorkspaceLoading />;
   }
 
-  return <ElaraWorkspace />;
+  return <ElaraSessionBoundary />;
 }
 
-function ElaraWorkspace() {
-  const [savedConversations, setSavedConversations] = useState<StoredConversation[]>(() => loadStoredConversations());
+function ElaraSessionBoundary() {
+  const [profile, setProfile] = useState<ElaraUserProfile | null | undefined>(undefined);
+  const [sessionError, setSessionError] = useState('');
+  const [attempt, setAttempt] = useState(0);
+  const [minimumLoaded, setMinimumLoaded] = useState(false);
+  useEffect(() => { const timer = setTimeout(() => setMinimumLoaded(true), 1050); return () => clearTimeout(timer); }, []);
+  useEffect(() => {
+    let active = true; let sequence = 0;
+    const controller = new AbortController();
+    const refresh = async () => {
+      const current = ++sequence;
+      try {
+        const response = await fetch('/api/auth/session', { cache: 'no-store', signal: controller.signal });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'No se pudo verificar la sesión.');
+        if (active && current === sequence) { setProfile(data.profile ?? null); setSessionError(''); }
+      } catch (caught) { if (active && current === sequence && !controller.signal.aborted) setSessionError(caught instanceof Error ? caught.message : 'No se pudo verificar la sesión.'); }
+    };
+    void refresh(); window.addEventListener('focus', refresh);
+    return () => { active = false; controller.abort(); window.removeEventListener('focus', refresh); };
+  }, [attempt]);
+  if (!minimumLoaded || (profile === undefined && !sessionError)) return <WorkspaceLoading />;
+  if (profile === undefined) return <div className="workspace-loading"><ElaraLogo size={54} /><p role="alert">{sessionError}</p><button type="button" className="auth-secondary" onClick={() => { setSessionError(''); setAttempt((value) => value + 1); }}>Volver a comprobar mi sesión</button></div>;
+  return <ElaraWorkspace key={profile?.id || 'guest'} initialProfile={profile} />;
+}
+
+function ElaraWorkspace({ initialProfile }: { initialProfile: ElaraUserProfile | null }) {
+  const storageKey = conversationStorageKey(initialProfile?.id || null);
+  const [modelPreferences, setModelPreferences] = useState<ModelPreferences>(() => {
+    try { return parseModelPreferences(JSON.parse(localStorage.getItem(storageKey + ':model') || '{}')) || DEFAULT_MODEL_PREFERENCES; } catch { return DEFAULT_MODEL_PREFERENCES; }
+  });
+  const [authBusy, setAuthBusy] = useState(false);
+  const [savedConversations, setSavedConversations] = useState<StoredConversation[]>(() => loadStoredConversations(storageKey));
   const [activeId, setActiveId] = useState<string>(() => savedConversations[0]?.id ?? 'conv-default');
-  const [userProfile, setUserProfile] = useState<ElaraUserProfile | null>(null);
-  const [guestUsed, setGuestUsed] = useState<number>(() => loadGuestCount());
+  const userProfile = initialProfile;
+
   const [input, setInput] = useState('');
   const [chatSearch, setChatSearch] = useState('');
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -257,39 +256,36 @@ function ElaraWorkspace() {
   const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
   const [editingDraft, setEditingDraft] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [previewWidth, setPreviewWidth] = useState(520);
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const [resizing, setResizing] = useState(false);
   const [previewState, setPreviewState] = useState<{ id: string; html: string } | null>(null);
   const [editedArtifacts, setEditedArtifacts] = useState<Record<string, string>>({});
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalKey, setAuthModalKey] = useState(0);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
-  const [listening, setListening] = useState(false);
   const [starterTab, setStarterTab] = useState<StarterCategory>('Destacados');
   const [attachedFile, setAttachedFile] = useState<AttachedCodeFile | null>(null);
   const [engineSheetOpen, setEngineSheetOpen] = useState(false);
   const [confirmClearAll, setConfirmClearAll] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [health, setHealth] = useState<HealthInfo>({
-    label: 'Elara Core 0.5',
+    label: 'Elara Core 0.7',
     mode: 'elara-core',
-    model: 'elara-core-v0.5',
+    model: 'elara-core-v0.7',
   });
 
-  const speechSupported = useSyncExternalStore(
-    noopSubscribe,
-    () => Boolean(getSpeechRecognitionCtor()),
-    () => false,
-  );
   const scrollContainerRef = useRef<HTMLElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const recognitionRef = useRef<InstanceType<SpeechRecognitionCtor> | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
   const autoFollowRef = useRef(true);
   const authEpochRef = useRef(0);
 
-  const transport = useMemo(() => new DefaultChatTransport({ api: '/api/chat' }), []);
+  const transport = useMemo(() => new DefaultChatTransport({ api: '/api/chat', body: modelPreferences }), [modelPreferences]);
   const initialMessages = useMemo(
     () => savedConversations.find((c) => c.id === activeId)?.messages ?? [],
     [savedConversations, activeId],
@@ -324,25 +320,8 @@ function ElaraWorkspace() {
   }, [savedConversations, activeId, messages]);
 
   useEffect(() => {
-    writeStoredConversations(displayConversations);
-  }, [displayConversations]);
-
-  useEffect(() => {
-    let active = true;
-    const controller = new AbortController();
-    const refresh = async () => {
-      const authEpoch = authEpochRef.current;
-      try {
-        const response = await fetch('/api/auth/session', { cache: 'no-store', signal: controller.signal });
-        const data = await response.json();
-        if (!active || authEpoch !== authEpochRef.current) return;
-        if (response.ok) setUserProfile(data.profile ?? null);
-        else setToast('No se pudo verificar tu sesión. Puedes seguir en acceso libre.');
-      } catch { /* Retry on the next focus after a temporary network error. */ }
-    };
-    void refresh(); window.addEventListener('focus', refresh);
-    return () => { active = false; controller.abort(); window.removeEventListener('focus', refresh); };
-  }, []);
+    writeStoredConversations(displayConversations, storageKey);
+  }, [displayConversations, storageKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -369,10 +348,11 @@ function ElaraWorkspace() {
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
+        dictation.cancel();
         if (busy) stop();
         clearError();
         const fresh = createEmptyConversation();
-        setSavedConversations((prev) => [fresh, ...prev].slice(0, 30));
+        setSavedConversations([fresh, ...displayConversations].slice(0, 30));
         setActiveId(fresh.id);
         setPreviewState(null);
       }
@@ -382,6 +362,11 @@ function ElaraWorkspace() {
   });
 
   const busy = status === 'submitted' || status === 'streaming';
+  const dictation = useServerDictation((text) => {
+    setInput((prev) => prev ? `${prev.trimEnd()} ${text}` : text);
+    requestAnimationFrame(() => { adjustTextareaHeight(textareaRef.current); textareaRef.current?.focus(); });
+  }, (message) => showToast(message));
+  const listening = dictation.phase === 'recording';
   const htmlArtifacts = useMemo(() => {
     return extractAllHtmlArtifacts(messages).map((art) => ({
       ...art,
@@ -389,7 +374,6 @@ function ElaraWorkspace() {
     }));
   }, [messages, editedArtifacts]);
   const latestArtifact = htmlArtifacts[htmlArtifacts.length - 1] ?? null;
-  const guestLimitReached = false;
   const filteredConversations = useMemo(() => {
     const q = chatSearch.trim().toLowerCase();
     if (!q) return displayConversations;
@@ -398,10 +382,13 @@ function ElaraWorkspace() {
 
   function openAuthModal() {
     setAuthModalKey((k) => k + 1);
+    setSidebarOpen(false);
+    setEngineSheetOpen(false);
     setAuthModalOpen(true);
   }
 
   function startNewChat() {
+    dictation.cancel();
     if (busy) stop();
     clearError();
     const fresh = createEmptyConversation();
@@ -415,6 +402,7 @@ function ElaraWorkspace() {
   }
 
   function selectConversation(conv: StoredConversation) {
+    dictation.cancel();
     if (busy) stop();
     if (conv.id === activeId) {
       setSidebarOpen(false);
@@ -446,7 +434,7 @@ function ElaraWorkspace() {
       setSavedConversations([fresh]);
       setActiveId(fresh.id);
       setPreviewState(null);
-      writeStoredConversations([fresh]);
+      writeStoredConversations([fresh], storageKey);
       return;
     }
     setSavedConversations(remaining);
@@ -454,21 +442,13 @@ function ElaraWorkspace() {
       setActiveId(remaining[0].id);
       setPreviewState(null);
     }
-    writeStoredConversations(remaining);
+    writeStoredConversations(remaining, storageKey);
   }
 
   function adjustTextareaHeight(el: HTMLTextAreaElement | null) {
     if (!el) return;
     el.style.height = 'auto';
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
-  }
-
-  function recordGuestUsageAndCheck(): boolean {
-    if (!userProfile) {
-      const next = guestUsed + 1; setGuestUsed(next);
-      try { window.localStorage.setItem(GUEST_COUNT_KEY, String(next)); } catch {}
-    }
-    return true;
   }
 
   function showToast(msg: string) {
@@ -486,7 +466,7 @@ function ElaraWorkspace() {
     setShowScrollDown(false);
     setConfirmClearAll(false);
     setChatSearch('');
-    writeStoredConversations([fresh]);
+    writeStoredConversations([fresh], storageKey);
     showToast('Historial local limpiado');
   }
 
@@ -509,8 +489,7 @@ function ElaraWorkspace() {
 
   function submitPrompt(text: string) {
     const clean = text.trim();
-    if ((!clean && !attachedFile) || busy) return;
-    if (!recordGuestUsageAndCheck()) return;
+    if ((!clean && !attachedFile) || busy || dictation.phase !== 'idle') return;
     clearError();
     autoFollowRef.current = true;
     setShowScrollDown(false);
@@ -528,7 +507,6 @@ function ElaraWorkspace() {
   function submitEditedMessage(msgIndex: number) {
     const clean = editingDraft.trim();
     if (!clean || busy) return;
-    if (!recordGuestUsageAndCheck()) return;
     clearError();
     setEditingMsgId(null);
     setEditingDraft('');
@@ -537,32 +515,8 @@ function ElaraWorkspace() {
   }
 
   function toggleVoiceDictation() {
-    if (listening && recognitionRef.current) {
-      recognitionRef.current.stop();
-      setListening(false);
-      return;
-    }
-    const Ctor = getSpeechRecognitionCtor();
-    if (!Ctor) return;
-    const rec = new Ctor();
-    rec.lang = 'es-PE';
-    rec.interimResults = false;
-    rec.maxAlternatives = 1;
-    rec.onresult = (event) => {
-      const transcript = event.results?.[0]?.[0]?.transcript?.trim();
-      if (transcript) {
-        setInput((prev) => {
-          const joined = prev ? `${prev.trimEnd()} ${transcript}` : transcript;
-          requestAnimationFrame(() => adjustTextareaHeight(textareaRef.current));
-          return joined;
-        });
-      }
-    };
-    rec.onerror = () => setListening(false);
-    rec.onend = () => setListening(false);
-    recognitionRef.current = rec;
-    setListening(true);
-    rec.start();
+    if (!userProfile) { showToast('Inicia sesión con Novvin para usar el dictado.'); openAuthModal(); return; }
+    void dictation.toggle();
   }
 
   function exportConversationMarkdown() {
@@ -581,22 +535,28 @@ function ElaraWorkspace() {
     showToast(`Exportado: ${slug}.md`);
   }
 
-  function handleSaveProfile(profile: ElaraUserProfile) {
-    authEpochRef.current += 1;
-    setUserProfile(profile); showToast('Sesión de Novvin iniciada');
-  }
-  function handleSignOut() {
-    authEpochRef.current += 1;
-    if (busy) stop(); setUserProfile(null); showToast('Sesión cerrada en Novvin');
+  function handleSaveProfile() { authEpochRef.current += 1; }
+  async function handleSignOut() {
+    if (authBusy) return;
+    dictation.cancel();
+    setAuthBusy(true);
+    try {
+      const response = await fetch('/api/auth/logout', { method: 'POST' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'No se pudo cerrar sesión.');
+      authEpochRef.current += 1;
+      if (busy) stop();
+      window.location.reload();
+    } finally { setAuthBusy(false); }
   }
 
-  async function copyAssistantMessage(id: string, text: string) {
+  async function copyMessage(id: string, text: string) {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedMessageId(id);
       setTimeout(() => setCopiedMessageId(null), 1600);
     } catch {
-      // Ignore clipboard failure cleanly.
+      showToast('No se pudo copiar. Selecciona el texto y cópialo con el menú del dispositivo.');
     }
   }
 
@@ -612,7 +572,7 @@ function ElaraWorkspace() {
 
 
   return (
-    <div className="elara-ambient flex h-dvh w-full overflow-hidden bg-[#F7F8FC] text-[#292D47]">
+    <div ref={workspaceRef} className={`elara-ambient flex h-dvh w-full overflow-hidden bg-[var(--canvas)] text-[var(--ink)] ${resizing ? 'is-resizing' : ''}`}>
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-20 bg-black/65 backdrop-blur-xs lg:hidden"
@@ -623,22 +583,24 @@ function ElaraWorkspace() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-30 flex w-[252px] xl:w-[268px] shrink-0 flex-col border-r border-[#DFDDEB] bg-[#EFEDF7]/95 backdrop-blur-md transition-transform duration-200 lg:static lg:translate-x-0 ${
+        ref={sidebarRef}
+        aria-label="Conversaciones"
+        className={`fixed inset-y-0 left-0 z-30 flex w-[252px] xl:w-[268px] shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface-2)]/95 backdrop-blur-md transition-transform duration-200 lg:static lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between border-b border-[#DFDDEB] px-4 py-3.5">
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3.5">
           <div className="flex items-center gap-2.5">
             <ElaraLogo size={28} />
             <div>
-              <span className="block text-sm font-bold tracking-[0.08em] text-[#292D47]">ELARA</span>
-              <span className="block text-[10px] text-[#74758B]">Un espacio para tus ideas</span>
+              <span className="block text-sm font-bold tracking-[0.08em] text-[var(--ink)]">ELARA</span>
+              <span className="block text-[10px] text-[var(--muted)]">Un espacio para tus ideas</span>
             </div>
           </div>
           <button
             type="button"
             onClick={() => setSidebarOpen(false)}
-            className="rounded-lg p-1 text-[#66697F] hover:bg-[#E8E3F5] hover:text-[#292D47] lg:hidden"
+            className="rounded-lg p-1 text-[var(--muted)] hover:bg-[var(--hover)] hover:text-[var(--ink)] lg:hidden"
             aria-label="Cerrar menú"
           >
             <X className="h-4 w-4" />
@@ -649,13 +611,13 @@ function ElaraWorkspace() {
           <button
             type="button"
             onClick={startNewChat}
-            className="flex w-full items-center justify-between rounded-xl border border-[#DCD8EB] bg-[#FFFFFF] px-3.5 py-2.5 text-sm font-medium text-[#292D47] transition-colors hover:border-[#6654D9]/55 hover:bg-[#E4DFF3]"
+            className="flex w-full items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2.5 text-sm font-medium text-[var(--ink)] transition-colors hover:border-[var(--accent)]/55 hover:bg-[var(--hover)]"
           >
             <span className="inline-flex items-center gap-2">
-              <Plus className="h-4 w-4 text-[#6654D9]" />
+              <Plus className="h-4 w-4 text-[var(--accent)]" />
               Nuevo chat
             </span>
-            <kbd className="rounded bg-[#EFEDF8] px-1.5 py-0.5 font-mono text-[10px] text-[#74758B]">
+            <kbd className="rounded bg-[var(--surface-2)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--muted)]">
               Ctrl K
             </kbd>
           </button>
@@ -663,33 +625,33 @@ function ElaraWorkspace() {
 
         <div className="min-h-0 flex-1 overflow-y-auto px-2.5 py-1">
           {displayConversations.length > 1 && (
-            <div className="mb-2 flex items-center gap-1.5 rounded-xl border border-[#DFDDEB] bg-[#F8F7FC] px-2.5 py-1.5">
-              <Search className="h-3.5 w-3.5 shrink-0 text-[#74758B]" />
+            <div className="mb-2 flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--canvas)] px-2.5 py-1.5">
+              <Search className="h-3.5 w-3.5 shrink-0 text-[var(--muted)]" />
               <input
                 type="search"
                 value={chatSearch}
                 onChange={(e) => setChatSearch(e.target.value)}
                 placeholder="Buscar chats..."
-                className="w-full bg-transparent text-xs text-[#292D47] placeholder-[#74758B] focus:outline-none"
+                className="w-full bg-transparent text-xs text-[var(--ink)] placeholder-[var(--muted)] focus:outline-none"
               />
             </div>
           )}
           <div className="flex items-center justify-between px-2 pb-1.5">
-            <p className="text-xs font-medium text-[#74758B]">Conversaciones</p>
+            <p className="text-xs font-medium text-[var(--muted)]">Conversaciones</p>
             {displayConversations.length > 1 && (
               confirmClearAll ? (
                 <div className="flex items-center gap-1.5 text-[11px]">
                   <button
                     type="button"
                     onClick={clearAllConversations}
-                    className="font-semibold text-[#FCA5A5] hover:underline"
+                    className="font-semibold text-[var(--danger)] hover:underline"
                   >
                     Sí, vaciar
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmClearAll(false)}
-                    className="text-[#66697F] hover:text-[#292D47]"
+                    className="text-[var(--muted)] hover:text-[var(--ink)]"
                   >
                     No
                   </button>
@@ -698,7 +660,7 @@ function ElaraWorkspace() {
                 <button
                   type="button"
                   onClick={() => setConfirmClearAll(true)}
-                  className="text-[11px] text-[#74758B] hover:text-[#494D66]"
+                  className="text-[11px] text-[var(--muted)] hover:text-[var(--secondary)]"
                 >
                   Limpiar
                 </button>
@@ -714,8 +676,8 @@ function ElaraWorkspace() {
                   key={conv.id}
                   className={`group flex items-center justify-between rounded-xl px-2.5 py-2 text-sm transition-colors ${
                     selected
-                      ? 'border border-[#D9D2ED] bg-[#E3DDF6] text-[#292D47]'
-                      : 'text-[#66697F] hover:bg-[#E8E4F3] hover:text-[#3E425C]'
+                      ? 'border border-[var(--border)] bg-[var(--selected)] text-[var(--ink)]'
+                      : 'text-[var(--muted)] hover:bg-[var(--hover)] hover:text-[var(--ink)]'
                   }`}
                 >
                   {isRenaming ? (
@@ -729,7 +691,7 @@ function ElaraWorkspace() {
                         if (e.key === 'Enter') commitRename(conv.id);
                         if (e.key === 'Escape') setRenamingId(null);
                       }}
-                      className="w-full rounded-md border border-[#6654D9]/60 bg-[#F8F7FC] px-2 py-0.5 text-xs text-[#292D47] focus:outline-none"
+                      className="w-full rounded-md border border-[var(--accent)]/60 bg-[var(--canvas)] px-2 py-0.5 text-xs text-[var(--ink)] focus:outline-none"
                     />
                   ) : (
                     <>
@@ -749,7 +711,7 @@ function ElaraWorkspace() {
                             setRenameDraft(conv.title);
                           }}
                           aria-label={`Renombrar ${conv.title}`}
-                          className="rounded p-1 text-[#74758B] hover:text-[#6654D9]"
+                          className="rounded p-1 text-[var(--muted)] hover:text-[var(--accent)]"
                         >
                           <Pencil className="h-3 w-3" />
                         </button>
@@ -757,7 +719,7 @@ function ElaraWorkspace() {
                           type="button"
                           onClick={() => deleteConversation(conv.id)}
                           aria-label={`Eliminar ${conv.title}`}
-                          className="rounded p-1 text-[#74758B] hover:text-[#F87171]"
+                          className="rounded p-1 text-[var(--muted)] hover:text-[var(--danger)]"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -770,133 +732,103 @@ function ElaraWorkspace() {
           </div>
         </div>
 
-        {/* Guest limit OR Signed-in User Profile Card */}
-        <div className="space-y-2.5 border-t border-[#DFDDEB] p-3">
-          {userProfile ? (
-            <button
-              type="button"
-              onClick={openAuthModal}
-              className="flex w-full items-center gap-2.5 rounded-xl border border-[#DCD5ED] bg-[#FFFFFF] p-2.5 text-left transition-colors hover:border-[#6654D9]/50"
-            >
-              <span
-                style={{ backgroundColor: userProfile.avatarColor }}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-[#FFFFFF]"
-              >
-                {userProfile.displayName.slice(0, 2).toUpperCase()}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-semibold text-[#292D47]">{userProfile.displayName}</p>
-                <p className="truncate font-mono text-[11px] text-[#6654B8]">@{userProfile.handle}</p>
-              </div>
-              <span className="rounded-md bg-[#23866A]/15 px-1.5 py-0.5 text-[10px] font-medium text-[#187356]">
-                Conectado
-              </span>
+        <div className="space-y-2.5 border-t border-[var(--border)] p-3">
+          {userProfile ? <>
+            <button type="button" onClick={openAuthModal} className="flex w-full items-center gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2.5 text-left hover:border-[var(--accent)]" aria-label={`Perfil de ${userProfile.displayName}, conectado con Novvin`}>
+              <NovvinAvatar key={userProfile.id} profile={userProfile} />
+              <span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold text-[var(--ink)]">{userProfile.displayName}</span><span className="novvin-connected mt-1"><NovvinLogo size={18} /> Conectado con Novvin</span></span>
             </button>
-          ) : (
-            <>
-              <div className="rounded-xl border border-[#DED8EB] bg-[#F0EEF8] p-3 text-xs">
-                <div className="flex items-center justify-between text-[#3E425C]">
-                  <span className="inline-flex items-center gap-1.5 font-medium">
-                    <span className="h-2 w-2 rounded-full bg-[#6654D9]" />
-                    Acceso libre
-                  </span>
-                  <span className="font-mono text-[11px] text-[#66697F]">
-                    {guestUsed} mensajes
-                  </span>
-                </div>
-                <p className="mt-1.5 text-[11px] text-[#74758B]">Sin registro. Historial en este navegador.</p>
-              </div>
-              <button
-                type="button"
-                onClick={openAuthModal}
-                className="flex w-full items-center justify-between rounded-xl bg-gradient-to-r from-[#6654D9]/15 to-[#9687DF]/15 border border-[#6654D9]/35 px-3 py-2.5 text-xs font-semibold text-[#51428E] transition-colors hover:border-[#6654D9]"
-              >
-                <span>Continuar con Novvin</span>
-                <ExternalLink className="h-3.5 w-3.5 text-[#6654D9]" />
-              </button>
-            </>
-          )}
+            <button type="button" onClick={() => { void handleSignOut().catch((caught) => showToast(caught instanceof Error ? caught.message : 'No se pudo cerrar sesión.')); }} disabled={authBusy} className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs text-[var(--secondary)] hover:bg-[var(--hover)]">{authBusy ? <LoaderCircle size={14} className="animate-spin" /> : <LogOut size={14} />} {authBusy ? 'Cerrando sesión…' : 'Cerrar sesión'}</button>
+          </> : <>
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3 text-xs">
+              <div className="flex items-center justify-between text-[var(--secondary)]"><span className="font-medium">Modo invitado</span><span className="text-[11px] text-[var(--muted)]">Core gratis</span></div>
+              <p className="mt-1.5 text-[11px] text-[var(--muted)]">Sin límite en Core. Historial de invitado en este navegador.</p>
+            </div>
+            <button type="button" onClick={openAuthModal} className="flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--accent)] px-3 py-2.5 text-xs font-semibold text-[var(--accent)] hover:bg-[var(--hover)]">Iniciar sesión</button>
+          </>}
         </div>
       </aside>
 
       {/* Main Conversation Column */}
       <div className="relative flex min-w-0 flex-1 flex-col">
-        <header className="relative flex items-center justify-between gap-2 border-b border-[#DFDDEB] bg-[#F7F8FC]/85 px-4 py-3 backdrop-blur-md">
+        <header className="relative flex items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--canvas)]/85 px-4 py-3 backdrop-blur-md">
           <div className="flex min-w-0 items-center gap-2.5">
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
               aria-label="Abrir conversaciones"
-              className="rounded-lg border border-[#DCD7E8] p-1.5 text-[#66697F] hover:text-[#292D47] lg:hidden"
+              className="rounded-lg border border-[var(--border)] p-1.5 text-[var(--muted)] hover:text-[var(--ink)] lg:hidden"
             >
               <Menu className="h-4 w-4" />
             </button>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold tracking-wider text-[#292D47] lg:hidden">ELARA</span>
+              <span className="text-sm font-bold tracking-wider text-[var(--ink)] lg:hidden">ELARA</span>
               <button
                 type="button"
                 onClick={() => setEngineSheetOpen((v) => !v)}
                 aria-expanded={engineSheetOpen}
-                className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[#DDD7ED] bg-[#F0EEF8] px-3 py-1 text-xs text-[#494D66] transition-colors hover:border-[#6654D9]/60 hover:text-[#292D47]"
+                className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3 py-1 text-xs text-[var(--secondary)] transition-colors hover:border-[var(--accent)]/60 hover:text-[var(--ink)]"
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-[#6654D9]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
                 {health.label}
               </button>
             </div>
           </div>
 
           {engineSheetOpen && (
-            <div className="absolute top-14 left-4 z-30 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-[#D9D2ED] bg-[#FFFFFF] p-4 text-xs shadow-2xl">
+            <div className="absolute top-14 left-4 z-30 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-xs shadow-2xl">
               <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 font-semibold text-[#292D47]">
-                  <Cpu className="h-3.5 w-3.5 text-[#6654D9]" />
+                <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--ink)]">
+                  <Cpu className="h-3.5 w-3.5 text-[var(--accent)]" />
                   Estado del motor
                 </span>
                 <button
                   type="button"
                   onClick={() => setEngineSheetOpen(false)}
                   aria-label="Cerrar panel de motor"
-                  className="rounded p-1 text-[#66697F] hover:bg-[#EEEAF7] hover:text-[#292D47]"
+                  className="rounded p-1 text-[var(--muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
-              <dl className="mt-3 space-y-1.5 text-[#66697F]">
+              <dl className="mt-3 space-y-1.5 text-[var(--muted)]">
                 <div className="flex justify-between">
                   <dt>Motor activo:</dt>
-                  <dd className="font-mono text-[#6654B8]">{health.label}</dd>
+                  <dd className="font-mono text-[var(--accent)]">{health.label}</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt>Contexto estable:</dt>
-                  <dd className="text-[#3E425C]">Hasta 40 turnos</dd>
+                  <dd className="text-[var(--ink)]">Hasta 40 turnos</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt>Tipo de asistente:</dt>
-                  <dd className="text-[#187356]">Básico especializado</dd>
+                  <dd className="text-[var(--success)]">Básico especializado</dd>
                 </div>
               </dl>
-              <p className="mt-3 text-[11px] leading-relaxed text-[#66697F]">{health.mode === 'elara-core' ? 'Crea prototipos y resuelve utilidades concretas. No consulta internet ni tiene conocimientos generales completos. Si falta información, te lo dirá.' : 'Modelo conectado en el servidor. Comprueba los datos importantes y revisa el código generado.'}</p>
+              <p className="mt-3 text-[11px] leading-relaxed text-[var(--muted)]">{health.mode === 'elara-core' ? 'Crea prototipos y resuelve utilidades concretas. No consulta internet ni tiene conocimientos generales completos. Si falta información, te lo dirá.' : 'Modelo conectado en el servidor. Comprueba los datos importantes y revisa el código generado.'}</p>
               <button
                 type="button"
                 onClick={() => {
                   setEngineSheetOpen(false);
-                  openAuthModal();
+                  if (userProfile) window.open(userProfile.novvinProfileUrl, '_blank', 'noopener,noreferrer');
+                  else openAuthModal();
                 }}
-                className="mt-3 flex w-full items-center justify-between rounded-xl border border-[#283B5E] bg-[#EEEAF7] px-3 py-2 text-xs font-medium text-[#51428E] hover:border-[#6654D9]"
+                className="mt-3 flex w-full items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-xs font-medium text-[var(--accent)] hover:border-[var(--accent)]"
               >
-                <span>{userProfile ? `Perfil Novvin (@${userProfile.handle})` : 'Continuar con Novvin'}</span>
-                <ExternalLink className="h-3.5 w-3.5 text-[#6654D9]" />
+                <span>{userProfile ? 'Mi perfil de Novvin' : 'Iniciar sesión'}</span>
+                <ExternalLink className="h-3.5 w-3.5 text-[var(--accent)]" />
               </button>
             </div>
           )}
 
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <AppearanceControl />
             {messages.length > 0 && (
               <button
                 type="button"
                 onClick={exportConversationMarkdown}
                 title="Exportar conversación (.md)"
-                className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-[#DFDBED] bg-[#F0EEF8] px-2.5 py-1.5 text-xs text-[#66697F] transition-colors hover:border-[#6654D9]/50 hover:text-[#292D47]"
+                className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1.5 text-xs text-[var(--muted)] transition-colors hover:border-[var(--accent)]/50 hover:text-[var(--ink)]"
               >
                 <Download className="h-3.5 w-3.5" />
                 <span className="hidden xl:inline">Exportar .md</span>
@@ -908,7 +840,7 @@ function ElaraWorkspace() {
                 onClick={() =>
                   setPreviewState(previewState ? null : { id: latestArtifact.id, html: latestArtifact.html })
                 }
-                className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-[#284261] bg-[#EEEAF7] px-2.5 py-1.5 text-xs font-medium text-[#6654B8] transition-colors hover:border-[#6654D9] hover:text-[#292D47]"
+                className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1.5 text-xs font-medium text-[var(--accent)] transition-colors hover:border-[var(--accent)] hover:text-[var(--ink)]"
               >
                 <Code2 className="h-3.5 w-3.5" />
                 {previewState ? 'Ocultar visor' : `Visor (${htmlArtifacts.length})`}
@@ -927,12 +859,12 @@ function ElaraWorkspace() {
               <div className="welcome-mark">
                 <ElaraLogo size={42} />
               </div>
-              <h1 className="welcome-heading mt-5 font-semibold tracking-tight text-[#292D47]">
+              <h1 className="welcome-heading mt-5 font-semibold tracking-tight text-[var(--ink)]">
                 {userProfile
                   ? `¿Qué creamos hoy, ${userProfile.displayName.split(' ')[0]}?`
                   : 'Una idea. Un buen comienzo.'}
               </h1>
-              <p className="mt-2 max-w-lg text-sm leading-relaxed text-[#66697F]">
+              <p className="mt-2 max-w-lg text-sm leading-relaxed text-[var(--muted)]">
                 Crea una web, dale forma a tu código o resuelve algo concreto. Cuéntame qué tienes en mente y empezamos.
               </p>
 
@@ -946,8 +878,8 @@ function ElaraWorkspace() {
                     onClick={() => setStarterTab(cat)}
                     className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                       starterTab === cat
-                        ? 'border-[#6654D9] bg-[#6654D9]/15 text-[#6654B8]'
-                        : 'border-[#DFDBED] bg-[#F3F2F9] text-[#66697F] hover:border-[#2E4166] hover:text-[#292D47]'
+                        ? 'border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--accent)]'
+                        : 'border-[var(--border)] bg-[var(--surface-2)] text-[var(--muted)] hover:border-[var(--border)] hover:text-[var(--ink)]'
                     }`}
                   >
                     {cat}
@@ -961,9 +893,9 @@ function ElaraWorkspace() {
                     key={prompt}
                     type="button"
                     onClick={() => submitPrompt(prompt)}
-                    className="group flex items-start gap-2.5 rounded-2xl border border-[#DFDBED] bg-[#FFFFFF]/90 p-4 text-left text-sm text-[#494D66] transition-all hover:border-[#6654D9]/50 hover:bg-[#E8E4F5] hover:text-[#292D47]"
+                    className="group flex items-start gap-2.5 rounded-2xl border border-[var(--border)] bg-[var(--surface)]/90 p-4 text-left text-sm text-[var(--secondary)] transition-all hover:border-[var(--accent)]/50 hover:bg-[var(--hover)] hover:text-[var(--ink)]"
                   >
-                    <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#6654D9] opacity-80 group-hover:opacity-100" />
+                    <Sparkles className="mt-0.6 h-4 w-4 shrink-0 text-[var(--accent)] opacity-80 group-hover:opacity-100" />
                     <span>{prompt}</span>
                   </button>
                 ))}
@@ -984,53 +916,45 @@ function ElaraWorkspace() {
                     <div
                       className={
                         isUser
-                          ? 'max-w-[85%] rounded-2xl border border-[#DCD5ED] bg-[#EDE9FB] px-4 py-2.5 text-[15px] leading-relaxed text-[#292D47] shadow-sm'
-                          : 'min-w-0 flex-1 pt-0.5'
+                          ? 'max-w-[85%] rounded-2xl border border-[var(--border)] bg-[var(--selected)] px-4 py-2.5 text-[15px] leading-relaxed text-[var(--ink)] shadow-sm'
+                          : `min-w-0 flex-1 pt-0.5 ${busy && index === messages.length - 1 ? 'streaming-response' : ''}`
                       }
                     >
                       {isUser ? (
                         editingMsgId === message.id ? (
                           <div className="space-y-2">
                             <textarea
+                              aria-label="Editar tu mensaje"
                               value={editingDraft}
                               onChange={(e) => setEditingDraft(e.target.value)}
                               rows={2}
-                              className="w-full min-w-[220px] rounded-xl border border-[#6654D9]/60 bg-[#FAFAFD] p-2 text-sm text-[#292D47] focus:outline-none sm:min-w-[340px]"
+                              className="w-full min-w-[220px] rounded-xl border border-[var(--accent)]/60 bg-[var(--canvas)] p-2 text-sm text-[var(--ink)] focus:outline-none sm:min-w-[340px]"
                             />
                             <div className="flex justify-end gap-1.5 text-xs">
                               <button
                                 type="button"
                                 onClick={() => setEditingMsgId(null)}
-                                className="rounded-lg border border-[#25334D] px-2.5 py-1 text-[#66697F] hover:text-[#292D47]"
+                                className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[var(--muted)] hover:text-[var(--ink)]"
                               >
                                 Cancelar
                               </button>
                               <button
                                 type="button"
                                 onClick={() => submitEditedMessage(index)}
-                                className="rounded-lg bg-[#6654D9] px-2.5 py-1 font-semibold text-[#FFFFFF] hover:opacity-90"
+                                className="rounded-lg bg-[var(--accent)] px-2.5 py-1 font-semibold text-[var(--on-accent)] hover:opacity-90"
                               >
                                 Reenviar
                               </button>
                             </div>
                           </div>
                         ) : (
-                          <div className="flex items-start gap-2">
-                            <p className="whitespace-pre-wrap">{text}</p>
-                            {!busy && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditingMsgId(message.id);
-                                  setEditingDraft(text);
-                                }}
-                                aria-label="Editar mensaje"
-                                title="Editar y reenviar"
-                                className="mt-0.5 shrink-0 rounded p-1 text-[#74758B] opacity-0 transition-opacity hover:bg-[#EEEAF7] hover:text-[#292D47] group-hover:opacity-100"
-                              >
-                                <Pencil className="h-3 w-3" />
-                              </button>
-                            )}
+                          <div className="min-w-0">
+                            <p className="whitespace-pre-wrap break-words">{text}</p>
+                            <div className="user-message-actions">
+                              <button type="button" onClick={() => copyMessage(message.id, text)} aria-label="Copiar mi mensaje">{copiedMessageId === message.id ? <Check size={13} /> : <Copy size={13} />}{copiedMessageId === message.id ? 'Copiado' : 'Copiar'}</button>
+                              {!busy && <button type="button" onClick={() => { setEditingMsgId(message.id); setEditingDraft(text); }} aria-label="Editar mensaje"><Pencil size={13} /> Editar</button>}
+                            </div>
+
                           </div>
                         )
                       ) : (
@@ -1045,14 +969,14 @@ function ElaraWorkspace() {
                             }}
                           />
                           {text && (
-                            <div className="mt-2 flex items-center gap-2 text-xs text-[#74758B] opacity-85 transition-opacity group-hover:opacity-100">
+                            <div className="mt-2 flex items-center gap-2 text-xs text-[var(--muted)] opacity-85 transition-opacity group-hover:opacity-100">
                               <button
                                 type="button"
-                                onClick={() => copyAssistantMessage(message.id, text)}
-                                className="inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-[#E8E4F5] hover:text-[#494D66]"
+                                onClick={() => copyMessage(message.id, text)}
+                                className="inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-[var(--hover)] hover:text-[var(--secondary)]"
                               >
                                 {copiedMessageId === message.id ? (
-                                  <Check className="h-3.5 w-3.5 text-[#34D399]" />
+                                  <Check className="h-3.5 w-3.5 text-[var(--success)]" />
                                 ) : (
                                   <Copy className="h-3.5 w-3.5" />
                                 )}
@@ -1062,7 +986,7 @@ function ElaraWorkspace() {
                                 <button
                                   type="button"
                                   onClick={() => regenerate()}
-                                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-[#E8E4F5] hover:text-[#494D66]"
+                                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-[var(--hover)] hover:text-[var(--secondary)]"
                                 >
                                   <RotateCcw className="h-3.5 w-3.5" />
                                   Regenerar
@@ -1077,23 +1001,18 @@ function ElaraWorkspace() {
                 );
               })}
 
-              {status === 'submitted' && (
-                <div className="flex items-center gap-3 text-sm text-[#66697F]">
-                  <ElaraLogo size={28} />
-                  <span className="animate-pulse">ELARA está preparando la respuesta…</span>
-                </div>
-              )}
+              {busy && <div className="typing-indicator" role="status" aria-label={status === 'submitted' ? 'Elara está preparando la respuesta' : 'Elara está escribiendo'}><ElaraLogo size={26} /><TypingDots /><span>{status === 'submitted' ? 'Preparando tu respuesta' : 'Escribiendo'}</span></div>}
 
               {error && (
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#5B212A] bg-[#EEEAF7] px-4 py-3 text-sm text-[#FECACA]">
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--danger-border)] bg-[var(--surface-2)] px-4 py-3 text-sm text-[var(--danger)]">
                   <div className="min-w-0 flex-1">
-                    <strong className="font-semibold text-[#FCA5A5]">No se pudo completar la respuesta:</strong>{' '}
-                    <span className="break-words text-[#FDE8E8]">{formatReadableError(error)}</span>
+                    <strong className="font-semibold text-[var(--danger)]">No se pudo completar la respuesta:</strong>{' '}
+                    <span className="break-words text-[var(--danger)]">{formatReadableError(error)}</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => regenerate()}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-[#7F1D1D] bg-[#3B151D] px-3 py-1.5 text-xs font-medium text-[#292D47] hover:bg-[#521D27]"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--danger-border)] bg-[var(--danger-bg)] px-3 py-1.5 text-xs font-medium text-[var(--ink)] hover:bg-[var(--danger-bg)]"
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
                     Reintentar
@@ -1115,7 +1034,7 @@ function ElaraWorkspace() {
               endRef.current?.scrollIntoView({ behavior: 'smooth' });
             }}
             aria-label="Ir al último mensaje"
-            className="absolute right-6 bottom-28 z-10 inline-flex items-center gap-1.5 rounded-full border border-[#25334E] bg-[#F0EEF8]/95 px-3 py-1.5 text-xs text-[#494D66] shadow-lg backdrop-blur hover:border-[#6654D9] hover:text-[#292D47]"
+            className="absolute right-6 bottom-28 z-10 inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-2)]/95 px-3 py-1.5 text-xs text-[var(--secondary)] shadow-lg backdrop-blur hover:border-[var(--accent)] hover:text-[var(--ink)]"
           >
             <ArrowDown className="h-3.5 w-3.5" />
             Bajar
@@ -1123,25 +1042,8 @@ function ElaraWorkspace() {
         )}
 
         {/* Composer */}
-        <footer className="border-t border-[#DFDDEB] bg-[#F7F8FC]/90 px-4 py-3.5 backdrop-blur-md sm:px-6">
-          <div className="mx-auto max-w-3xl">
-            {guestLimitReached ? (
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#2D3D5E] bg-[#EDE9F9] px-4 py-3.5">
-                <div className="text-sm">
-                  <p className="font-semibold text-[#292D47]">Alcanzaste los {GUEST_MESSAGE_LIMIT} mensajes gratuitos</p>
-                  <p className="text-xs text-[#66697F]">
-                    Inicia sesión con tu perfil o continúa con Novvin para seguir chateando sin límite.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={openAuthModal}
-                  className="rounded-xl bg-gradient-to-r from-[#6654D9] to-[#9687DF] px-4 py-2 text-xs font-semibold text-[#FFFFFF] hover:opacity-95"
-                >
-                  Iniciar sesión para continuar
-                </button>
-              </div>
-            ) : (
+        <footer className="border-t border-[var(--border)] bg-[var(--canvas)]/90 px-4 py-3.5 backdrop-blur-md sm:px-6">
+          <div className="composer-container mx-auto max-w-3xl">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -1149,23 +1051,23 @@ function ElaraWorkspace() {
                 }}
               >
                 {attachedFile && (
-                  <div className="mb-2 flex items-center justify-between rounded-xl border border-[#283B5E] bg-[#EDE9F9] px-3 py-1.5 text-xs text-[#3E425C]">
+                  <div className="mb-2 flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--selected)] px-3 py-1.5 text-xs text-[var(--ink)]">
                     <span className="inline-flex min-w-0 items-center gap-2">
-                      <FileCode2 className="h-3.5 w-3.5 shrink-0 text-[#6654D9]" />
+                      <FileCode2 className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
                       <span className="truncate font-mono">{attachedFile.name}</span>
-                      <span className="shrink-0 text-[11px] text-[#74758B]">{attachedFile.sizeLabel}</span>
+                      <span className="shrink-0 text-[11px] text-[var(--muted)]">{attachedFile.sizeLabel}</span>
                     </span>
                     <button
                       type="button"
                       onClick={() => setAttachedFile(null)}
                       aria-label="Quitar archivo adjunto"
-                      className="rounded p-0.5 text-[#66697F] hover:text-[#292D47]"
+                      className="rounded p-0.5 text-[var(--muted)] hover:text-[var(--ink)]"
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 )}
-                <div className="composer flex items-end gap-2 rounded-2xl border border-[#D9D3EA] bg-[#FFFFFF] p-2 focus-within:border-[#6654D9]/70">
+                <div className="composer flex items-end gap-2 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 focus-within:border-[var(--accent)]/70">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -1179,7 +1081,7 @@ function ElaraWorkspace() {
                       onClick={() => fileInputRef.current?.click()}
                       aria-label="Adjuntar archivo de código"
                       title="Adjuntar archivo de código (.html, .js, .py, .sql, .json...)"
-                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#EEEAF7] bg-[#F1EFF9] text-[#66697F] transition-colors hover:border-[#6654D9]/50 hover:text-[#292D47]"
+                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--surface-2)] bg-[var(--surface-2)] text-[var(--muted)] transition-colors hover:border-[var(--accent)]/50 hover:text-[var(--ink)]"
                     >
                       <Paperclip className="h-4 w-4" />
                     </button>
@@ -1199,21 +1101,23 @@ function ElaraWorkspace() {
                     }}
                     rows={1}
                     aria-label="Tu mensaje para Elara" maxLength={40000} placeholder="Cuéntame tu idea…"
-                    className="max-h-40 min-h-[44px] flex-1 resize-none overflow-y-auto bg-transparent px-2.5 py-2.5 text-[15px] leading-5 text-[#292D47] placeholder-[#74758B] focus:outline-none"
+                    className="max-h-40 min-h-[44px] flex-1 resize-none overflow-y-auto bg-transparent px-2.5 py-2.5 text-[15px] leading-5 text-[var(--ink)] placeholder-[var(--muted)] focus:outline-none"
                   />
-                  {speechSupported && !busy && (
+                  <ModelSelector value={modelPreferences} signedIn={Boolean(userProfile)} disabled={busy} onChange={(value) => { setModelPreferences(value); try { localStorage.setItem(storageKey + ':model', JSON.stringify(value)); } catch {} }} />
+                  {!busy && (
                     <button
                       type="button"
                       onClick={toggleVoiceDictation}
+                      disabled={dictation.phase === 'transcribing'}
                       aria-label={listening ? 'Detener dictado' : 'Dictar por voz'}
                       title={listening ? 'Detener dictado' : 'Dictar por voz'}
                       className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors ${
                         listening
-                          ? 'animate-pulse border-[#F43F5E]/60 bg-[#F43F5E]/15 text-[#FDA4AF]'
-                          : 'border-[#EEEAF7] bg-[#F1EFF9] text-[#66697F] hover:text-[#292D47]'
+                          ? 'animate-pulse border-[var(--danger)]/60 bg-[var(--danger)]/15 text-[var(--danger)]'
+                          : 'border-[var(--surface-2)] bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--ink)]'
                       }`}
                     >
-                      {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                      {dictation.phase === 'transcribing' || dictation.phase === 'permission' ? <LoaderCircle className="h-4 w-4 animate-spin" /> : listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                     </button>
                   )}
                   {busy ? (
@@ -1221,39 +1125,48 @@ function ElaraWorkspace() {
                       type="button"
                       onClick={() => stop()}
                       aria-label="Detener generación"
-                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEEAF7] text-[#292D47] transition-colors hover:bg-[#334155]"
+                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-2)] text-[var(--ink)] transition-colors hover:bg-[var(--hover)]"
                     >
                       <Square className="h-4 w-4 fill-current" />
                     </button>
                   ) : (
                     <button
                       type="submit"
-                      disabled={!input.trim() && !attachedFile}
+                      disabled={(!input.trim() && !attachedFile) || dictation.phase !== 'idle'}
                       aria-label="Enviar mensaje"
-                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-[#6654D9] to-[#8270DE] text-[#FFFFFF] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:from-[#DFDDEB] disabled:to-[#DFDDEB] disabled:text-[#74758B]"
+                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent)] text-[var(--on-accent)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:from-[var(--border)] disabled:to-[var(--border)] disabled:text-[var(--muted)]"
                     >
                       <ArrowUp className="h-4 w-4 stroke-[2.5]" />
                     </button>
                   )}
                 </div>
+                {dictation.phase !== 'idle' && <p className="dictation-status" role="status">{listening ? `Grabando · 0:${String(dictation.seconds).padStart(2,'0')} · Pulsa el micrófono para terminar (máx. 30 s).` : dictation.phase === 'permission' ? 'Esperando permiso para usar el micrófono. Pulsa de nuevo para cancelar.' : 'Convirtiendo tu voz a texto en el servidor de Elara…'}{dictation.phase === 'transcribing' && <button type="button" onClick={dictation.cancel}>Cancelar</button>}</p>}
               </form>
-            )}
 
-            <p className="mt-2 text-center text-[11px] text-[#74758B]">
+            <p className="mt-2 text-center text-[11px] text-[var(--muted)]">
               {health.label} · {userProfile ? `Sesión de @${userProfile.handle}` : 'Acceso libre'} · Verifica el código antes de producción.
             </p>
           </div>
         </footer>
       </div>
 
+      {previewState && <div className="preview-resizer" role="separator" aria-label="Ajustar ancho del visor" aria-orientation="vertical" aria-valuemin={320} aria-valuemax={1200} aria-valuenow={Math.round(previewWidth)} tabIndex={0}
+        onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setResizing(true); }}
+        onPointerMove={(event) => { if (!event.currentTarget.hasPointerCapture(event.pointerId)) return; const box = workspaceRef.current?.getBoundingClientRect(); if (!box) return; const available = box.width - (sidebarRef.current?.getBoundingClientRect().width || 0); setPreviewWidth(Math.max(320, Math.min(available - 320, box.right - event.clientX))); }}
+        onPointerUp={(event) => { event.currentTarget.releasePointerCapture(event.pointerId); setResizing(false); }} onLostPointerCapture={() => setResizing(false)}
+        onKeyDown={(event) => { if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); const available = (workspaceRef.current?.clientWidth || 1200) - (sidebarRef.current?.clientWidth || 0); setPreviewWidth((width) => Math.max(320, Math.min(available - 320, width + (event.key === 'ArrowLeft' ? 24 : -24)))); } }}><span /></div>}
+
       {/* Live Preview Drawer */}
       {previewState && (
         <CodePreviewDrawer
           artifacts={htmlArtifacts}
+          selectedId={previewState.id}
+          width={previewWidth}
+          onResetLayout={() => setPreviewWidth(520)}
           selectedHtml={previewState.html}
-          onSelectHtml={(html) => {
+          onSelectHtml={(html, id) => {
             const art = htmlArtifacts.find((a) => a.html === html);
-            setPreviewState({ id: art?.id || previewState.id, html });
+            setPreviewState({ id: id || art?.id || previewState.id, html });
           }}
           onUpdateHtml={(nextHtml) => {
             setEditedArtifacts((prev) => ({ ...prev, [previewState.id]: nextHtml }));
@@ -1268,9 +1181,6 @@ function ElaraWorkspace() {
       <NovvinAuthModal
         key={authModalKey}
         open={authModalOpen}
-        limitReached={guestLimitReached}
-        guestUsed={guestUsed}
-        guestLimit={GUEST_MESSAGE_LIMIT}
         existingProfile={userProfile}
         onSaveProfile={handleSaveProfile}
         onSignOut={handleSignOut}
@@ -1280,7 +1190,7 @@ function ElaraWorkspace() {
       {toast && (
         <div
           role="status"
-          className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 rounded-full border border-[#2B3D5E] bg-[#EEEAF7]/95 px-4 py-1.5 text-xs font-medium text-[#51428E] shadow-xl backdrop-blur"
+          className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 rounded-full border border-[var(--border)] bg-[var(--surface-2)]/95 px-4 py-1.5 text-xs font-medium text-[var(--accent)] shadow-xl backdrop-blur"
         >
           {toast}
         </div>

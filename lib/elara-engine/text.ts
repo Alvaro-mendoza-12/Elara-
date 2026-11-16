@@ -1,3 +1,5 @@
+const SINGULAR_TOKENS: Record<string, string> = { ventas: 'venta', tiendas: 'tienda', catalogos: 'catalogo', paginas: 'pagina', sitios: 'sitio', productos: 'producto' };
+
 export interface PromptParams {
   raw: string;
   normalized: string;
@@ -39,10 +41,10 @@ export function tokenize(input: string): string[] {
   const rawTokens = clean.split(' ').filter((t) => t.length >= 2 && !STOPWORDS.has(t));
   const tokens: string[] = [];
   for (let i = 0; i < rawTokens.length; i += 1) {
-    const word = rawTokens[i];
+    const word = SINGULAR_TOKENS[rawTokens[i]] || rawTokens[i];
     tokens.push(word);
     if (i + 1 < rawTokens.length) {
-      tokens.push(`${word}_${rawTokens[i + 1]}`);
+      tokens.push(`${word}_${SINGULAR_TOKENS[rawTokens[i + 1]] || rawTokens[i + 1]}`);
     }
   }
   return tokens;

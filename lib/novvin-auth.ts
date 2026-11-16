@@ -1,11 +1,13 @@
 import { cookies } from 'next/headers';
 import { openSession, sealSession } from './session-crypto';
+import type { NovvinUser } from './novvin-profile';
+export { publicProfile } from './novvin-profile';
 
 export const SESSION_COOKIE = process.env.NODE_ENV === 'production' ? '__Host-elara-session' : 'elara-session';
 const BACKEND_COOKIE = '__Secure-novvin-web-session';
 const TTL = 30 * 24 * 60 * 60;
 type Session = { refresh: string; expires: number };
-export interface NovvinUser { id: string; displayName?: string; username?: string; email?: string }
+
 
 export function authConfigured() { return (process.env.ELARA_SESSION_SECRET?.length ?? 0) >= 32; }
 
@@ -19,17 +21,19 @@ export function trustedMutation(req: Request) {
   } catch { return false; }
 }
 
-export async function novvinFetch(path: string, body?: unknown, refresh?: string, method = 'POST') {
+export async function novvinFetch(path: string, body?: unknown, refresh?: string, method = 'POST', accessToken?: string, timeoutMs = 15_000, extraHeaders: Record<string, string> = {}) {
   const base = new URL(process.env.NOVVIN_API_URL || 'https://conectate.tail9b267c.ts.net');
   if (base.protocol !== 'https:') throw new Error('Novvin requiere HTTPS.');
   return fetch(new URL(path, base), {
-    method, cache: 'no-store', signal: AbortSignal.timeout(15_000), redirect: 'error',
+    method, cache: 'no-store', signal: AbortSignal.timeout(timeoutMs), redirect: 'error',
     headers: {
       'Content-Type': 'application/json',
       // This BFF speaks the existing first-party web session contract.
       Origin: 'https://novvinapp.com',
       'x-novvin-web-session': 'web-v1',
       'User-Agent': 'ELARA Web / Novvin integration',
+      ...extraHeaders,
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...(refresh ? { Cookie: `${BACKEND_COOKIE}=${encodeURIComponent(refresh)}` } : {}),
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
@@ -54,7 +58,19 @@ export async function readNovvinSession() {
   return session && session.expires > Date.now() && typeof session.refresh === 'string' ? session : null;
 }
 
-export async function verifiedNovvinUser(): Promise<NovvinUser | null> {
+export async function enrichNovvinUser(user: NovvinUser, accessToken: string): Promise<NovvinUser> {
+  try {
+    const ids = [user.id, user.supabaseUserId].filter((id) => /^[a-f0-9-]{36}$/i.test(id || ''));
+    if (!ids.length) return user;
+    const response = await novvinFetch(`/rest/v1/profiles?select=id,display_name,username,avatar_url,avatar_media_type&id=in.(${ids.join(',')})`, undefined, undefined, 'GET', accessToken, 5000);
+    if (!response.ok) return user;
+    const rows = await response.json();
+    const profile = Array.isArray(rows) ? (rows.find((row) => row.id === user.supabaseUserId) || rows.find((row) => row.id === user.id)) : null;
+    return profile ? { ...user, displayName: profile.display_name || user.displayName, username: profile.username || user.username, avatarUrl: typeof profile.avatar_url === 'string' ? profile.avatar_url : user.avatarUrl, avatarMediaType: profile.avatar_media_type || user.avatarMediaType } : user;
+  } catch { return user; }
+}
+
+export async function verifiedNovvinSession(withProfile = false): Promise<{ user: NovvinUser; accessToken: string } | null> {
   const session = await readNovvinSession();
   if (!session) return null;
   const response = await novvinFetch('/v1/auth/web-session/refresh', undefined, session.refresh);
@@ -64,13 +80,10 @@ export async function verifiedNovvinUser(): Promise<NovvinUser | null> {
   }
   if (!response.ok) throw new Error('Novvin no está disponible. Vuelve a intentarlo.');
   const payload = await response.json();
-  return payload.user?.id ? payload.user : null;
+  if (!payload.user?.id || !payload.accessToken) return null;
+  return { user: withProfile ? await enrichNovvinUser(payload.user, payload.accessToken) : payload.user, accessToken: payload.accessToken };
 }
 
-export function publicProfile(user: NovvinUser) {
-  return {
-    displayName: user.displayName || user.username || 'Usuario de Novvin',
-    handle: user.username || user.id.slice(0, 8), avatarColor: '#7862d9',
-    linkedMethod: 'novvin-session', createdAt: 0, focus: 'Uso general',
-  };
+export async function verifiedNovvinUser(withProfile = false): Promise<NovvinUser | null> {
+  return (await verifiedNovvinSession(withProfile))?.user || null;
 }

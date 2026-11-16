@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { JetBrains_Mono, Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
+import { APPEARANCE_BOOTSTRAP } from '@/lib/appearance';
 
 const sans = Plus_Jakarta_Sans({
   variable: '--font-elara-sans',
@@ -20,13 +21,14 @@ export const metadata: Metadata = {
   manifest: '/manifest.webmanifest',
   icons: { icon: '/icon.svg', apple: '/apple-icon.png' },
   description:
-    'Interfaz conversacional de ELARA con streaming en tiempo real, generación de código, visor responsivo de index.html e acceso con tu cuenta de Novvin.',
+    'Interfaz conversacional de ELARA con streaming en tiempo real, generación de código, visor responsivo de index.html y acceso con tu cuenta de Novvin.',
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="es" className={`${sans.variable} ${mono.variable} h-full antialiased`}>
-      <body className="h-full bg-[#F7F8FC] text-[#292D47] font-sans selection:bg-[#6654D9]/30 selection:text-[#292D47]">
+    <html lang="es" suppressHydrationWarning className={`${sans.variable} ${mono.variable} h-full antialiased`}>
+      <head><script dangerouslySetInnerHTML={{ __html: APPEARANCE_BOOTSTRAP }} /></head>
+      <body className="h-full bg-[var(--canvas)] text-[var(--ink)] font-sans selection:bg-[var(--accent)]/30 selection:text-[var(--ink)]">
         {children}
       </body>
     </html>

@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { authConfigured, novvinFetch, persistNovvinSession, publicProfile, readNovvinSession, SESSION_COOKIE, trustedMutation, verifiedNovvinUser } from '@/lib/novvin-auth';
+import { NOVVIN_REGISTER_URL } from '@/lib/novvin-profile';
+import { authConfigured, enrichNovvinUser, novvinFetch, persistNovvinSession, publicProfile, readNovvinSession, SESSION_COOKIE, trustedMutation, verifiedNovvinUser } from '@/lib/novvin-auth';
 
 const noStore = { 'Cache-Control': 'no-store' };
 const credentials = z.object({
@@ -24,9 +25,11 @@ const errors: Record<string, string> = {
 };
 
 export async function GET(_req: Request, ctx: RouteContext<'/api/auth/[action]'>) {
-  if ((await ctx.params).action !== 'session') return Response.json({}, { status: 404 });
+  const { action } = await ctx.params;
+  if (action === 'register') return Response.redirect(NOVVIN_REGISTER_URL, 303);
+  if (action !== 'session') return Response.json({}, { status: 404 });
   try {
-    const user = await verifiedNovvinUser();
+    const user = await verifiedNovvinUser(true);
     return Response.json({ profile: user ? publicProfile(user) : null, configured: authConfigured() }, { headers: noStore });
   } catch {
     return Response.json({ error: 'No se pudo verificar la sesión con Novvin.' }, { status: 503, headers: noStore });
@@ -36,7 +39,8 @@ export async function GET(_req: Request, ctx: RouteContext<'/api/auth/[action]'>
 export async function POST(req: Request, ctx: RouteContext<'/api/auth/[action]'>) {
   if (!trustedMutation(req)) return Response.json({ error: 'Origen no autorizado.' }, { status: 403 });
   const { action } = await ctx.params;
-  if (!['login', 'register', 'logout'].includes(action)) return Response.json({}, { status: 404 });
+  if (action === 'register') return Response.json({ error: 'Crea tu cuenta en la página oficial de Novvin.', url: NOVVIN_REGISTER_URL }, { status: 410, headers: noStore });
+  if (!['login', 'logout'].includes(action)) return Response.json({}, { status: 404 });
   if (!authConfigured()) return Response.json({ error: 'El acceso de Novvin aún no está configurado.' }, { status: 503 });
   try {
     if (action === 'logout') {
@@ -54,9 +58,6 @@ export async function POST(req: Request, ctx: RouteContext<'/api/auth/[action]'>
     const parsed = credentials.safeParse(body);
     if (!parsed.success) return Response.json({ error: 'Revisa el correo, la contraseña y los datos del formulario.' }, { status: 400 });
     const { email, password, displayName, username, secondFactor } = parsed.data;
-    if (action === 'register' && (!displayName || !username || password.length < 8)) {
-      return Response.json({ error: 'Completa nombre, usuario y contraseña de al menos 8 caracteres.' }, { status: 400 });
-    }
     const response = await novvinFetch(`/v1/auth/${action}`, {
       email: email.toLowerCase(), password, displayName, username, client: 'web', deviceLabel: 'ELARA Web',
       ...(secondFactor ? (/^\d{6}$/.test(secondFactor) ? { totpCode: secondFactor } : { backupCode: secondFactor }) : {}),
@@ -68,7 +69,7 @@ export async function POST(req: Request, ctx: RouteContext<'/api/auth/[action]'>
     }, { status: response.status, headers: noStore });
     if (!payload.user?.id) throw new Error('Missing verified user');
     await persistNovvinSession(response);
-    return Response.json({ profile: publicProfile(payload.user) }, { headers: noStore });
+    return Response.json({ profile: publicProfile(await enrichNovvinUser(payload.user, payload.accessToken)) }, { headers: noStore });
   } catch {
     return Response.json({ error: 'No se pudo conectar con Novvin. Vuelve a intentarlo.' }, { status: 503, headers: noStore });
   }

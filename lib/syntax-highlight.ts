@@ -124,20 +124,20 @@ export function tokenizeHighlightedLines(code: string, lang: string): HighlightT
 export function tokenClassName(kind: TokenKind): string {
   switch (kind) {
     case 'keyword':
-      return 'text-[#7C3CB5] font-medium';
+      return 'text-[var(--syntax-keyword)] font-medium';
     case 'string':
-      return 'text-[#16634E]';
+      return 'text-[var(--syntax-string)]';
     case 'tag':
-      return 'text-[#116D91]';
+      return 'text-[var(--syntax-tag)]';
     case 'attr':
-      return 'text-[#8A4E15]';
+      return 'text-[var(--syntax-attr)]';
     case 'comment':
-      return 'text-[#646879] italic';
+      return 'text-[var(--syntax-comment)] italic';
     case 'number':
-      return 'text-[#8A5710]';
+      return 'text-[var(--syntax-number)]';
     case 'operator':
-      return 'text-[#3C56A2]';
+      return 'text-[var(--syntax-operator)]';
     default:
-      return 'text-[#353B54]';
+      return 'text-[var(--syntax-plain)]';
   }
 }

@@ -53,7 +53,7 @@ function splitCodeSegments(raw: string): Segment[] {
  */
 function renderInline(line: string, keyPrefix = 'in'): ReactNode[] {
   const nodes: ReactNode[] = [];
-  const pattern = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\(https:\/\/[^)\s]+\))/g;
+  const pattern = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\((?:https:\/\/[^)\s]+|tel:\+?\d+(?:\?[a-zA-Z0-9_=&-]+)?)\))/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
   let idx = 0;
@@ -67,7 +67,7 @@ function renderInline(line: string, keyPrefix = 'in'): ReactNode[] {
 
     if (token.startsWith('**') && token.endsWith('**')) {
       nodes.push(
-        <strong key={key} className="font-semibold text-[#292D47]">
+        <strong key={key} className="font-semibold text-[var(--ink)]">
           {renderInline(token.slice(2, -2), key)}
         </strong>,
       );
@@ -75,21 +75,21 @@ function renderInline(line: string, keyPrefix = 'in'): ReactNode[] {
       nodes.push(
         <code
           key={key}
-          className="rounded-md border border-[#26324B] bg-[#F0EDF8] px-1.5 py-0.5 font-mono text-[0.84em] text-[#6654B8]"
+          className="rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-1.5 py-0.5 font-mono text-[0.84em] text-[var(--accent)]"
         >
           {token.slice(1, -1)}
         </code>,
       );
     } else {
-      const linkMatch = token.match(/^\[([^\]]+)\]\((https:\/\/[^)\s]+)\)$/);
+      const linkMatch = token.match(/^\[([^\]]+)\]\((https:\/\/[^)\s]+|tel:\+?\d+(?:\?[a-zA-Z0-9_=&-]+)?)\)$/);
       if (linkMatch) {
         nodes.push(
           <a
             key={key}
             href={linkMatch[2]}
-            target="_blank"
+            target={linkMatch[2].startsWith('https:') ? '_blank' : undefined}
             rel="noopener noreferrer"
-            className="text-[#6654D9] underline decoration-[#6654D9]/40 underline-offset-4 hover:text-[#6654B8]"
+            className="text-[var(--accent)] underline decoration-[var(--accent)]/40 underline-offset-4 hover:text-[var(--accent)]"
           >
             {linkMatch[1]}
           </a>,
@@ -130,7 +130,7 @@ function ProseBlock({ text }: { text: string }) {
     if (listItems.length === 0) return;
     if (listOrdered) {
       elements.push(
-        <ol key={keyCounter++} className="my-2.5 list-decimal space-y-1.5 pl-5 text-[#3E425C]">
+        <ol key={keyCounter++} className="my-2.5 list-decimal space-y-1.5 pl-5 text-[var(--ink)]">
           {listItems.map((item, i) => (
             <li key={i} className="leading-relaxed">
               {renderInline(item, `ol-${keyCounter}-${i}`)}
@@ -140,7 +140,7 @@ function ProseBlock({ text }: { text: string }) {
       );
     } else {
       elements.push(
-        <ul key={keyCounter++} className="my-2.5 list-disc space-y-1.5 pl-5 text-[#3E425C]">
+        <ul key={keyCounter++} className="my-2.5 list-disc space-y-1.5 pl-5 text-[var(--ink)]">
           {listItems.map((item, i) => (
             <li key={i} className="leading-relaxed">
               {renderInline(item, `ul-${keyCounter}-${i}`)}
@@ -177,10 +177,10 @@ function ProseBlock({ text }: { text: string }) {
       elements.push(
         <div
           key={keyCounter++}
-          className="my-3 overflow-x-auto rounded-xl border border-[#DFDBED] bg-[#EEEAF7]"
+          className="my-3 overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--surface-2)]"
         >
           <table className="w-full border-collapse text-left text-xs sm:text-sm">
-            <thead className="border-b border-[#DFDBED] bg-[#EEEAF7] text-[#3E425C]">
+            <thead className="border-b border-[var(--border)] bg-[var(--surface-2)] text-[var(--ink)]">
               <tr>
                 {headers.map((h, hi) => (
                   <th key={hi} className="px-3.5 py-2.5 font-semibold">
@@ -189,9 +189,9 @@ function ProseBlock({ text }: { text: string }) {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#EEEAF7] text-[#494D66]">
+            <tbody className="divide-y divide-[var(--surface-2)] text-[var(--secondary)]">
               {rows.map((row, ri) => (
-                <tr key={ri} className="hover:bg-[#EEEAF7]">
+                <tr key={ri} className="hover:bg-[var(--surface-2)]">
                   {headers.map((_, ci) => (
                     <td key={ci} className="px-3.5 py-2 align-top">
                       {renderInline(row[ci] ?? '', `td-${keyCounter}-${ri}-${ci}`)}
@@ -208,7 +208,7 @@ function ProseBlock({ text }: { text: string }) {
 
     if (/^---+$/.test(trimmed)) {
       flushList();
-      elements.push(<hr key={keyCounter++} className="my-4 border-[#DCD7E8]" />);
+      elements.push(<hr key={keyCounter++} className="my-4 border-[var(--border)]" />);
       continue;
     }
 
@@ -230,19 +230,19 @@ function ProseBlock({ text }: { text: string }) {
     flushList();
     if (trimmed.startsWith('### ')) {
       elements.push(
-        <h3 key={keyCounter++} className="mt-4 mb-1 text-base font-semibold text-[#292D47]">
+        <h3 key={keyCounter++} className="mt-4 mb-1 text-base font-semibold text-[var(--ink)]">
           {renderInline(trimmed.slice(4), `h3-${keyCounter}`)}
         </h3>,
       );
     } else if (trimmed.startsWith('## ')) {
       elements.push(
-        <h2 key={keyCounter++} className="mt-4 mb-1.5 text-lg font-semibold text-[#292D47]">
+        <h2 key={keyCounter++} className="mt-4 mb-1.5 text-lg font-semibold text-[var(--ink)]">
           {renderInline(trimmed.slice(3), `h2-${keyCounter}`)}
         </h2>,
       );
     } else if (trimmed.startsWith('# ')) {
       elements.push(
-        <h1 key={keyCounter++} className="mt-4 mb-2 text-xl font-bold text-[#292D47]">
+        <h1 key={keyCounter++} className="mt-4 mb-2 text-xl font-bold text-[var(--ink)]">
           {renderInline(trimmed.slice(2), `h1-${keyCounter}`)}
         </h1>,
       );
@@ -250,14 +250,14 @@ function ProseBlock({ text }: { text: string }) {
       elements.push(
         <blockquote
           key={keyCounter++}
-          className="my-2.5 border-l-2 border-[#6654D9]/60 bg-[#EEEAF7] px-3.5 py-2 text-sm text-[#494D66]"
+          className="my-2.5 border-l-2 border-[var(--accent)]/60 bg-[var(--surface-2)] px-3.5 py-2 text-sm text-[var(--secondary)]"
         >
           {renderInline(trimmed.slice(2), `bq-${keyCounter}`)}
         </blockquote>,
       );
     } else {
       elements.push(
-        <p key={keyCounter++} className="my-1.5 leading-relaxed text-[#3E425C]">
+        <p key={keyCounter++} className="my-1.5 leading-relaxed text-[var(--ink)]">
           {renderInline(trimmed, `p-${keyCounter}`)}
         </p>,
       );
@@ -318,13 +318,13 @@ function CodeBlock({
             : 'txt';
 
   return (
-    <div className="my-3.5 overflow-hidden rounded-2xl border border-[#233049] bg-[#EEEAF7] shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#EEEAF7] bg-[#EEEAF7] px-3.5 py-2.5 text-xs text-[#66697F]">
+    <div className="my-3.5 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--surface-2)] bg-[var(--surface-2)] px-3.5 py-2.5 text-xs text-[var(--muted)]">
         <div className="flex items-center gap-2">
-          <span className="rounded-md border border-[#25334D] bg-[#EEEAF7] px-2 py-0.5 font-mono text-[11px] font-medium text-[#6654B8]">
+          <span className="rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2 py-0.5 font-mono text-[11px] font-medium text-[var(--accent)]">
             {lang || 'código'}
           </span>
-          <span className="text-[11px] text-[#74758B]">{highlighted.length} líneas</span>
+          <span className="text-[11px] text-[var(--muted)]">{highlighted.length} líneas</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
@@ -332,7 +332,7 @@ function CodeBlock({
             <button
               type="button"
               onClick={() => onOpenPreview(code)}
-              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-[#6654D9] px-2.5 py-1 text-xs font-semibold text-[#EEEAF7] transition-colors hover:bg-[#6654B8]"
+              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-[var(--accent)] px-2.5 py-1 text-xs font-semibold text-[var(--surface-2)] transition-colors hover:bg-[var(--accent)]"
             >
               <Play className="h-3 w-3 fill-current" />
               Vista previa
@@ -341,7 +341,7 @@ function CodeBlock({
           <button
             type="button"
             onClick={() => downloadTextFile(isHtml ? 'index.html' : `elara-snippet.${ext}`, code)}
-            className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[#DDD7ED] bg-[#EEEAF7] px-2 py-1 text-xs text-[#494D66] transition-colors hover:border-[#6654D9]/40 hover:text-[#292D47]"
+            className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1 text-xs text-[var(--secondary)] transition-colors hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
             title="Descargar archivo"
           >
             <Download className="h-3.5 w-3.5" />
@@ -349,16 +349,16 @@ function CodeBlock({
           <button
             type="button"
             onClick={handleCopy}
-            className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg border border-[#DDD7ED] bg-[#EEEAF7] px-2.5 py-1 text-xs font-medium text-[#494D66] transition-colors hover:border-[#6654D9]/40 hover:text-[#292D47]"
+            className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-xs font-medium text-[var(--secondary)] transition-colors hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
           >
-            {copied ? <Check className="h-3.5 w-3.5 text-[#34D399]" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? <Check className="h-3.5 w-3.5 text-[var(--success)]" /> : <Copy className="h-3.5 w-3.5" />}
             {copied ? 'Copiado' : 'Copiar'}
           </button>
           {isLong && (
             <button
               type="button"
               onClick={() => setCollapsed((v) => !v)}
-              className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-2 py-1 text-xs text-[#66697F] hover:bg-[#EEEAF7] hover:text-[#292D47]"
+              className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-2 py-1 text-xs text-[var(--muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
             >
               {collapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
               {collapsed ? 'Expandir' : 'Contraer'}
@@ -372,8 +372,8 @@ function CodeBlock({
           <table className="w-full border-collapse">
             <tbody>
               {highlighted.map((tokens, lineIdx) => (
-                <tr key={lineIdx} className="hover:bg-[#EEEAF7]/60">
-                  <td className="w-10 select-none pr-3 text-right text-[11px] text-[#475569]">
+                <tr key={lineIdx} className="hover:bg-[var(--surface-2)]/60">
+                  <td className="w-10 select-none pr-3 text-right text-[11px] text-[var(--muted)]">
                     {lineIdx + 1}
                   </td>
                   <td className="whitespace-pre pr-3">
@@ -389,7 +389,7 @@ function CodeBlock({
           </table>
         </div>
       ) : (
-        <div className="px-4 py-2.5 text-xs text-[#74758B]">
+        <div className="px-4 py-2.5 text-xs text-[var(--muted)]">
           Bloque contraído ({highlighted.length} líneas). Pulsa Expandir o Vista previa para verlo.
         </div>
       )}

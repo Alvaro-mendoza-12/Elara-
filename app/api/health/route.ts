@@ -11,7 +11,7 @@ export async function GET() {
       label: info.label,
       model: info.modelName,
       authMode: authConfigured() ? 'novvin-session' : 'guest',
-      capabilities: info.mode === 'elara-core' ? ['web-prototypes', 'code-inspection', 'utilities'] : ['language-model'],
+      capabilities: ['web-prototypes', 'code-inspection', 'utilities', ...(info.mode === 'custom-server' ? ['language-model'] : [])],
       generalLanguageModel: info.mode !== 'elara-core',
     },
     {

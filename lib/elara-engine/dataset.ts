@@ -2,6 +2,23 @@ import type { IntentTrainingExample } from './neural-net';
 
 export const ELARA_INTENTS: IntentTrainingExample[] = [
   {
+    id: 'commerce_create',
+    patterns: [
+      'crea tienda online para vender productos',
+      'haz pagina de venta de ropa',
+      'quiero vender zapatos en una tienda virtual',
+      'necesito catalogo de ventas con carrito',
+      'diseña una pagina de comercio electronico',
+      'creame una tienda de juguetes',
+      'genera una web para vender comida',
+      'haz una tienda para mi emprendimiento',
+      'crea catalogo de productos en soles',
+      'necesito una pagina para mi negocio de venta',
+      'quiero un ecommerce de ropa con carrito',
+      'hacer tienda para vender servicios por internet',
+    ],
+  },
+  {
     id: 'greeting_help',
     patterns: [
       'hola',

@@ -1,3 +1,5 @@
+import { readWebSpec } from './web-spec';
+import { commerceRequest, COMMERCE_QUESTION, shortArtifactEdit } from './request';
 import { contextualReply } from './context';
 import { inspectCodeSnippet } from './code-analyzer';
 import {
@@ -11,6 +13,7 @@ import { tryConversationalResponse } from './conversational';
 import { ELARA_INTENTS, KNOWLEDGE_ARTICLES } from './dataset';
 import { buildTrainedIntentNetwork, type ElaraIntentNetwork } from './neural-net';
 import { detectCrisisHelpResponse } from './safety';
+import { polynomialIntegral } from './math';
 import { extractFencedCodeBlocks, extractPromptParams, tokenize } from './text';
 import {
   buildBlogHtml,
@@ -108,7 +111,7 @@ function buildContextualFollowUp(userText: string, prevHtml: { prompt: string; h
     /\b(claro|clara|oscuro|oscura|blanco|blanca|light|dark|soles|euros?|dolares)\b/.test(norm);
   if (!supportedEdit) return 'Con el motor básico puedo cambiar el color, el tema claro u oscuro, la marca, la moneda y la cantidad de productos del prototipo anterior. No puedo aplicar ese cambio concreto con fiabilidad. Indica uno de esos ajustes o comparte el fragmento de código que necesitas revisar.';
 
-  const prevParams = extractPromptParams(prevHtml.prompt);
+  const prevParams = { ...extractPromptParams(prevHtml.prompt), ...readWebSpec(prevHtml.html) };
   prevParams.accentColor = prevHtml.html.match(/--accent:\s*(#[a-fA-F0-9]{3,6})/)?.[1] || prevParams.accentColor;
   prevParams.preferredTheme = /--bg:\s*#(?:f8fafc|f7f8fc)/i.test(prevHtml.html) ? 'light' : 'dark';
   const oldItems = prevHtml.html.match(/const ITEMS = (\[[\s\S]*?\]);/);
@@ -123,6 +126,8 @@ function buildContextualFollowUp(userText: string, prevHtml: { prompt: string; h
       ? 'dark'
       : prevParams.preferredTheme;
   merged.preferredTheme = wantsLight;
+  merged.topicSubject = prevParams.topicSubject;
+  merged.brandName = params.brandName || prevParams.brandName;
   merged.accentColor = params.accentColor || prevParams.accentColor;
   if (/\b(soles|sol\s+peruano|pen)\b/.test(norm)) merged.currencySymbol = 'S/';
   else if (/\b(euros?|eur)\b/.test(norm)) merged.currencySymbol = '€';
@@ -184,7 +189,7 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
   }
 
   // 1. Crisis & self-harm priority safeguard — NEVER respond with generic AI status.
-  const crisisReply = detectCrisisHelpResponse(latestUser);
+  const crisisReply = detectCrisisHelpResponse(latestUser, turns.filter((t) => t.role === 'user').slice(0, -1).map((t) => t.text));
   if (crisisReply) {
     return {
       reply: crisisReply,
@@ -196,8 +201,11 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
   const contextResponse = contextualReply(turns);
   if (contextResponse) return contextResponse;
 
-  const params = extractPromptParams(latestUser);
-  const norm = params.normalized;
+  const integral = polynomialIntegral(latestUser);
+  if (integral) return { reply: integral, intent: 'math_polynomial_integral', confidence: 1 };
+
+  let params = extractPromptParams(latestUser);
+  let norm = params.normalized;
 
   // 2. JSON formatting & pasted code review (handles attached files or fenced snippets cleanly)
   if (params.codeBlocks.length > 0) {
@@ -233,7 +241,7 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
   // 4. Follow-up tweaks to previously generated HTML in the conversation
   const previousHtml = findPreviousHtml(turns);
   if (previousHtml) {
-    const followUp = buildContextualFollowUp(latestUser, previousHtml);
+    const followUp = buildContextualFollowUp(shortArtifactEdit(latestUser) || latestUser, previousHtml);
     if (followUp) {
       return { reply: followUp, intent: 'code_index_followup', confidence: 0.92 };
     }
@@ -248,6 +256,13 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
       intent: directConv.intent,
       confidence: 0.95,
     };
+  }
+
+  const commerce = commerceRequest(turns);
+  if (commerce?.kind === 'clarify') return { reply: COMMERCE_QUESTION, intent: 'clarify_commerce', confidence: 1 };
+  if (commerce?.kind === 'create') {
+    params = extractPromptParams(commerce.brief);
+    norm = params.normalized;
   }
 
   // 5. Explicit web/app generation with real topic/item synthesis (e.g. "20 juguetes de perritos")
@@ -312,6 +327,9 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
   const prediction = net.predict(latestUser);
   if (prediction.confidence >= 0.72 && prediction.confidence - prediction.runnerUpConfidence >= 0.2) {
     switch (prediction.label) {
+      case 'commerce_create':
+        if (/^(?:un |mi |una )?(?:ecommerce|comercio electronico|emprendimiento online|negocio online)[.!? ]*$/.test(norm)) return { reply: COMMERCE_QUESTION, intent: 'clarify_commerce', confidence: prediction.confidence };
+        break;
       case 'greeting_help':
         if (!/^(hola(?: elara)?|buen[oa]s?(?: dias| tardes| noches)?|que tal(?: como estas)?|necesito ayuda|que puedes hacer|como empiezo)[.!? ]*$/.test(norm)) break;
         return {
@@ -324,7 +342,7 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
         if (!/elara|quien eres|como te llamas|tu motor|quien te creo|eres una inteligencia/.test(norm)) break;
         return {
           reply:
-            'Soy **ELARA** (`E L A R A`), tu asistente web de programación y prototipado rápido.\n\nEn esta etapa corro con **Elara Core 0.5**, un motor especializado de reglas, plantillas y clasificación de intenciones que funciona en el servidor. No es un modelo de lenguaje general: crea prototipos web, calcula y consulta guías técnicas limitadas. No navego por internet ni tengo acceso a tus archivos salvo los que adjuntes.',
+            'Soy **ELARA** (`E L A R A`), tu asistente web de programación y prototipado rápido.\n\nEn esta etapa corro con **Elara Core 0.6**, un motor especializado de reglas, plantillas y clasificación de intenciones que funciona en el servidor. No es un modelo de lenguaje general: crea prototipos web, calcula y consulta guías técnicas limitadas. No navego por internet ni tengo acceso a tus archivos salvo los que adjuntes.',
           intent: prediction.label,
           confidence: prediction.confidence,
         };

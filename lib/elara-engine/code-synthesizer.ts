@@ -1,3 +1,4 @@
+import { serializeWebSpec } from './web-spec';
 import type { PromptParams } from './text';
 
 function escapeHtml(text: string): string {
@@ -16,8 +17,9 @@ function pickAccentInk(hex: string): string {
   const r = parseInt(full.slice(0, 2), 16);
   const g = parseInt(full.slice(2, 4), 16);
   const b = parseInt(full.slice(4, 6), 16);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.62 ? '#061018' : '#ffffff';
+  const linear = [r, g, b].map((value) => { const channel = value / 255; return channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4; });
+  const luminance = linear[0] * .2126 + linear[1] * .7152 + linear[2] * .0722;
+  return 1.05 / (luminance + .05) >= 4.5 ? '#ffffff' : '#101018';
 }
 
 export function resolveThemePalette(theme: 'dark' | 'light', accentOverride?: string | null) {
@@ -62,6 +64,7 @@ export function buildLandingIndexHtml(params: PromptParams): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="elara-spec" content="${serializeWebSpec(params)}" />
   <title>${brand} — Inicio</title>
   <style>
     :root { --bg: ${c.bg}; --surface: ${c.surface}; --border: ${c.border}; --text: ${c.text}; --muted: ${c.muted}; --accent: ${c.accent}; }
@@ -148,6 +151,7 @@ export function buildLoginIndexHtml(params: PromptParams): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="elara-spec" content="${serializeWebSpec(params)}" />
   <title>Acceder — ${brand}</title>
   <style>
     :root { --bg: ${c.bg}; --surface: ${c.surface}; --border: ${c.border}; --text: ${c.text}; --muted: ${c.muted}; --accent: ${c.accent}; }
@@ -210,6 +214,7 @@ export function buildDashboardIndexHtml(params: PromptParams): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="elara-spec" content="${serializeWebSpec(params)}" />
   <title>${brand} — Panel</title>
   <style>
     :root { --bg: ${c.bg}; --surface: ${c.surface}; --border: ${c.border}; --text: ${c.text}; --muted: ${c.muted}; --accent: ${c.accent}; }
@@ -279,6 +284,7 @@ export function buildCalculatorIndexHtml(params: PromptParams): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="elara-spec" content="${serializeWebSpec(params)}" />
   <title>${brand}</title>
   <style>
     :root { --bg: ${c.bg}; --surface: ${c.surface}; --border: ${c.border}; --text: ${c.text}; --accent: ${c.accent}; }
@@ -336,6 +342,7 @@ export function buildPortfolioIndexHtml(params: PromptParams): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="elara-spec" content="${serializeWebSpec(params)}" />
   <title>${brand}</title>
   <style>
     :root { --bg: ${c.bg}; --surface: ${c.surface}; --border: ${c.border}; --text: ${c.text}; --muted: ${c.muted}; --accent: ${c.accent}; }

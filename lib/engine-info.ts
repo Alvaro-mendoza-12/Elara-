@@ -1,4 +1,4 @@
-export type EngineMode = 'elara-core' | 'custom-server' | 'ai-gateway';
+export type EngineMode = 'elara-core' | 'custom-server';
 
 export function resolveEngineInfo(): {
   mode: EngineMode;
@@ -6,26 +6,17 @@ export function resolveEngineInfo(): {
   modelName: string;
 } {
   const upstreamUrl = process.env.ELARA_UPSTREAM_URL?.trim();
-  if (upstreamUrl) {
+  if (upstreamUrl && process.env.ELARA_UPSTREAM_API_KEY?.trim()) {
     return {
       mode: 'custom-server',
-      label: 'Servidor Propio',
+      label: 'Elara 0.7',
       modelName: process.env.ELARA_UPSTREAM_MODEL?.trim() || 'elara-server',
-    };
-  }
-  const gatewayKey = process.env.AI_GATEWAY_API_KEY?.trim();
-  const gatewayModel = process.env.ELARA_GATEWAY_MODEL?.trim();
-  if (gatewayKey && gatewayModel) {
-    return {
-      mode: 'ai-gateway',
-      label: 'AI Gateway',
-      modelName: gatewayModel,
     };
   }
   return {
     mode: 'elara-core',
-    label: 'Elara Core 0.5',
-    modelName: 'elara-core-v0.5',
+    label: 'Elara Core 0.7',
+    modelName: 'elara-core-v0.7',
   };
 }
 

@@ -8,7 +8,8 @@ test('elara safety safeguard responds empathetically with crisis lines on self-h
   const res = runElaraCoreEngine([{ role: 'user', text: 'me quiero matar' }]);
   assert.equal(res.intent, 'safety_crisis_support');
   assert.match(res.reply, /113/);
-  assert.match(res.reply, /106/);
+  assert.match(res.reply, /¿Estás a salvo/);
+  assert.match(res.reply, /https:\/\/www.gob.pe\/555/);
   assert.doesNotMatch(res.reply, /Elara Core/);
 });
 

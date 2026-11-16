@@ -1,5 +1,6 @@
+import { serializeWebSpec } from './web-spec';
 import { resolveThemePalette } from './code-synthesizer';
-import type { PromptParams } from './text';
+import { normalizeText, type PromptParams } from './text';
 
 interface CatalogSeed {
   name: string;
@@ -211,7 +212,7 @@ function selectCatalogItems(params: PromptParams): {
   accent: string;
   items: CatalogItem[];
 } {
-  const norm = params.normalized;
+  const norm = params.topicSubject ? normalizeText(params.topicSubject) : params.normalized;
   const currency = params.currencySymbol || '$';
   const count = params.requestedCount ?? (/\b20\b/.test(norm) ? 20 : 12);
 
@@ -257,11 +258,35 @@ function selectCatalogItems(params: PromptParams): {
   };
 }
 
+const CATALOG_ICONS: Record<string, string> = {
+  laptop: 'M3 4h18v13H3z M1 21h22l-2-4H3z',
+  car: 'M4 16H2v-5l2-1 3-5h10l3 5 2 1v5h-2 M7 16h10 M7 5l-2 6h14l-2-6 M7 16a2 2 0 1 0 0 .1 M19 16a2 2 0 1 0 0 .1',
+  bag: 'M5 7h14l2 14H3L5 7z M9 8V6a3 3 0 0 1 6 0v2',
+  shirt: 'M8 3l4 2 4-2 6 5-4 4-2-2v11H8V10l-2 2-4-4 6-5z',
+  shoe: 'M3 13l3-7 5 6 10 4v5H3v-8z M11 12l-2 3 M14 13l-2 3 M3 18h18',
+  paw: 'M8 10a2 3 0 1 0 0-.1 M16 10a2 3 0 1 0 0-.1 M4 14a2 2.5 0 1 0 0-.1 M20 14a2 2.5 0 1 0 0-.1 M7 20c0-3 3-6 5-6s5 3 5 6c0 3-4 1-5 1s-5 2-5-1z',
+  food: 'M4 3v6 M7 3v6 M10 3v6 M4 8c0 5 6 5 6 0 M7 12v9 M18 3c-5 5-5 11 0 11v7 M18 3v11',
+  book: 'M3 3h7l2 2 2-2h7v17h-7l-2 1-2-1H3V3z M12 5v16',
+  fitness: 'M2 9v6 M5 6v12 M19 6v12 M22 9v6 M5 12h14',
+};
+function catalogIcon(item: CatalogSeed): string {
+  const text = (item.name + ' ' + item.category).toLowerCase();
+  if (/laptop|monitor|teclado|ssd|dock/.test(text)) return 'laptop';
+  if (/carrit|coche|auto |vehiculo/.test(text)) return 'car';
+  if (/mordedor|mascota|perrit|canin|peluche|olfativa/.test(text)) return 'paw';
+  if (/zapat|calzado|shoe/.test(text)) return 'shoe';
+  if (/ropa|polera|camisa|vestid|casaca|hoodie/.test(text)) return 'shirt';
+  if (/comida|postre|cafe|café|plato|pizza|hamburguesa/.test(text)) return 'food';
+  if (/curso|libro|taller|educacion/.test(text)) return 'book';
+  if (/pesa|fitness|banda|proteina|creatina/.test(text)) return 'fitness';
+  return 'bag';
+}
+
 export function buildCatalogStoreHtml(params: PromptParams): string {
   const { title, subtitle, accent, items } = selectCatalogItems(params);
   const c = resolveThemePalette(params.preferredTheme, accent);
   const categories = ['Todos', ...Array.from(new Set(items.map((x) => x.category)))];
-  const serializedItems = JSON.stringify(items).replace(/</g, '\\u003c');
+  const serializedItems = JSON.stringify(items.map((item) => ({ ...item, icon: catalogIcon(item) }))).replace(/</g, '\\u003c');
   const currency = params.currencySymbol || '$';
 
   return `<!DOCTYPE html>
@@ -269,6 +294,7 @@ export function buildCatalogStoreHtml(params: PromptParams): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="elara-spec" content="${serializeWebSpec(params)}" />
   <title>${escapeHtml(title)}</title>
   <style>
     :root { --bg: ${c.bg}; --surface: ${c.surface}; --card: ${c.card}; --border: ${c.border}; --text: ${c.text}; --muted: ${c.muted}; --accent: ${c.accent}; --accent-ink: ${c.accentInk}; }
@@ -289,14 +315,14 @@ export function buildCatalogStoreHtml(params: PromptParams): string {
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; transition: border-color 0.15s, transform 0.15s; }
     .card:hover { border-color: var(--accent); transform: translateY(-2px); }
-    .card-art { height: 144px; border-radius: 10px; border: 1px solid var(--border); background: radial-gradient(circle at top right, rgba(148,163,184,0.2), transparent 65%), var(--surface); display: flex; align-items: center; justify-content: space-between; padding: 0 14px; margin-bottom: 10px; }
-    .mono { width: 38px; height: 38px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-weight: 800; display: grid; place-items: center; font-size: 0.9rem; letter-spacing: 0.04em; }
-    .tag { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: rgba(148,163,184,0.14); color: var(--accent); width: fit-content; }
+    .card-art { height: 144px; border-radius: 10px; border: 1px solid var(--border); background: radial-gradient(circle at top right, rgba(148,163,184,0.2), transparent 65%), var(--surface); display: flex; align-items: center; justify-content: center; position: relative; padding: 0 14px; margin-bottom: 10px; }
+    .mono { width: 74px; height: 74px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-weight: 800; display: grid; place-items: center; font-size: 0.9rem; letter-spacing: 0.04em; }
+    .tag { position: absolute; top: 10px; right: 10px; max-width: calc(100% - 20px); display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: rgba(148,163,184,0.14); color: var(--accent); width: fit-content; }
     .card h3 { font-size: 1rem; margin-top: 4px; }
     .card p { font-size: 0.87rem; color: var(--muted); margin-top: 4px; }
     .card-foot { display: flex; align-items: center; justify-content: space-between; padding-top: 8px; border-top: 1px solid var(--border); }
     .price { font-weight: 700; font-size: 1.05rem; }
-    .add { background: transparent; color: var(--accent); border: 1px solid var(--accent); border-radius: 8px; padding: 6px 12px; font-weight: 600; font-size: 0.82rem; cursor: pointer; }
+    .add { background: transparent; color: var(--text); border: 1px solid var(--accent); border-radius: 8px; padding: 6px 12px; font-weight: 600; font-size: 0.82rem; cursor: pointer; }
     .add:hover { background: var(--accent); color: var(--accent-ink); }
     .summary { margin-top: 28px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; display: none; }
     .summary.open { display: block; }
@@ -304,11 +330,27 @@ export function buildCatalogStoreHtml(params: PromptParams): string {
     .summary li { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 0.9rem; color: var(--muted); }
     .rm { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 2px 8px; cursor: pointer; font-size: 0.78rem; }
     .checkout-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
-    #orderFeedback { font-size: 0.85rem; color: var(--accent); font-weight: 600; }
+    #orderFeedback { font-size: 0.85rem; color: var(--text); font-weight: 600; }
     :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
     button, input, select { font: inherit; }
     h1 { letter-spacing: -.045em; line-height: 1.12; }
-    @media(max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card { padding: 12px; min-width: 0; overflow-wrap: anywhere; } .card-art { height: 110px; padding: 10px; gap: 6px; } .tag { min-width: 0; overflow-wrap: anywhere; } .mono { flex-shrink: 0; } .card-foot { flex-wrap: wrap; gap: 10px; } .container { padding: 20px 0; } }
+    @media(max-width: 560px) {
+      .container { padding: 24px 16px 48px; }
+      header { align-items: flex-start; gap: 18px; }
+      .grid { grid-template-columns: 1fr; gap: 12px; }
+      .card { padding: 14px; min-width: 0; overflow-wrap: anywhere; }
+      .card-content { display: grid; grid-template-columns: 82px minmax(0,1fr); gap: 5px 12px; align-items: start; }
+      .card-art { grid-row: 1 / span 2; min-height: 110px; height: auto; margin: 0; padding: 8px; flex-direction: column; gap: 8px; }
+      .tag { position: static; max-width: 100%; font-size: 10px; text-align: center; padding: 3px 5px; color: var(--text); }
+      .mono { flex-shrink: 0; width: 52px; height: 52px; }
+      .mono svg { width: 36px; height: 36px; }
+      .card h3 { font-size: 1rem; margin: 0; line-height: 1.4; }
+      .card p { font-size: .875rem; line-height: 1.5; margin: 0; }
+      .card-foot { flex-wrap: wrap; gap: 10px; }
+      .search-row { width: 100%; }
+      input[type="search"], select { width: 100%; min-width: 0; }
+      .chip { min-height: 36px; font-size: .875rem; }
+    }
     @media(max-width: 360px) { .grid { grid-template-columns: 1fr; } }
     @media(prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } .card:hover { transform: none; } }
   </style>
@@ -355,6 +397,7 @@ export function buildCatalogStoreHtml(params: PromptParams): string {
 
   <script>
     const ITEMS = ${serializedItems};
+    const ICON_PATHS = ${JSON.stringify(CATALOG_ICONS)};
     const CURRENCY = ${JSON.stringify(currency === 'S/' ? 'S/ ' : currency)};
     let activeCat = 'Todos';
     let query = '';
@@ -404,11 +447,16 @@ export function buildCatalogStoreHtml(params: PromptParams): string {
         const card = document.createElement('article');
         card.className = 'card';
         const top = document.createElement('div');
+        top.className = 'card-content';
         const art = document.createElement('div');
         art.className = 'card-art';
         const mono = document.createElement('span');
         mono.className = 'mono';
-        mono.textContent = item.category.slice(0, 2).toUpperCase();
+        const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        icon.setAttribute('viewBox', '0 0 24 24'); icon.setAttribute('width','48'); icon.setAttribute('height','48');
+        icon.setAttribute('fill','none'); icon.setAttribute('stroke','currentColor'); icon.setAttribute('stroke-width','1.25'); icon.setAttribute('stroke-linecap','round'); icon.setAttribute('stroke-linejoin','round'); icon.setAttribute('aria-hidden','true');
+        const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+        path.setAttribute('d',ICON_PATHS[item.icon] || ICON_PATHS.bag); icon.appendChild(path); mono.appendChild(icon);
         const tag = document.createElement('span');
         tag.className = 'tag';
         tag.textContent = item.category + ' · ' + item.badge;
@@ -486,6 +534,7 @@ export function buildTodoAppHtml(params: PromptParams): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="elara-spec" content="${serializeWebSpec(params)}" />
   <title>${brand} — Tareas</title>
   <style>
     :root { --bg: ${c.bg}; --surface: ${c.surface}; --card: ${c.card}; --border: ${c.border}; --text: ${c.text}; --muted: ${c.muted}; --accent: ${c.accent}; --ink: ${c.accentInk}; }
@@ -511,7 +560,7 @@ export function buildTodoAppHtml(params: PromptParams): string {
     :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
     button, input, select { font: inherit; }
     h1 { letter-spacing: -.045em; line-height: 1.12; }
-    @media(max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card { padding: 12px; min-width: 0; overflow-wrap: anywhere; } .card-art { height: 110px; padding: 10px; gap: 6px; } .tag { min-width: 0; overflow-wrap: anywhere; } .mono { flex-shrink: 0; } .card-foot { flex-wrap: wrap; gap: 10px; } .container { padding: 20px 0; } }
+    @media(max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card { padding: 12px; min-width: 0; overflow-wrap: anywhere; } .card-art { height: 110px; padding: 10px; gap: 6px; } .tag { min-width: 0; overflow-wrap: anywhere; } .mono { flex-shrink: 0; width: 58px; height: 58px; } .card-foot { flex-wrap: wrap; gap: 10px; } .container { padding: 20px 0; } }
     @media(max-width: 360px) { .grid { grid-template-columns: 1fr; } }
     @media(prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } .card:hover { transform: none; } }
   </style>
@@ -618,6 +667,7 @@ export function buildPomodoroHtml(params: PromptParams): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="elara-spec" content="${serializeWebSpec(params)}" />
   <title>${brand}</title>
   <style>
     :root { --bg: ${c.bg}; --surface: ${c.surface}; --border: ${c.border}; --text: ${c.text}; --muted: ${c.muted}; --accent: ${c.accent}; --ink: ${c.accentInk}; }
@@ -635,7 +685,7 @@ export function buildPomodoroHtml(params: PromptParams): string {
     :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
     button, input, select { font: inherit; }
     h1 { letter-spacing: -.045em; line-height: 1.12; }
-    @media(max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card { padding: 12px; min-width: 0; overflow-wrap: anywhere; } .card-art { height: 110px; padding: 10px; gap: 6px; } .tag { min-width: 0; overflow-wrap: anywhere; } .mono { flex-shrink: 0; } .card-foot { flex-wrap: wrap; gap: 10px; } .container { padding: 20px 0; } }
+    @media(max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card { padding: 12px; min-width: 0; overflow-wrap: anywhere; } .card-art { height: 110px; padding: 10px; gap: 6px; } .tag { min-width: 0; overflow-wrap: anywhere; } .mono { flex-shrink: 0; width: 58px; height: 58px; } .card-foot { flex-wrap: wrap; gap: 10px; } .container { padding: 20px 0; } }
     @media(max-width: 360px) { .grid { grid-template-columns: 1fr; } }
     @media(prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } .card:hover { transform: none; } }
   </style>
@@ -700,6 +750,7 @@ export function buildQuizAppHtml(params: PromptParams): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="elara-spec" content="${serializeWebSpec(params)}" />
   <title>${brand}</title>
   <style>
     :root { --bg: ${c.bg}; --surface: ${c.surface}; --card: ${c.card}; --border: ${c.border}; --text: ${c.text}; --muted: ${c.muted}; --accent: ${c.accent}; --ink: ${c.accentInk}; }
@@ -718,7 +769,7 @@ export function buildQuizAppHtml(params: PromptParams): string {
     :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
     button, input, select { font: inherit; }
     h1 { letter-spacing: -.045em; line-height: 1.12; }
-    @media(max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card { padding: 12px; min-width: 0; overflow-wrap: anywhere; } .card-art { height: 110px; padding: 10px; gap: 6px; } .tag { min-width: 0; overflow-wrap: anywhere; } .mono { flex-shrink: 0; } .card-foot { flex-wrap: wrap; gap: 10px; } .container { padding: 20px 0; } }
+    @media(max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card { padding: 12px; min-width: 0; overflow-wrap: anywhere; } .card-art { height: 110px; padding: 10px; gap: 6px; } .tag { min-width: 0; overflow-wrap: anywhere; } .mono { flex-shrink: 0; width: 58px; height: 58px; } .card-foot { flex-wrap: wrap; gap: 10px; } .container { padding: 20px 0; } }
     @media(max-width: 360px) { .grid { grid-template-columns: 1fr; } }
     @media(prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } .card:hover { transform: none; } }
   </style>
@@ -797,6 +848,7 @@ export function buildPaletteGeneratorHtml(params: PromptParams): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="elara-spec" content="${serializeWebSpec(params)}" />
   <title>${brand}</title>
   <style>
     :root { --bg: ${c.bg}; --surface: ${c.surface}; --border: ${c.border}; --text: ${c.text}; --muted: ${c.muted}; --accent: ${c.accent}; --ink: ${c.accentInk}; }
@@ -814,7 +866,7 @@ export function buildPaletteGeneratorHtml(params: PromptParams): string {
     :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
     button, input, select { font: inherit; }
     h1 { letter-spacing: -.045em; line-height: 1.12; }
-    @media(max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card { padding: 12px; min-width: 0; overflow-wrap: anywhere; } .card-art { height: 110px; padding: 10px; gap: 6px; } .tag { min-width: 0; overflow-wrap: anywhere; } .mono { flex-shrink: 0; } .card-foot { flex-wrap: wrap; gap: 10px; } .container { padding: 20px 0; } }
+    @media(max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card { padding: 12px; min-width: 0; overflow-wrap: anywhere; } .card-art { height: 110px; padding: 10px; gap: 6px; } .tag { min-width: 0; overflow-wrap: anywhere; } .mono { flex-shrink: 0; width: 58px; height: 58px; } .card-foot { flex-wrap: wrap; gap: 10px; } .container { padding: 20px 0; } }
     @media(max-width: 360px) { .grid { grid-template-columns: 1fr; } }
     @media(prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } .card:hover { transform: none; } }
   </style>
@@ -871,6 +923,7 @@ export function buildBlogHtml(params: PromptParams): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="elara-spec" content="${serializeWebSpec(params)}" />
   <title>${brand} — Artículos</title>
   <style>
     :root { --bg: ${c.bg}; --surface: ${c.surface}; --card: ${c.card}; --border: ${c.border}; --text: ${c.text}; --muted: ${c.muted}; --accent: ${c.accent}; --ink: ${c.accentInk}; }
@@ -891,7 +944,7 @@ export function buildBlogHtml(params: PromptParams): string {
     :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
     button, input, select { font: inherit; }
     h1 { letter-spacing: -.045em; line-height: 1.12; }
-    @media(max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card { padding: 12px; min-width: 0; overflow-wrap: anywhere; } .card-art { height: 110px; padding: 10px; gap: 6px; } .tag { min-width: 0; overflow-wrap: anywhere; } .mono { flex-shrink: 0; } .card-foot { flex-wrap: wrap; gap: 10px; } .container { padding: 20px 0; } }
+    @media(max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card { padding: 12px; min-width: 0; overflow-wrap: anywhere; } .card-art { height: 110px; padding: 10px; gap: 6px; } .tag { min-width: 0; overflow-wrap: anywhere; } .mono { flex-shrink: 0; width: 58px; height: 58px; } .card-foot { flex-wrap: wrap; gap: 10px; } .container { padding: 20px 0; } }
     @media(max-width: 360px) { .grid { grid-template-columns: 1fr; } }
     @media(prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } .card:hover { transform: none; } }
   </style>
@@ -974,6 +1027,7 @@ export function buildBookingFormHtml(params: PromptParams): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="elara-spec" content="${serializeWebSpec(params)}" />
   <title>${brand}</title>
   <style>
     :root { --bg: ${c.bg}; --surface: ${c.surface}; --card: ${c.card}; --border: ${c.border}; --text: ${c.text}; --muted: ${c.muted}; --accent: ${c.accent}; --ink: ${c.accentInk}; }
@@ -988,7 +1042,7 @@ export function buildBookingFormHtml(params: PromptParams): string {
     :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
     button, input, select { font: inherit; }
     h1 { letter-spacing: -.045em; line-height: 1.12; }
-    @media(max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card { padding: 12px; min-width: 0; overflow-wrap: anywhere; } .card-art { height: 110px; padding: 10px; gap: 6px; } .tag { min-width: 0; overflow-wrap: anywhere; } .mono { flex-shrink: 0; } .card-foot { flex-wrap: wrap; gap: 10px; } .container { padding: 20px 0; } }
+    @media(max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card { padding: 12px; min-width: 0; overflow-wrap: anywhere; } .card-art { height: 110px; padding: 10px; gap: 6px; } .tag { min-width: 0; overflow-wrap: anywhere; } .mono { flex-shrink: 0; width: 58px; height: 58px; } .card-foot { flex-wrap: wrap; gap: 10px; } .container { padding: 20px 0; } }
     @media(max-width: 360px) { .grid { grid-template-columns: 1fr; } }
     @media(prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } .card:hover { transform: none; } }
   </style>
