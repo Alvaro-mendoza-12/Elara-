@@ -182,8 +182,11 @@ footer { padding-bottom: max(14px, env(safe-area-inset-bottom)) !important; }
 .model-panel label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
 .model-panel input { accent-color: var(--accent); }
 .model-panel p { font-size: 10px; line-height: 1.6; margin: 8px; color: var(--muted); }
+.model-panel { max-height: min(440px, calc(100dvh - 180px)); overflow-y: auto; }
 .dictation-status { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 9px; color: var(--secondary); font-size: 11px; line-height: 1.5; }
 .dictation-status button { color: var(--accent); text-decoration: underline; }
+.dictation-error { color: var(--danger); justify-content: space-between; text-align: left; padding: 8px 12px; border: 1px solid var(--danger-border); border-radius: 10px; background: var(--danger-bg); }
+footer { padding-bottom: max(14px, calc(env(safe-area-inset-bottom) + 8px)); }
 @container composer (max-width: 560px) {
   .composer { grid-template-columns: 32px minmax(0,1fr) 32px 32px; gap: 4px; padding: 8px 10px; }
   .composer textarea { grid-column: 1 / -1; grid-row: 1; padding-bottom: 8px; }

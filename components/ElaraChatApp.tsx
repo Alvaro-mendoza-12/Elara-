@@ -250,6 +250,7 @@ function ElaraWorkspace({ initialProfile }: { initialProfile: ElaraUserProfile |
   const userProfile = initialProfile;
 
   const [input, setInput] = useState('');
+  const [dictationError, setDictationError] = useState('');
   const [chatSearch, setChatSearch] = useState('');
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
@@ -365,7 +366,7 @@ function ElaraWorkspace({ initialProfile }: { initialProfile: ElaraUserProfile |
   const dictation = useServerDictation((text) => {
     setInput((prev) => prev ? `${prev.trimEnd()} ${text}` : text);
     requestAnimationFrame(() => { adjustTextareaHeight(textareaRef.current); textareaRef.current?.focus(); });
-  }, (message) => showToast(message));
+  }, (message) => setDictationError(message));
   const listening = dictation.phase === 'recording';
   const htmlArtifacts = useMemo(() => {
     return extractAllHtmlArtifacts(messages).map((art) => ({
@@ -389,6 +390,7 @@ function ElaraWorkspace({ initialProfile }: { initialProfile: ElaraUserProfile |
 
   function startNewChat() {
     dictation.cancel();
+    setDictationError('');
     if (busy) stop();
     clearError();
     const fresh = createEmptyConversation();
@@ -403,6 +405,7 @@ function ElaraWorkspace({ initialProfile }: { initialProfile: ElaraUserProfile |
 
   function selectConversation(conv: StoredConversation) {
     dictation.cancel();
+    setDictationError('');
     if (busy) stop();
     if (conv.id === activeId) {
       setSidebarOpen(false);
@@ -428,6 +431,7 @@ function ElaraWorkspace({ initialProfile }: { initialProfile: ElaraUserProfile |
   }
 
   function deleteConversation(id: string) {
+    if (id === activeId) dictation.cancel();
     const remaining = displayConversations.filter((c) => c.id !== id);
     if (remaining.length === 0) {
       const fresh = createEmptyConversation();
@@ -458,6 +462,7 @@ function ElaraWorkspace({ initialProfile }: { initialProfile: ElaraUserProfile |
   }
 
   function clearAllConversations() {
+    dictation.cancel();
     if (busy) stop();
     const fresh = createEmptyConversation();
     setSavedConversations([fresh]);
@@ -506,7 +511,7 @@ function ElaraWorkspace({ initialProfile }: { initialProfile: ElaraUserProfile |
 
   function submitEditedMessage(msgIndex: number) {
     const clean = editingDraft.trim();
-    if (!clean || busy) return;
+    if (!clean || busy || dictation.phase !== 'idle') return;
     clearError();
     setEditingMsgId(null);
     setEditingDraft('');
@@ -515,6 +520,7 @@ function ElaraWorkspace({ initialProfile }: { initialProfile: ElaraUserProfile |
   }
 
   function toggleVoiceDictation() {
+    setDictationError('');
     if (!userProfile) { showToast('Inicia sesión con Novvin para usar el dictado.'); openAuthModal(); return; }
     void dictation.toggle();
   }
@@ -1141,6 +1147,7 @@ function ElaraWorkspace({ initialProfile }: { initialProfile: ElaraUserProfile |
                   )}
                 </div>
                 {dictation.phase !== 'idle' && <p className="dictation-status" role="status">{listening ? `Grabando · 0:${String(dictation.seconds).padStart(2,'0')} · Pulsa el micrófono para terminar (máx. 30 s).` : dictation.phase === 'permission' ? 'Esperando permiso para usar el micrófono. Pulsa de nuevo para cancelar.' : 'Convirtiendo tu voz a texto en el servidor de Elara…'}{dictation.phase === 'transcribing' && <button type="button" onClick={dictation.cancel}>Cancelar</button>}</p>}
+                {dictationError && <p className="dictation-status dictation-error" role="alert"><span>{dictationError}</span><button type="button" aria-label="Cerrar aviso del dictado" onClick={() => setDictationError('')}><X size={14} /></button></p>}
               </form>
 
             <p className="mt-2 text-center text-[11px] text-[var(--muted)]">

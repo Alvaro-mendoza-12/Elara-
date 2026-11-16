@@ -297,7 +297,7 @@ export function buildCatalogStoreHtml(params: PromptParams): string {
   <meta name="elara-spec" content="${serializeWebSpec(params)}" />
   <title>${escapeHtml(title)}</title>
   <style>
-    :root { --bg: ${c.bg}; --surface: ${c.surface}; --card: ${c.card}; --border: ${c.border}; --text: ${c.text}; --muted: ${c.muted}; --accent: ${c.accent}; --accent-ink: ${c.accentInk}; }
+    :root { color-scheme: ${params.preferredTheme === 'light' ? 'light' : 'dark'}; --bg: ${c.bg}; --surface: ${c.surface}; --card: ${c.card}; --border: ${c.border}; --text: ${c.text}; --muted: ${c.muted}; --accent: ${c.accent}; --accent-ink: ${c.accentInk}; scrollbar-width: thin; scrollbar-color: var(--border) var(--bg); }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
     .container { max-width: 1200px; margin: 0 auto; padding: 24px 20px 64px; }

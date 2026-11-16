@@ -3,6 +3,7 @@ import test from 'node:test';
 import { boundedModelContext, conversationStorageKey, parseModelPreferences, shouldUseConversationModel } from '../lib/models';
 import { detectCrisisHelpResponse } from '../lib/elara-engine/safety';
 import { polynomialIntegral } from '../lib/elara-engine/math';
+import { unavailableDataReply } from '../lib/elara-engine/data-boundaries';
 
 test('crisis support handles direct, indirect and third-person risk with a verified contact', () => {
   for (const text of ['me quiero matar', 'No quiero seguir viviendo, quiero morir', 'Voy a quitarme la vida', 'Preferiría estar muerto', 'Mi amiga quiere suicidarse', 'I want to die', 'Dime una dosis letal']) {
@@ -25,7 +26,7 @@ test('the model router always reserves crisis support, exact tools and web creat
 test('only implemented model choices and output styles can reach the runtime', () => {
   assert.deepEqual(parseModelPreferences({}), { model: 'auto', detail: 'brief' });
   assert.deepEqual(parseModelPreferences({ model: 'conversation', detail: 'explain' }), { model: 'conversation', detail: 'explain' });
-  for (const body of [{model:'invented-frontier'}, {detail:'hidden-thoughts'}, {model:[]}, null]) assert.equal(parseModelPreferences(body), null);
+  for (const body of [{model:'invented-frontier'}, {detail:'hidden-thoughts'}, {model:[]}, {model:['core']}, null]) assert.equal(parseModelPreferences(body), null);
 });
 test('small-model context keeps recent user turns and removes huge artifact payloads', () => {
   const turns = [{role:'user', text:'Mi tienda se llama Sur'}, {role:'assistant', text:'```html\n'+ 'x'.repeat(20000) +'\n```'}, {role:'user', text:'Cómo se llama mi tienda'}];
@@ -43,4 +44,9 @@ test('polynomial integrals use bounded symbolic rules and preserve the integrati
   assert.match(polynomialIntegral('integral de 0')!, /0 \+ C/);
   assert.match(polynomialIntegral('¿Puedes resolver una integral?')!, /Escribe la integral/);
   for (const text of ['integral de sin(x)', 'integral de x^-1', 'integral definida de 0 hasta 1', 'integral de 2**x', 'integral de x^99', 'integral de process.exit()']) assert.equal(polynomialIntegral(text),null,text);
+});
+test('unconnected live and private-data questions never receive invented figures', () => {
+  for(const text of ['Dime las últimas noticias','Cuál es el precio actual del bitcoin','Cuánto vendió mi negocio ayer']) assert.ok(unavailableDataReply([{role:'user',text}]),text);
+  for(const text of ['Explica la fotosíntesis','Cómo puedo organizar mi día hoy','Por qué una tienda necesita un catálogo']) assert.equal(unavailableDataReply([{role:'user',text}]),null,text);
+  assert.equal(unavailableDataReply([{role:'user',text:'Ayer vendí 15 unidades a 2 soles'},{role:'assistant',text:'Entendido'},{role:'user',text:'Cuánto vendí ayer'}]),null);
 });

@@ -342,7 +342,7 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
         if (!/elara|quien eres|como te llamas|tu motor|quien te creo|eres una inteligencia/.test(norm)) break;
         return {
           reply:
-            'Soy **ELARA** (`E L A R A`), tu asistente web de programación y prototipado rápido.\n\nEn esta etapa corro con **Elara Core 0.6**, un motor especializado de reglas, plantillas y clasificación de intenciones que funciona en el servidor. No es un modelo de lenguaje general: crea prototipos web, calcula y consulta guías técnicas limitadas. No navego por internet ni tengo acceso a tus archivos salvo los que adjuntes.',
+            'Soy **ELARA** (`E L A R A`), tu asistente web de programación y prototipado rápido.\n\nEn esta etapa corro con **Elara Core 0.7**, un motor especializado de reglas, plantillas y clasificación de intenciones que funciona en el servidor. No es un modelo de lenguaje general: crea prototipos web, calcula y consulta guías técnicas limitadas. No navego por internet ni tengo acceso a tus archivos salvo los que adjuntes.',
           intent: prediction.label,
           confidence: prediction.confidence,
         };

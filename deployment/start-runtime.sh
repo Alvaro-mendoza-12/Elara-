@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 base=/home/alvaro/elara-runtime
-model_image=$(cat "$base/llama-image-lock.txt")
+model_image=ghcr.io/ggml-org/llama.cpp@sha256:7751a6c0dc3d019c231d42678abbb0fac1a13a24c17c956109ed27533139f280
 if ! docker inspect elara-model >/dev/null 2>&1; then
  docker run -d --name elara-model --restart unless-stopped --network elara-runtime --user "$(id -u):$(id -g)" --cpus=2.5 --memory=3g --memory-swap=3g --pids-limit=256 --cap-drop=ALL --security-opt=no-new-privileges --read-only --tmpfs /tmp:rw,nosuid,nodev,size=128m -v "$base/models:/models:ro" -v "$base/secrets:/run/secrets:ro" "$model_image" -m /models/Qwen3.5-2B-Q4_K_M.gguf -c 4096 -t 3 -tb 3 -np 1 -ngl 0 -n 256 --no-webui --api-key-file /run/secrets/api-key --reasoning off --reasoning-budget 0 --chat-template-kwargs '{"enable_thinking":false}' --host 0.0.0.0 --port 8080 --jinja
 fi

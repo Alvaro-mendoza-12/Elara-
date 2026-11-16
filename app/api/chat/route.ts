@@ -13,6 +13,7 @@ import { parseChatInput } from '@/lib/chat-input';
 import { readNovvinSession, trustedMutation, verifiedNovvinUser } from '@/lib/novvin-auth';
 import { boundedModelContext, parseModelPreferences, shouldUseConversationModel } from '@/lib/models';
 import { upstreamConfiguration } from '@/lib/model-runtime';
+import { unavailableDataReply } from '@/lib/elara-engine/data-boundaries';
 
 export const maxDuration = 60;
 
@@ -47,6 +48,23 @@ function splitForStreaming(text: string): string[] {
   return chunks;
 }
 
+function coreStreamResponse(req: Request, reply: string, engine: 'core' | 'safety' = 'core') {
+  const textPartId = `elara-txt-${crypto.randomUUID()}`;
+  const messageId = `elara-msg-${crypto.randomUUID()}`;
+  const stream = createUIMessageStream<UIMessage>({
+    execute: async ({ writer }) => {
+      writer.write({ type: 'start', messageId }); writer.write({ type: 'start-step' }); writer.write({ type: 'text-start', id: textPartId });
+      for (const chunk of splitForStreaming(reply)) {
+        if (req.signal.aborted) break;
+        writer.write({ type: 'text-delta', id: textPartId, delta: chunk });
+        await new Promise((resolve) => setTimeout(resolve, reply.includes('```html') ? 4 : 18));
+      }
+      writer.write({ type: 'text-end', id: textPartId }); writer.write({ type: 'finish-step' }); writer.write({ type: 'finish', finishReason: 'stop' });
+    }, onError: () => 'No se pudo completar la respuesta de Elara.',
+  });
+  return createUIMessageStreamResponse({ stream, headers: { 'Cache-Control': 'no-store', 'X-Elara-Engine': engine } });
+}
+
 export async function POST(req: Request) {
   if (!trustedMutation(req)) return Response.json({ error: 'Origen no permitido.' }, { status: 403 });
   let rawBody: unknown;
@@ -61,6 +79,10 @@ export async function POST(req: Request) {
   if (!uiMessages) return Response.json({ error: 'Incluye un mensaje de texto válido. Reduce los archivos o la conversación si son demasiado grandes.', code: 'INVALID_MESSAGES' }, { status: 400 });
   const preferences = parseModelPreferences(rawBody);
   if (!preferences) return Response.json({ error: 'Elige uno de los motores disponibles.' }, { status: 400 });
+  const turns = uiMessagesToSimpleTurns(uiMessages);
+  const computed = runElaraCoreEngine(turns);
+  // Support must still work if Novvin is unavailable or a session has expired.
+  if (computed.intent === 'safety_crisis_support') return coreStreamResponse(req, computed.reply, 'safety');
   let verifiedUser: Awaited<ReturnType<typeof verifiedNovvinUser>> = null;
   if (await readNovvinSession()) {
     try {
@@ -71,8 +93,8 @@ export async function POST(req: Request) {
   const engineInfo = resolveEngineInfo();
 
   try {
-    const turns = uiMessagesToSimpleTurns(uiMessages);
-    const computed = runElaraCoreEngine(turns);
+    const dataBoundary = shouldUseConversationModel(preferences.model, computed.intent) ? unavailableDataReply(turns) : null;
+    if (dataBoundary) { computed.reply = dataBoundary; computed.intent = 'capability_data_boundary'; }
     const conversationRequested = shouldUseConversationModel(preferences.model, computed.intent);
     if (preferences.model === 'conversation' && !verifiedUser && computed.intent !== 'safety_crisis_support') return Response.json({ error: 'Inicia sesión con Novvin para usar Conversación. Core sigue disponible sin registro.' }, { status: 401 });
     if (conversationRequested && engineInfo.mode === 'custom-server' && verifiedUser) {
@@ -104,30 +126,7 @@ export async function POST(req: Request) {
     }
     if (computed.intent === 'identity_elara' && engineInfo.mode === 'custom-server') computed.reply = 'Soy **Elara**, la asistente de Novvin. Combino **Core rápido**, para prototipos web, cálculos y utilidades, con **Conversación**, basado en Qwen3.5-2B y adaptado con instrucciones y herramientas de Elara. Ambos funcionan en servidores; tu laptop puede estar apagada. No navego por internet y puedo equivocarme. Conversación requiere iniciar sesión con Novvin.';
     if (computed.intent === '__fallback_honest__' && engineInfo.mode === 'custom-server' && !verifiedUser) computed.reply += '\n\nPara preguntas generales, inicia sesión con Novvin y elige **Conversación** o **Automático**. Core sigue siendo gratuito y sin límite de mensajes.';
-    const chunks = splitForStreaming(computed.reply);
-    const textPartId = `elara-txt-${crypto.randomUUID()}`;
-    const messageId = `elara-msg-${crypto.randomUUID()}`;
-
-    const stream = createUIMessageStream<UIMessage>({
-      execute: async ({ writer }) => {
-        writer.write({ type: 'start', messageId });
-        writer.write({ type: 'start-step' });
-        writer.write({ type: 'text-start', id: textPartId });
-
-        for (const chunk of chunks) {
-          if (req.signal.aborted) break;
-          writer.write({ type: 'text-delta', id: textPartId, delta: chunk });
-          await new Promise((resolve) => setTimeout(resolve, computed.reply.includes('```html') ? 4 : 18));
-        }
-
-        writer.write({ type: 'text-end', id: textPartId });
-        writer.write({ type: 'finish-step' });
-        writer.write({ type: 'finish', finishReason: 'stop' });
-      },
-      onError: () => 'No se pudo completar la respuesta de ELARA.',
-    });
-
-    return createUIMessageStreamResponse({ stream, headers: { 'Cache-Control': 'no-store', 'X-Elara-Engine': computed.intent === 'safety_crisis_support' ? 'safety' : 'core' } });
+    return coreStreamResponse(req, computed.reply);
   } catch (error) {
     console.error('[api/chat] Request failed:', error instanceof Error ? error.name : 'UnknownError');
     return Response.json(

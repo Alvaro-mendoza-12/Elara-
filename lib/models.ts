@@ -11,7 +11,7 @@ export function parseModelPreferences(body: unknown): ModelPreferences | null {
   if (!body || typeof body !== 'object') return null;
   const value = body as Record<string, unknown>;
   const model = value.model ?? 'auto'; const detail = value.detail ?? 'brief';
-  if (!['auto', 'core', 'conversation'].includes(String(model)) || !['brief', 'explain'].includes(String(detail))) return null;
+  if (typeof model !== 'string' || typeof detail !== 'string' || !['auto', 'core', 'conversation'].includes(model) || !['brief', 'explain'].includes(detail)) return null;
   return { model: model as ModelChoice, detail: detail as ResponseDetail };
 }
 

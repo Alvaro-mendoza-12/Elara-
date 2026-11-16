@@ -5,7 +5,7 @@ export function contextualReply(turns: SimpleTurn[]): EngineResult | null {
   const latest = turns.at(-1)?.text || '';
   const norm = normalizeText(latest);
   if (/^(quien eres|como te llamas|que es elara|eres un modelo local|usas un modelo local|funcionas en mi laptop)[.? ]*$/.test(norm)) {
-    return { reply: 'Soy **Elara**, una asistente para crear prototipos web, revisar fragmentos de código y resolver utilidades. Ahora uso **Elara Core 0.6**, un motor de reglas, plantillas y un pequeño clasificador de intenciones. Funciono en el servidor de Vercel y no necesito que tu portátil esté encendido. Todavía no soy un modelo de lenguaje general ni navego por internet.', intent: 'identity_elara', confidence: 1 };
+    return { reply: 'Soy **Elara**, una asistente para crear prototipos web, revisar fragmentos de código y resolver utilidades. Ahora uso **Elara Core 0.7**, un motor de reglas, plantillas y un pequeño clasificador de intenciones. Funciono en el servidor de Vercel y no necesito que tu portátil esté encendido. Todavía no soy un modelo de lenguaje general ni navego por internet.', intent: 'identity_elara', confidence: 1 };
   }
   if (/\b(como me llamo|recuerdas mi nombre|cual es mi nombre)\b/.test(norm)) {
     const name = [...turns].reverse().filter((t) => t.role === 'user')

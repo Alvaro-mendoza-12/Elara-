@@ -1,29 +1,41 @@
-# Arquitectura de Elara 0.5
+# Arquitectura de Elara 0.7
 
 ```text
 Navegador
-  ├─ Conversaciones locales y exportación Markdown
-  ├─ /api/chat → validación Zod → ventana de 40 mensajes / 100.000 caracteres → streaming
-  ├─ /api/auth/login, register, session, logout
-  └─ Visor HTML sandbox allow-scripts (sin acceso al origen de Elara)
+  ├─ Sesión verificada antes de abrir el historial correspondiente
+  ├─ Historial local por cuenta / invitado; exportación Markdown
+  ├─ Micrófono → grabación breve → /api/transcribe → texto revisable
+  └─ Visor HTML sandbox allow-scripts sin acceso al origen de Elara
 
 Vercel / Next.js
-  ├─ Core 0.5: reglas + clasificación de intenciones + utilidades + plantillas
-  ├─ Proveedor OpenAI-compatible o AI Gateway opcional; no configurados en esta entrega
-  └─ BFF de Novvin → HTTPS → Ubuntu Novvin
-        ├─ login / register con contrato web existente
-        ├─ refresh comprueba revocación y suspensión en servidor
-        └─ logout revoca exactamente la sesión del navegador
+  ├─ Validación de Origin, esquema, tamaño y roles user/assistant
+  ├─ Apoyo ante riesgo personal detectado, independiente del modelo y de Novvin
+  ├─ Core 0.7 → utilidades, integrales polinómicas acotadas, plantillas y clasificador
+  ├─ /api/models → disponibilidad real del runtime propio
+  ├─ /api/chat → Core o conversación según la elección y la petición
+  ├─ /api/transcribe → audio acotado y cuenta Novvin verificada
+  └─ BFF de Novvin → login, refresh, avatar protegido y revocación
+
+Ubuntu
+  ├─ Servicios Novvin existentes, conservados
+  └─ Red Docker elara-runtime
+       ├─ Gateway autenticado, una inferencia activa, límites y reserva de recursos
+       ├─ llama.cpp + Qwen3.5-2B Q4_K_M
+       └─ whisper.cpp + Whisper base multilingüe
 ```
 
-El secreto de Elara cifra la credencial de renovación de Novvin mediante AES-256-GCM. La cookie del navegador es HttpOnly, SameSite=Lax y Secure en producción; nunca se confía en un nombre local como identidad autenticada. Las mutaciones comprueban Origin contra Host y rechazan contextos cross-site. El proxy servidor habla el contrato web de primera parte de Novvin, con su origen canónico y etiqueta `ELARA Web`; no es OAuth ni inicia automáticamente una sesión ya abierta en otro dominio.
+El BFF cifra la credencial de renovación de Novvin mediante AES-256-GCM. La cookie es HttpOnly, SameSite=Lax y Secure en producción. No conserva contraseña ni perfil; cada verificación consulta a Novvin. Las mutaciones validan Origin y Host. La integración usa el contrato web existente de Novvin, no OAuth ni SSO entre dominios.
 
-La cookie no conserva contraseña ni perfil. Cada lectura de sesión consulta a Novvin, que valida su vigencia. El perfil público solo contiene los campos de presentación. Los fallos de disponibilidad conservan el estado para permitir un reintento. El cierre se confirma únicamente tras recibir respuesta de Novvin.
+El perfil se enriquece con los campos públicos autorizados de Novvin, incluyendo `avatar_media_type`. El avatar solo se obtiene desde el bucket avatars del gateway propio, con sesión verificada y comprobación del propietario. Admite imágenes y videos, peticiones Range, límite de 25 MB y cache privado sin almacenamiento. No se reenvían credenciales a hosts arbitrarios.
 
-Los mensajes aceptados son user/assistant con partes de texto. Se permite y elimina `step-start`, metadato generado por el AI SDK. Las instrucciones system enviadas por el cliente se rechazan. Se limita el cuerpo a 1 MB, cada parte a 50.000 caracteres y el contexto completo a 100.000 caracteres sin cortar bloques de código.
+La aplicación espera la identidad verificada antes de cargar conversaciones. Un cambio de cuenta remonta el espacio de trabajo con otra clave de almacenamiento; no hereda mensajes de otra cuenta ni del invitado. El historial antiguo sin identidad comprobable no se asigna automáticamente. El almacenamiento local no es una base de datos compartida ni ofrece cifrado de historial o sincronización entre dispositivos.
 
-El motor básico conserva marca, color, cantidad y moneda de los catálogos al editarlos. Rechaza coincidencias débiles del clasificador y reconoce cambios de tema. La memoria de nombres procede de mensajes del usuario en la conversación actual. No sincroniza conversaciones entre dispositivos y no consulta internet.
+Chat admite un cuerpo de hasta 1 MB, partes de texto de hasta 50.000 caracteres y una ventana de 40 mensajes / 100.000 caracteres. Rechaza roles system del cliente y elimina el metadato step-start del SDK. Conversación utiliza una ventana mucho menor, con hasta 16 turnos, 7.500 caracteres de contexto y último mensaje de hasta 6.000 caracteres. Resume los bloques HTML como referencias al visor. Las instrucciones del modelo establecen límites de conocimiento y evitan afirmaciones de acciones no ejecutadas. Consultas detectadas de datos actuales o privados sin fuente reciben una aclaración de capacidad.
 
-El visor valida que postMessage proceda de su iframe. Los prototipos usan textContent para el catálogo; los datos JSON se escapan antes de insertarlos en script. Abrir HTML en una pestaña independiente ejecuta ese código: debe revisarse antes de publicarlo o proporcionar datos reales.
+Core conserva marca, tema, moneda, color, cantidad y tema del catálogo al editarlo, mediante una especificación mínima embebida en el HTML. No incorpora el chat completo al archivo exportado. El clasificador pequeño se entrena con ejemplos propios al inicializarse; el LLM Qwen se utiliza con sus pesos abiertos cuantizados, sin entrenamiento adicional de pesos.
 
-No hay cuota comercial de 20 mensajes ni promesas de consumo ilimitado de proveedores. El acceso libre usa el motor básico. Antes de habilitar un proveedor de pago se requiere una política de consumo con almacenamiento compartido y límites de presupuesto.
+La inferencia requiere cuenta Novvin verificada. El identificador enviado al runtime es un HMAC del ID de cuenta, no el correo. El gateway permite solo las rutas previstas y un modelo fijo, protege su clave mediante comparación constante, admite una inferencia a la vez y limita la frecuencia por cuenta. No expone administración, carga de modelos ni el servidor Whisper directamente. El runtime rechaza trabajo si hay menos de 2,5 GiB de memoria disponible o carga media de un minuto de 6 o superior. Límites y reproducibilidad: deployment/README.md.
+
+Dictado graba hasta treinta segundos, libera las pistas del micrófono al detener o cancelar, acota el archivo a 2 MB y no envía el mensaje automáticamente. El audio se procesa en el servidor propio; los archivos temporales de Whisper están en tmpfs y se retiran al terminar. No se habilitaron logs de contenido en el contenedor de voz. El navegador debe conceder acceso al micrófono y soportar MediaRecorder.
+
+El visor valida el origen de postMessage, mantiene un viewport real del dispositivo dentro de una carcasa escalada y conserva el aislamiento sandbox. Los catálogos generan sus iconos SVG con createElementNS y los textos con textContent. El código editado o abierto en otra pestaña debe revisarse antes de utilizar datos reales o publicarlo.
