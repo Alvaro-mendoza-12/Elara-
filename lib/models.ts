@@ -50,7 +50,7 @@ export function boundedModelContext(turns: SimpleTurn[]): Array<{ role: 'user' |
   }
   const budget = Math.max(3600,latest.text.length+memory.length) - memory.length;
   let size = 0;
-  for (const [index, turn] of active.slice(-16).reverse().entries()) {
+  for (const [index, turn] of active.slice(-8).reverse().entries()) {
     if (turn.role !== 'user' && turn.role !== 'assistant') continue;
     let content = turn.text;
     if (index > 0) {

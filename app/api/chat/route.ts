@@ -68,7 +68,7 @@ function coreStreamResponse(req: Request, reply: string, engine: 'core' | 'safet
 
 export async function POST(req: Request) {
   const started = performance.now();
-  const deadline = AbortSignal.timeout(40_000);
+  const deadline = AbortSignal.timeout(42_000);
   const signal = AbortSignal.any([req.signal,deadline]);
   if (!trustedMutation(req)) return Response.json({ error: 'Origen no permitido.' }, { status: 403 });
   let rawBody: unknown;
@@ -118,7 +118,7 @@ export async function POST(req: Request) {
         instructions: conversationInstructions(preferences.detail),
         messages,
         abortSignal: signal,
-        timeout: {totalMs:35_000,firstChunkMs:22_000,chunkMs:10_000},
+        timeout: {totalMs:38_000,firstChunkMs:30_000,chunkMs:10_000},
         maxOutputTokens: preferences.detail === 'brief' ? 192 : 256,
         temperature: 0.5,
         maxRetries: 0,
