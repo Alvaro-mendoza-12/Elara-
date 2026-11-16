@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: #0b0e14;
+  --color-surface: #121722;
+  --color-elevated: #171e2e;
+  --color-border: #222b3d;
+  --color-foreground: #f1f5f9;
+  --color-muted: #94a3b8;
+  --color-accent: #38bdf8;
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+html,
+body {
+  background-color: #0b0e14;
+  color: #f1f5f9;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #253047 transparent;
+}
