@@ -65,3 +65,60 @@ test('elara static analyzer and syntax highlighter handle HTML, JSON, and JS pro
   assert.ok(tokens[0].some((t) => t.kind === 'attr'));
   assert.ok(tokens[0].some((t) => t.kind === 'string'));
 });
+
+test('elara generates domain catalogs with custom accent color, count and PEN currency', () => {
+  const res = runElaraCoreEngine([
+    { role: 'user', text: 'Crea una web de 10 laptops gamer en color morado en soles' },
+  ]);
+  assert.equal(res.intent, 'code_index_dynamic_catalog');
+  assert.match(res.reply, /#a855f7/);
+  assert.match(res.reply, /S\/\s*\d/);
+  const jsonMatch = res.reply.match(/const ITEMS = (\[[\s\S]*?\]);/);
+  assert.ok(jsonMatch?.[1]);
+  const parsed = JSON.parse(jsonMatch[1]) as unknown[];
+  assert.equal(parsed.length, 10);
+});
+
+test('elara generates Todo, Pomodoro, Quiz and Palette apps and supports color follow-up', () => {
+  const todo = runElaraCoreEngine([{ role: 'user', text: 'Haz un gestor de tareas interactivo en index.html' }]);
+  assert.equal(todo.intent, 'code_index_todo');
+  assert.match(todo.reply, /data-elara-app="todo"/);
+
+  const todoFollowUp = runElaraCoreEngine([
+    { role: 'user', text: 'Haz un gestor de tareas interactivo en index.html' },
+    { role: 'assistant', text: todo.reply },
+    { role: 'user', text: 'Cambia el color a verde en tema claro' },
+  ]);
+  assert.match(todoFollowUp.reply, /data-elara-app="todo"/);
+  assert.match(todoFollowUp.reply, /#10b981/);
+  assert.match(todoFollowUp.reply, /#f8fafc/);
+
+  const pomodoro = runElaraCoreEngine([{ role: 'user', text: 'Crea un temporizador pomodoro' }]);
+  assert.equal(pomodoro.intent, 'code_index_pomodoro');
+  assert.match(pomodoro.reply, /25:00/);
+
+  const quiz = runElaraCoreEngine([{ role: 'user', text: 'Genera un quiz interactivo' }]);
+  assert.equal(quiz.intent, 'code_index_quiz');
+  assert.match(quiz.reply, /QUESTIONS/);
+
+  const palette = runElaraCoreEngine([{ role: 'user', text: 'Crea un generador de paletas de colores' }]);
+  assert.equal(palette.intent, 'code_index_palette');
+  assert.match(palette.reply, /linear-gradient/);
+});
+
+test('elara resolves unit conversion, color conversion, uuid, password and CSS guide tables', () => {
+  const unitRes = runElaraCoreEngine([{ role: 'user', text: 'Convierte 10 km a millas' }]);
+  assert.equal(unitRes.intent, 'unit_convert');
+  assert.match(unitRes.reply, /6\.2137/);
+
+  const colorRes = runElaraCoreEngine([{ role: 'user', text: 'Convierte color #38bdf8 a rgb' }]);
+  assert.equal(colorRes.intent, 'dev_color_convert');
+  assert.match(colorRes.reply, /rgb\(56, 189, 248\)/);
+
+  const uuidRes = runElaraCoreEngine([{ role: 'user', text: 'Genera un uuid' }]);
+  assert.equal(uuidRes.intent, 'dev_uuid_gen');
+  assert.match(uuidRes.reply, /[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i);
+
+  const cssRes = runElaraCoreEngine([{ role: 'user', text: 'Diferencia entre flexbox y css grid' }]);
+  assert.match(cssRes.reply, /\| Necesidad \| Recomendado \|/);
+});

@@ -8,11 +8,16 @@ import {
   Check,
   Code2,
   Copy,
+  Download,
   ExternalLink,
   Menu,
   MessageSquare,
+  Mic,
+  MicOff,
+  Pencil,
   Plus,
   RotateCcw,
+  Search,
   Sparkles,
   Square,
   Trash2,
@@ -21,12 +26,13 @@ import {
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { CodePreviewDrawer, type HtmlArtifactVersion } from './CodePreviewDrawer';
 import { ElaraLogo } from './ElaraLogo';
-import { MessageMarkdown } from './MessageMarkdown';
+import { downloadTextFile, MessageMarkdown } from './MessageMarkdown';
 import { NovvinAuthModal, type ElaraUserProfile } from './NovvinAuthModal';
 
 interface StoredConversation {
   id: string;
   title: string;
+  customTitle?: boolean;
   updatedAt: number;
   messages: UIMessage[];
 }
@@ -44,10 +50,30 @@ const GUEST_MESSAGE_LIMIT = 20;
 
 const STARTER_PROMPTS = [
   'Genera una web de 20 juguetes de perritos',
-  'Haz un login moderno en HTML con botón Continuar con Novvin',
-  'Crea una calculadora web interactiva en index.html',
-  'Ejemplo de fetch seguro con async/await en TypeScript',
+  'Crea una web de 10 laptops gamer en color morado en soles',
+  'Haz un gestor de tareas interactivo (To-Do) en index.html',
+  'Diferencia entre Flexbox y CSS Grid con ejemplos',
 ];
+
+type SpeechRecognitionCtor = new () => {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
+  if (typeof window === 'undefined') return null;
+  const w = window as unknown as {
+    SpeechRecognition?: SpeechRecognitionCtor;
+    webkitSpeechRecognition?: SpeechRecognitionCtor;
+  };
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
 
 const noopSubscribe = () => () => {};
 
@@ -66,14 +92,16 @@ function extractAllHtmlArtifacts(messages: UIMessage[]): HtmlArtifactVersion[] {
     const text = extractMessageText(msg);
     const regex = /```html\n([\s\S]*?)```/g;
     let match: RegExpExecArray | null;
+    let blockIndex = 0;
     while ((match = regex.exec(text)) !== null) {
       if (match[1]?.trim()) {
         list.push({
-          id: `${msg.id}-v${version}`,
+          id: `${msg.id}-b${blockIndex}`,
           label: `v${version}`,
           html: match[1],
         });
         version += 1;
+        blockIndex += 1;
       }
     }
   }
@@ -178,19 +206,33 @@ function ElaraWorkspace() {
   const [userProfile, setUserProfile] = useState<ElaraUserProfile | null>(() => loadStoredProfile());
   const [guestUsed, setGuestUsed] = useState<number>(() => loadGuestCount());
   const [input, setInput] = useState('');
+  const [chatSearch, setChatSearch] = useState('');
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState('');
+  const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
+  const [editingDraft, setEditingDraft] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [previewState, setPreviewState] = useState<{ id: string; html: string } | null>(null);
+  const [editedArtifacts, setEditedArtifacts] = useState<Record<string, string>>({});
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalKey, setAuthModalKey] = useState(0);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
+  const [listening, setListening] = useState(false);
   const [health, setHealth] = useState<HealthInfo>({
-    label: 'Elara Core v0.2',
+    label: 'Elara Core v0.3',
     mode: 'elara-core',
-    model: 'elara-core-v0.2',
+    model: 'elara-core-v0.3',
   });
 
+  const speechSupported = useSyncExternalStore(
+    noopSubscribe,
+    () => Boolean(getSpeechRecognitionCtor()),
+    () => false,
+  );
   const scrollContainerRef = useRef<HTMLElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const recognitionRef = useRef<InstanceType<SpeechRecognitionCtor> | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
   const autoFollowRef = useRef(true);
 
@@ -200,7 +242,7 @@ function ElaraWorkspace() {
     [savedConversations, activeId],
   );
 
-  const { messages, sendMessage, status, stop, error, regenerate, clearError } = useChat({
+  const { messages, setMessages, sendMessage, status, stop, error, regenerate, clearError } = useChat({
     id: activeId,
     messages: initialMessages,
     transport,
@@ -208,7 +250,7 @@ function ElaraWorkspace() {
       const text = extractMessageText(message);
       const match = text.match(/```html\n([\s\S]*?)```/);
       if (match?.[1] && typeof window !== 'undefined' && window.innerWidth >= 1024) {
-        setPreviewHtml(match[1]);
+        setPreviewState({ id: `${message.id}-b0`, html: match[1] });
       }
     },
   });
@@ -217,7 +259,8 @@ function ElaraWorkspace() {
     const existing = savedConversations.find((c) => c.id === activeId);
     const updatedActive: StoredConversation = {
       id: activeId,
-      title: makeTitleFromMessages(messages),
+      title: existing?.customTitle ? existing.title : makeTitleFromMessages(messages),
+      customTitle: existing?.customTitle,
       updatedAt: existing?.updatedAt ?? 0,
       messages,
     };
@@ -261,7 +304,7 @@ function ElaraWorkspace() {
         const fresh = createEmptyConversation();
         setSavedConversations((prev) => [fresh, ...prev].slice(0, 30));
         setActiveId(fresh.id);
-        setPreviewHtml(null);
+        setPreviewState(null);
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -269,9 +312,19 @@ function ElaraWorkspace() {
   });
 
   const busy = status === 'submitted' || status === 'streaming';
-  const htmlArtifacts = useMemo(() => extractAllHtmlArtifacts(messages), [messages]);
-  const latestHtml = htmlArtifacts[htmlArtifacts.length - 1]?.html ?? null;
+  const htmlArtifacts = useMemo(() => {
+    return extractAllHtmlArtifacts(messages).map((art) => ({
+      ...art,
+      html: editedArtifacts[art.id] ?? art.html,
+    }));
+  }, [messages, editedArtifacts]);
+  const latestArtifact = htmlArtifacts[htmlArtifacts.length - 1] ?? null;
   const guestLimitReached = !userProfile && guestUsed >= GUEST_MESSAGE_LIMIT;
+  const filteredConversations = useMemo(() => {
+    const q = chatSearch.trim().toLowerCase();
+    if (!q) return displayConversations;
+    return displayConversations.filter((c) => c.title.toLowerCase().includes(q));
+  }, [displayConversations, chatSearch]);
 
   function openAuthModal() {
     setAuthModalKey((k) => k + 1);
@@ -284,7 +337,8 @@ function ElaraWorkspace() {
     const fresh = createEmptyConversation();
     setSavedConversations([fresh, ...displayConversations].slice(0, 30));
     setActiveId(fresh.id);
-    setPreviewHtml(null);
+    setPreviewState(null);
+    setEditingMsgId(null);
     setSidebarOpen(false);
     autoFollowRef.current = true;
   }
@@ -298,9 +352,19 @@ function ElaraWorkspace() {
     clearError();
     setSavedConversations(displayConversations);
     setActiveId(conv.id);
-    setPreviewHtml(null);
+    setPreviewState(null);
+    setEditingMsgId(null);
     setSidebarOpen(false);
     autoFollowRef.current = true;
+  }
+
+  function commitRename(id: string) {
+    const nextTitle = renameDraft.trim();
+    setRenamingId(null);
+    if (!nextTitle) return;
+    setSavedConversations((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, title: nextTitle.slice(0, 48), customTitle: true } : c)),
+    );
   }
 
   function deleteConversation(id: string) {
@@ -309,28 +373,29 @@ function ElaraWorkspace() {
       const fresh = createEmptyConversation();
       setSavedConversations([fresh]);
       setActiveId(fresh.id);
-      setPreviewHtml(null);
+      setPreviewState(null);
       writeStoredConversations([fresh]);
       return;
     }
     setSavedConversations(remaining);
     if (id === activeId) {
       setActiveId(remaining[0].id);
-      setPreviewHtml(null);
+      setPreviewState(null);
     }
     writeStoredConversations(remaining);
   }
 
-  function submitPrompt(text: string) {
-    const clean = text.trim();
-    if (!clean || busy) return;
+  function adjustTextareaHeight(el: HTMLTextAreaElement | null) {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  }
+
+  function recordGuestUsageAndCheck(): boolean {
     if (!userProfile && guestUsed >= GUEST_MESSAGE_LIMIT) {
       openAuthModal();
-      return;
+      return false;
     }
-    clearError();
-    autoFollowRef.current = true;
-    setShowScrollDown(false);
     if (!userProfile) {
       const nextCount = guestUsed + 1;
       setGuestUsed(nextCount);
@@ -340,8 +405,76 @@ function ElaraWorkspace() {
         // Ignore storage write error.
       }
     }
+    return true;
+  }
+
+  function submitPrompt(text: string) {
+    const clean = text.trim();
+    if (!clean || busy) return;
+    if (!recordGuestUsageAndCheck()) return;
+    clearError();
+    autoFollowRef.current = true;
+    setShowScrollDown(false);
     sendMessage({ text: clean });
     setInput('');
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+  }
+
+  function submitEditedMessage(msgIndex: number) {
+    const clean = editingDraft.trim();
+    if (!clean || busy) return;
+    if (!recordGuestUsageAndCheck()) return;
+    clearError();
+    setEditingMsgId(null);
+    setEditingDraft('');
+    setMessages(messages.slice(0, msgIndex));
+    sendMessage({ text: clean });
+  }
+
+  function toggleVoiceDictation() {
+    if (listening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setListening(false);
+      return;
+    }
+    const Ctor = getSpeechRecognitionCtor();
+    if (!Ctor) return;
+    const rec = new Ctor();
+    rec.lang = 'es-PE';
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    rec.onresult = (event) => {
+      const transcript = event.results?.[0]?.[0]?.transcript?.trim();
+      if (transcript) {
+        setInput((prev) => {
+          const joined = prev ? `${prev.trimEnd()} ${transcript}` : transcript;
+          requestAnimationFrame(() => adjustTextareaHeight(textareaRef.current));
+          return joined;
+        });
+      }
+    };
+    rec.onerror = () => setListening(false);
+    rec.onend = () => setListening(false);
+    recognitionRef.current = rec;
+    setListening(true);
+    rec.start();
+  }
+
+  function exportConversationMarkdown() {
+    if (messages.length === 0) return;
+    const title = displayConversations.find((c) => c.id === activeId)?.title || 'conversacion-elara';
+    const body = messages
+      .map((m) => `## ${m.role === 'user' ? 'Usuario' : 'ELARA'}\n\n${extractMessageText(m)}`)
+      .join('\n\n---\n\n');
+    const slug = title
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || 'elara-chat';
+    downloadTextFile(`${slug}.md`, `# ${title}\n\n${body}\n`);
   }
 
   function handleSaveProfile(profile: ElaraUserProfile) {
@@ -434,10 +567,23 @@ function ElaraWorkspace() {
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-2.5 py-1">
+          {displayConversations.length > 1 && (
+            <div className="mb-2 flex items-center gap-1.5 rounded-xl border border-[#1B2436] bg-[#080B13] px-2.5 py-1.5">
+              <Search className="h-3.5 w-3.5 shrink-0 text-[#64748B]" />
+              <input
+                type="search"
+                value={chatSearch}
+                onChange={(e) => setChatSearch(e.target.value)}
+                placeholder="Buscar chats..."
+                className="w-full bg-transparent text-xs text-white placeholder-[#64748B] focus:outline-none"
+              />
+            </div>
+          )}
           <p className="px-2 pb-1.5 text-xs font-medium text-[#64748B]">Conversaciones</p>
           <div className="space-y-1">
-            {displayConversations.map((conv) => {
+            {filteredConversations.map((conv) => {
               const selected = conv.id === activeId;
+              const isRenaming = renamingId === conv.id;
               return (
                 <div
                   key={conv.id}
@@ -447,22 +593,52 @@ function ElaraWorkspace() {
                       : 'text-[#94A3B8] hover:bg-[#111725] hover:text-[#E2E8F0]'
                   }`}
                 >
-                  <button
-                    type="button"
-                    onClick={() => selectConversation(conv)}
-                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                  >
-                    <MessageSquare className="h-3.5 w-3.5 shrink-0 opacity-75" />
-                    <span className="truncate">{conv.title}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => deleteConversation(conv.id)}
-                    aria-label={`Eliminar ${conv.title}`}
-                    className="rounded p-1 text-[#64748B] opacity-0 transition-opacity hover:text-[#F87171] group-hover:opacity-100"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  {isRenaming ? (
+                    <input
+                      autoFocus
+                      type="text"
+                      value={renameDraft}
+                      onChange={(e) => setRenameDraft(e.target.value)}
+                      onBlur={() => commitRename(conv.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitRename(conv.id);
+                        if (e.key === 'Escape') setRenamingId(null);
+                      }}
+                      className="w-full rounded-md border border-[#38BDF8]/60 bg-[#080B13] px-2 py-0.5 text-xs text-white focus:outline-none"
+                    />
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => selectConversation(conv)}
+                        className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                      >
+                        <MessageSquare className="h-3.5 w-3.5 shrink-0 opacity-75" />
+                        <span className="truncate">{conv.title}</span>
+                      </button>
+                      <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRenamingId(conv.id);
+                            setRenameDraft(conv.title);
+                          }}
+                          aria-label={`Renombrar ${conv.title}`}
+                          className="rounded p-1 text-[#64748B] hover:text-[#38BDF8]"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteConversation(conv.id)}
+                          aria-label={`Eliminar ${conv.title}`}
+                          className="rounded p-1 text-[#64748B] hover:text-[#F87171]"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               );
             })}
@@ -552,14 +728,27 @@ function ElaraWorkspace() {
           </div>
 
           <div className="flex items-center gap-2">
-            {latestHtml && (
+            {messages.length > 0 && (
               <button
                 type="button"
-                onClick={() => setPreviewHtml(previewHtml ? null : latestHtml)}
+                onClick={exportConversationMarkdown}
+                title="Exportar conversación (.md)"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#1E2A42] bg-[#0F1522] px-2.5 py-1.5 text-xs text-[#94A3B8] transition-colors hover:border-[#38BDF8]/50 hover:text-white"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Exportar .md</span>
+              </button>
+            )}
+            {latestArtifact && (
+              <button
+                type="button"
+                onClick={() =>
+                  setPreviewState(previewState ? null : { id: latestArtifact.id, html: latestArtifact.html })
+                }
                 className="inline-flex items-center gap-1.5 rounded-xl border border-[#284261] bg-[#101C2E] px-3 py-1.5 text-xs font-medium text-[#7DD3FC] transition-colors hover:border-[#38BDF8] hover:text-white"
               >
                 <Code2 className="h-3.5 w-3.5" />
-                {previewHtml ? 'Ocultar visor' : `Abrir visor (${htmlArtifacts.length})`}
+                {previewState ? 'Ocultar visor' : `Abrir visor (${htmlArtifacts.length})`}
               </button>
             )}
           </div>
@@ -619,10 +808,61 @@ function ElaraWorkspace() {
                       }
                     >
                       {isUser ? (
-                        <p className="whitespace-pre-wrap">{text}</p>
+                        editingMsgId === message.id ? (
+                          <div className="space-y-2">
+                            <textarea
+                              value={editingDraft}
+                              onChange={(e) => setEditingDraft(e.target.value)}
+                              rows={2}
+                              className="w-full min-w-[220px] rounded-xl border border-[#38BDF8]/60 bg-[#080C14] p-2 text-sm text-white focus:outline-none sm:min-w-[340px]"
+                            />
+                            <div className="flex justify-end gap-1.5 text-xs">
+                              <button
+                                type="button"
+                                onClick={() => setEditingMsgId(null)}
+                                className="rounded-lg border border-[#25334D] px-2.5 py-1 text-[#94A3B8] hover:text-white"
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => submitEditedMessage(index)}
+                                className="rounded-lg bg-[#38BDF8] px-2.5 py-1 font-semibold text-[#061018] hover:opacity-90"
+                              >
+                                Reenviar
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-start gap-2">
+                            <p className="whitespace-pre-wrap">{text}</p>
+                            {!busy && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingMsgId(message.id);
+                                  setEditingDraft(text);
+                                }}
+                                aria-label="Editar mensaje"
+                                title="Editar y reenviar"
+                                className="mt-0.5 shrink-0 rounded p-1 text-[#64748B] opacity-0 transition-opacity hover:bg-[#1C2A44] hover:text-white group-hover:opacity-100"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        )
                       ) : (
                         <>
-                          <MessageMarkdown content={text} onOpenPreview={(code) => setPreviewHtml(code)} />
+                          <MessageMarkdown
+                            content={text}
+                            onOpenPreview={(code) => {
+                              const matchArt = htmlArtifacts.find(
+                                (a) => a.html === code || extractAllHtmlArtifacts([message]).some((raw) => raw.id === a.id),
+                              );
+                              setPreviewState({ id: matchArt?.id || `${message.id}-v1`, html: matchArt?.html ?? code });
+                            }}
+                          />
                           {text && (
                             <div className="mt-2 flex items-center gap-2 text-xs text-[#64748B] opacity-85 transition-opacity group-hover:opacity-100">
                               <button
@@ -729,8 +969,12 @@ function ElaraWorkspace() {
               >
                 <div className="flex items-end gap-2 rounded-2xl border border-[#222F47] bg-[#0E1421] p-2 shadow-inner focus-within:border-[#38BDF8]/70">
                   <textarea
+                    ref={textareaRef}
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={(e) => {
+                      setInput(e.target.value);
+                      adjustTextareaHeight(e.target);
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
@@ -738,9 +982,24 @@ function ElaraWorkspace() {
                       }
                     }}
                     rows={1}
-                    placeholder="Pide una web de cualquier tema, ejemplo de código o pega un fallo..."
-                    className="max-h-40 min-h-[42px] flex-1 resize-none bg-transparent px-2.5 py-2 text-[15px] text-white placeholder-[#64748B] focus:outline-none"
+                    placeholder="Pide una web, ejemplo de código o pega un error..."
+                    className="max-h-40 min-h-[44px] flex-1 resize-none overflow-y-auto bg-transparent px-2.5 py-2.5 text-[15px] leading-5 text-white placeholder-[#64748B] focus:outline-none"
                   />
+                  {speechSupported && !busy && (
+                    <button
+                      type="button"
+                      onClick={toggleVoiceDictation}
+                      aria-label={listening ? 'Detener dictado' : 'Dictar por voz'}
+                      title={listening ? 'Detener dictado' : 'Dictar por voz'}
+                      className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors ${
+                        listening
+                          ? 'animate-pulse border-[#F43F5E]/60 bg-[#F43F5E]/15 text-[#FDA4AF]'
+                          : 'border-[#212D44] bg-[#131A29] text-[#94A3B8] hover:text-white'
+                      }`}
+                    >
+                      {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                    </button>
+                  )}
                   {busy ? (
                     <button
                       type="button"
@@ -772,13 +1031,20 @@ function ElaraWorkspace() {
       </div>
 
       {/* Live Preview Drawer */}
-      {previewHtml && (
+      {previewState && (
         <CodePreviewDrawer
           artifacts={htmlArtifacts}
-          selectedHtml={previewHtml}
-          onSelectHtml={(html) => setPreviewHtml(html)}
+          selectedHtml={previewState.html}
+          onSelectHtml={(html) => {
+            const art = htmlArtifacts.find((a) => a.html === html);
+            setPreviewState({ id: art?.id || previewState.id, html });
+          }}
+          onUpdateHtml={(nextHtml) => {
+            setEditedArtifacts((prev) => ({ ...prev, [previewState.id]: nextHtml }));
+            setPreviewState((prev) => (prev ? { ...prev, html: nextHtml } : null));
+          }}
           onFixErrorPrompt={(msg) => submitPrompt(msg)}
-          onClose={() => setPreviewHtml(null)}
+          onClose={() => setPreviewState(null)}
         />
       )}
 

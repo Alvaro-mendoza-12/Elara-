@@ -107,6 +107,18 @@ function renderInline(line: string, keyPrefix = 'in'): ReactNode[] {
   return nodes;
 }
 
+function parseTableRow(line: string): string[] {
+  const clean = line.trim().replace(/^\|/, '').replace(/\|$/, '');
+  return clean.split('|').map((cell) => cell.trim());
+}
+
+function isTableSeparator(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed.includes('|') && !trimmed.includes('-')) return false;
+  const cells = parseTableRow(trimmed);
+  return cells.length >= 2 && cells.every((c) => /^:?-{2,}:?$/.test(c));
+}
+
 function ProseBlock({ text }: { text: string }) {
   const lines = text.split('\n');
   const elements: ReactNode[] = [];
@@ -140,10 +152,57 @@ function ProseBlock({ text }: { text: string }) {
     listItems = [];
   };
 
-  for (const rawLine of lines) {
-    const trimmed = rawLine.trim();
+  for (let idx = 0; idx < lines.length; idx += 1) {
+    const trimmed = lines[idx].trim();
     if (!trimmed) {
       flushList();
+      continue;
+    }
+
+    // Markdown table block: header line + separator line (`| --- | --- |`) + body rows
+    if (
+      trimmed.includes('|') &&
+      idx + 1 < lines.length &&
+      isTableSeparator(lines[idx + 1])
+    ) {
+      flushList();
+      const headers = parseTableRow(trimmed);
+      const rows: string[][] = [];
+      idx += 2;
+      while (idx < lines.length && lines[idx].trim().includes('|')) {
+        rows.push(parseTableRow(lines[idx]));
+        idx += 1;
+      }
+      idx -= 1;
+      elements.push(
+        <div
+          key={keyCounter++}
+          className="my-3 overflow-x-auto rounded-xl border border-[#1E2A42] bg-[#0B101A]"
+        >
+          <table className="w-full border-collapse text-left text-xs sm:text-sm">
+            <thead className="border-b border-[#1E2A42] bg-[#11192B] text-[#E2E8F0]">
+              <tr>
+                {headers.map((h, hi) => (
+                  <th key={hi} className="px-3.5 py-2.5 font-semibold">
+                    {renderInline(h, `th-${keyCounter}-${hi}`)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#182235] text-[#CBD5E1]">
+              {rows.map((row, ri) => (
+                <tr key={ri} className="hover:bg-[#101727]">
+                  {headers.map((_, ci) => (
+                    <td key={ci} className="px-3.5 py-2 align-top">
+                      {renderInline(row[ci] ?? '', `td-${keyCounter}-${ri}-${ci}`)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>,
+      );
       continue;
     }
 
@@ -180,6 +239,12 @@ function ProseBlock({ text }: { text: string }) {
         <h2 key={keyCounter++} className="mt-4 mb-1.5 text-lg font-semibold text-white">
           {renderInline(trimmed.slice(3), `h2-${keyCounter}`)}
         </h2>,
+      );
+    } else if (trimmed.startsWith('# ')) {
+      elements.push(
+        <h1 key={keyCounter++} className="mt-4 mb-2 text-xl font-bold text-white">
+          {renderInline(trimmed.slice(2), `h1-${keyCounter}`)}
+        </h1>,
       );
     } else if (trimmed.startsWith('> ')) {
       elements.push(

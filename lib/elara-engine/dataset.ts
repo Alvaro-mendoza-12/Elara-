@@ -131,6 +131,39 @@ export const ELARA_INTENTS: IntentTrainingExample[] = [
       'subir servidor a docker compose ubuntu',
     ],
   },
+  {
+    id: 'guide_css_layout',
+    patterns: [
+      'diferencia entre flexbox y css grid',
+      'como centrar un div con css moderno',
+      'guia rapida de flexbox y grid responsivo',
+      'diseno responsivo sin media queries',
+    ],
+  },
+  {
+    id: 'guide_regex',
+    patterns: [
+      'regex para validar correo email en javascript',
+      'expresiones regulares comunes telefono url password',
+      'como usar regex en js o python',
+    ],
+  },
+  {
+    id: 'guide_http_auth',
+    patterns: [
+      'diferencia entre get post put patch delete',
+      'como funciona autenticacion jwt bearer token',
+      'configurar cors en api rest backend',
+    ],
+  },
+  {
+    id: 'guide_js_arrays',
+    patterns: [
+      'como usar map filter reduce find en javascript',
+      'metodos de arrays en js o typescript',
+      'ejemplos de map y filter en arreglos',
+    ],
+  },
 ];
 
 export interface KnowledgeArticle {
@@ -284,6 +317,74 @@ Y si levantas un servicio propio en Ubuntu con Docker:
 \`\`\`bash
 docker compose up -d --build
 docker compose ps
+\`\`\``,
+  },
+  {
+    id: 'css_layout',
+    keywords: ['flexbox', 'grid', 'css', 'centrar', 'layout', 'responsivo', 'responsive'],
+    answer: `Comparativa rápida entre **Flexbox** y **CSS Grid**:
+
+| Necesidad | Recomendado | Propiedad clave |
+| --- | --- | --- |
+| Alinear botones o barra en 1 eje | Flexbox | \`display: flex; gap: 12px;\` |
+| Centrar horizontal y vertical | Grid o Flex | \`display: grid; place-items: center;\` |
+| Tarjetas adaptables en 2D | CSS Grid | \`grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))\` |
+
+\`\`\`css
+.responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+\`\`\``,
+  },
+  {
+    id: 'regex_guide',
+    keywords: ['regex', 'expresion', 'regular', 'validar', 'correo', 'email', 'telefono'],
+    answer: `Expresiones regulares frecuentes listas para usar en JavaScript / TypeScript:
+
+| Caso | Patrón | Notas |
+| --- | --- | --- |
+| Correo básico | \`/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/\` | Validar además en servidor |
+| Solo dígitos | \`/^\\d+$/\` | Útil para códigos o DNI |
+| Usuario \`@handle\` | \`/^[a-z0-9_]{3,24}$/\` | Igual al formato usado en Novvin |
+| Hex Color | \`/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/\` | Soporta formato corto y completo |
+
+\`\`\`ts
+export const isValidHandle = (value: string) => /^[a-z0-9_]{3,24}$/.test(value.trim());
+\`\`\``,
+  },
+  {
+    id: 'http_auth',
+    keywords: ['jwt', 'bearer', 'cors', 'put', 'patch', 'delete', 'rest', 'endpoint', 'token', 'oauth'],
+    answer: `Resumen práctico de métodos **REST** y autenticación con **Bearer / JWT**:
+
+| Método | Uso correcto | ¿Idempotente? |
+| --- | --- | --- |
+| \`GET\` | Consultar datos sin modificarlos | Sí |
+| \`POST\` | Crear recursos o iniciar acciones | No |
+| \`PUT\` | Reemplazar un recurso completo | Sí |
+| \`PATCH\` | Actualizar campos puntuales | Depende |
+| \`DELETE\` | Eliminar un recurso | Sí |
+
+Para validar un token sin bloquear el cliente, envía \`Authorization: Bearer <token>\` en cabeceras HTTPS y nunca guardes secretos en \`NEXT_PUBLIC_*\`.`,
+  },
+  {
+    id: 'js_arrays',
+    keywords: ['map', 'filter', 'reduce', 'find', 'some', 'array', 'arreglo'],
+    answer: `Métodos esenciales de **Arrays** en JavaScript / TypeScript:
+
+| Método | Qué devuelve | Caso típico |
+| --- | --- | --- |
+| \`map\` | Nuevo array transformado | Renderizar tarjetas o formatear DTOs |
+| \`filter\` | Nuevo array filtrado | Buscar productos por texto o categoría |
+| \`find\` | Primer elemento o \`undefined\` | Localizar un usuario por ID |
+| \`reduce\` | Un valor acumulado | Calcular total del carrito |
+
+\`\`\`ts
+const total = items
+  .filter((x) => x.inStock)
+  .reduce((acc, item) => acc + item.price, 0);
 \`\`\``,
   },
 ];

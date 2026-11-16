@@ -11,7 +11,14 @@ import { ELARA_INTENTS, KNOWLEDGE_ARTICLES } from './dataset';
 import { buildTrainedIntentNetwork, type ElaraIntentNetwork } from './neural-net';
 import { detectCrisisHelpResponse } from './safety';
 import { extractFencedCodeBlocks, extractPromptParams, tokenize } from './text';
-import { buildCatalogStoreHtml, buildWebFromPrompt } from './web-builder';
+import {
+  buildCatalogStoreHtml,
+  buildPaletteGeneratorHtml,
+  buildPomodoroHtml,
+  buildQuizAppHtml,
+  buildTodoAppHtml,
+  buildWebFromPrompt,
+} from './web-builder';
 
 export interface SimpleTurn {
   role: string;
@@ -84,7 +91,11 @@ function formatStaticReview(text: string, codeBlocks: Array<{ lang: string; code
 function buildContextualFollowUp(userText: string, prevHtml: { prompt: string; html: string }): string | null {
   const params = extractPromptParams(userText);
   const norm = params.normalized;
-  if (!/(cambia|ponle|actualiza|modifica|tema\s+claro|tema\s+oscuro|blanco|oscuro|titulo|título|nombre|explica|corrige|error)/.test(norm)) {
+  if (
+    !/(cambia|ponle|ponlo|actualiza|modifica|agrega|anade|color|tema\s+claro|tema\s+oscuro|blanco|oscuro|soles|euros|dolares|titulo|nombre|explica|corrige|error)/.test(
+      norm,
+    )
+  ) {
     return null;
   }
 
@@ -92,19 +103,46 @@ function buildContextualFollowUp(userText: string, prevHtml: { prompt: string; h
     return 'El `index.html` anterior está organizado en tres bloques autocontenidos:\n\n1. **`<style>` con variables `:root`**: centraliza fondo, bordes y color principal.\n2. **HTML5 semántico**: diseño adaptable a escritorio y móvil sin librerías externas.\n3. **`<script>` seguro**: conecta los eventos con `addEventListener` y actualiza textos con `textContent`.';
   }
 
+  const prevParams = extractPromptParams(prevHtml.prompt);
   const combinedPrompt = `${prevHtml.prompt} ${userText}`;
   const merged = extractPromptParams(combinedPrompt);
   const wantsLight = /\b(clar[ao]|blanc[ao]|light)\b/.test(norm)
     ? 'light'
     : /\b(oscur[ao]|negro|dark)\b/.test(norm)
       ? 'dark'
-      : merged.preferredTheme;
+      : prevParams.preferredTheme;
   merged.preferredTheme = wantsLight;
-  if (params.brandName) merged.brandName = params.brandName;
-  if (params.requestedCount) merged.requestedCount = params.requestedCount;
+  merged.accentColor = params.accentColor || prevParams.accentColor;
+  if (/\b(soles|sol\s+peruano|pen)\b/.test(norm)) merged.currencySymbol = 'S/';
+  else if (/\b(euros?|eur)\b/.test(norm)) merged.currencySymbol = '€';
+  else if (/\b(dolares|usd)\b/.test(norm)) merged.currencySymbol = '$';
+  else merged.currencySymbol = prevParams.currencySymbol;
 
-  if (prevHtml.html.includes('catalogGrid')) {
+  if (params.brandName) merged.brandName = params.brandName;
+  const addMoreMatch = norm.match(/(?:agrega|anade|suma)\s+(\d{1,2})\s*(?:mas|elementos|productos|items)?/);
+  if (addMoreMatch?.[1]) {
+    const baseCount = prevParams.requestedCount ?? (/\b20\b/.test(prevParams.normalized) ? 20 : 12);
+    merged.requestedCount = Math.min(40, baseCount + Number(addMoreMatch[1]));
+  } else if (params.requestedCount) {
+    merged.requestedCount = params.requestedCount;
+  } else {
+    merged.requestedCount = prevParams.requestedCount;
+  }
+
+  if (prevHtml.html.includes('data-elara-app="catalog"') || prevHtml.html.includes('catalogGrid')) {
     return buildHtmlResponse('Actualicé el catálogo `index.html` con tus cambios:', buildCatalogStoreHtml(merged), params.wantsCodeOnly);
+  }
+  if (prevHtml.html.includes('data-elara-app="todo"')) {
+    return buildHtmlResponse('Actualicé tu gestor de tareas `index.html`:', buildTodoAppHtml(merged), params.wantsCodeOnly);
+  }
+  if (prevHtml.html.includes('data-elara-app="pomodoro"')) {
+    return buildHtmlResponse('Actualicé tu temporizador Pomodoro `index.html`:', buildPomodoroHtml(merged), params.wantsCodeOnly);
+  }
+  if (prevHtml.html.includes('data-elara-app="quiz"')) {
+    return buildHtmlResponse('Actualicé la trivia interactiva `index.html`:', buildQuizAppHtml(merged), params.wantsCodeOnly);
+  }
+  if (prevHtml.html.includes('data-elara-app="palette"')) {
+    return buildHtmlResponse('Actualicé el generador de paletas `index.html`:', buildPaletteGeneratorHtml(merged), params.wantsCodeOnly);
   }
   if (prevHtml.html.includes('loginForm')) {
     return buildHtmlResponse('Actualicé la pantalla de acceso según lo pedido:', buildLoginIndexHtml(merged), params.wantsCodeOnly);
@@ -182,7 +220,13 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
   }
 
   // 5. Explicit web/app generation with real topic/item synthesis (e.g. "20 juguetes de perritos")
-  const wantsWeb = /\b(web|pagina|sitio|index|index\.html|html|tienda|catalogo|landing|login|dashboard|panel|calculadora|portafolio|portfolio)\b/.test(norm);
+  const wantsWeb =
+    /\b(web|webs|pagina|paginas|sitio|sitios|index|index\.html|html|tiendas?|catalogos?|landing|login|dashboard|panel|calculadoras?|portafolios?|portfolio|pomodoro|temporizador(?:es)?|quiz(?:zes)?|trivias?|paletas?|gradientes?)\b/.test(
+      norm,
+    ) ||
+    /\b(crea|genera|haz|hazme|dame|construye|arma|quiero)\b.*\b(todo|to-do|tareas|lista\s+de\s+tareas|kanban|cronometro|cuestionario|generador)\b/.test(
+      norm,
+    );
   if (wantsWeb) {
     if (/\b(login|iniciar\s+sesion|acceso|registro)\b/.test(norm)) {
       return {
@@ -217,7 +261,7 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
     if (dynamicWeb.html) {
       return {
         reply: buildHtmlResponse(dynamicWeb.description, dynamicWeb.html, params.wantsCodeOnly),
-        intent: 'code_index_dynamic_catalog',
+        intent: dynamicWeb.intent || 'code_index_dynamic_catalog',
         confidence: 0.96,
       };
     }
@@ -239,21 +283,21 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
       case 'greeting_help':
         return {
           reply:
-            '¡Hola! Soy **ELARA**. Dime qué necesitas y vamos directo a ello:\n\n- **Crear páginas web (`index.html`)** sobre el tema que pidas (por ejemplo: *"Genera una web de 20 juguetes de perritos"*, login, menú o calculadora).\n- **Ejemplos de código** en React/TypeScript, Python FastAPI, PostgreSQL, Git o Docker.\n- **Revisar fragmentos** de HTML, JSON, JavaScript o SQL.',
+            '¡Hola! Soy **ELARA**. Dime qué necesitas y vamos directo a ello:\n\n- **Crear páginas y apps (`index.html`)** sobre cualquier tema (catálogos, laptops, comida, juguetes, **gestor de tareas**, **Pomodoro**, **trivia** o **paletas** — puedes pedir tema claro/oscuro, color y moneda `S/` o `$`).\n- **Utilidades rápidas**: convierte unidades (`km a millas`, `°C a °F`), colores (`#38bdf8` a RGB), genera **UUIDs / contraseñas** o calcula porcentajes.\n- **Guías y revisión de código**: React/TS, CSS Flexbox/Grid, Regex, REST/JWT, Python, SQL y análisis estático.',
           intent: prediction.label,
           confidence: prediction.confidence,
         };
       case 'identity_elara':
         return {
           reply:
-            'Soy **ELARA** (`E L A R A`), tu asistente web de programación y prototipado rápido.\n\nEn esta etapa corro con **Elara Core v0.2** (motor propio ligero en el navegador/servidor para diseño web `index.html`, utilidades de código y consultas técnicas base). Puedes conectarme un modelo completo desde `ELARA_UPSTREAM_URL` cuando enlazar el servidor GPU.',
+            'Soy **ELARA** (`E L A R A`), tu asistente web de programación y prototipado rápido.\n\nEn esta etapa corro con **Elara Core v0.3** (motor propio optimizado en el servidor para construir sitios `index.html` interactivos, utilidades de desarrollo y guías técnicas). Puedes conectar un modelo externo o propio mediante `ELARA_UPSTREAM_URL`.',
           intent: prediction.label,
           confidence: prediction.confidence,
         };
       case 'novvin_ecosystem':
         return {
           reply:
-            'Puedes usar **ELARA** gratis sin login (hasta 20 mensajes en acceso libre). Para seguir sin límite o guardar tu perfil, pulsa **Continuar con Novvin** en la barra izquierda para crear tu nombre y @usuario (listo para enlazar con `novvinapp.com`).',
+            'Puedes usar **ELARA** gratis sin login (hasta 20 mensajes en acceso libre). Para seguir sin límite o guardar tu perfil, pulsa **Continuar con Novvin** en la barra izquierda para crear tu nombre y `@usuario` (preparado para conectar con `novvinapp.com`).',
           intent: prediction.label,
           confidence: prediction.confidence,
         };
@@ -261,13 +305,21 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
       case 'code_js_ts_basics':
       case 'code_python_api':
       case 'code_sql_postgres':
-      case 'code_git_deploy': {
+      case 'code_git_deploy':
+      case 'guide_css_layout':
+      case 'guide_regex':
+      case 'guide_http_auth':
+      case 'guide_js_arrays': {
         const keyMap: Record<string, string> = {
           code_react_component: 'react_component',
           code_js_ts_basics: 'js_async_fetch',
           code_python_api: 'python_api',
           code_sql_postgres: 'sql_postgres',
           code_git_deploy: 'git_deploy',
+          guide_css_layout: 'css_layout',
+          guide_regex: 'regex_guide',
+          guide_http_auth: 'http_auth',
+          guide_js_arrays: 'js_arrays',
         };
         const article = KNOWLEDGE_ARTICLES.find((a) => a.id === keyMap[prediction.label]);
         if (article) {
@@ -298,7 +350,7 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
   // 8. Honest, specific fallback acknowledging what was asked without robotic wall of text
   const preview = latestUser.length > 72 ? `${latestUser.slice(0, 72)}…` : latestUser;
   return {
-    reply: `No tengo suficiente contexto entrenado en **Elara Core v0.2** para responder directamente *"${preview}"* sin inventar información.\n\nSi deseas probar mis funciones listas hoy, puedes pedirme:\n- *"Genera una web de 20 juguetes de perritos"* (o cualquier tienda/catálogo, login, panel o calculadora en \`index.html\`).\n- Un ejemplo práctico de **React, JS, Python, SQL o Git**.\n- Pegar un fragmento de código para buscar errores de sintaxis.`,
+    reply: `No tengo suficiente contexto entrenado en **Elara Core v0.3** para responder directamente *"${preview}"* sin inventar información.\n\nSi quieres aprovechar lo que ya ejecuta en tiempo real, puedes pedirme:\n- *"Genera una web de 10 laptops gamer en color morado en soles"* o un **Gestor de tareas**, **Pomodoro**, **Trivia** o **Login** en \`index.html\`.\n- Utilidades: *"Convierte 25 km a millas"*, *"Convierte #38bdf8 a rgb"*, *"Genera un UUID"* o *"15% de 800"*.\n- Guías rápidas de **React, CSS Grid/Flexbox, Regex, REST/JWT, Python o PostgreSQL**.`,
     intent: '__fallback_honest__',
     confidence: prediction.confidence,
   };

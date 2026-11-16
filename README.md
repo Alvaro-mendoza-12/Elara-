@@ -5,14 +5,15 @@ Interfaz conversacional web de **ELARA** desarrollada con Next.js 16, React 19, 
 ## Características principales
 
 - **Chat en tiempo real + ventana deslizante estable**: conserva hasta 40 turnos de contexto hacia el servidor sin provocar errores HTTP 400 en conversaciones largas y muestra el error exacto si falla la red o la API.
+- **Controles modernos de conversación**: buscador de chats, renombrado inline, exportación a `.md`, edición/reenvío de mensajes, cuadro de entrada autoajustable y dictado por voz opcional cuando el navegador soporta `SpeechRecognition`.
 - **Límite en modo invitado y flujo "Continuar con Novvin"**:
   - Hasta **20 mensajes gratuitos** en acceso libre con barra de progreso en la barra lateral.
-  - Botón **Continuar con Novvin** con paso para crear tu nombre, `@usuario`, enfoque y avatar para desbloquear conversaciones ilimitadas en el navegador (listo para enlazar OAuth con `novvinapp.com`).
-- **Generación de webs `index.html` ajustadas al tema pedido**:
-  - Sintetiza catálogos/tiendas dinámicas según el tema y cantidad solicitada (ej. *"Generame una web de 20 juguetes de perritos"*), pantallas de login, paneles con filtro, portafolios y calculadoras.
-- **Bloques de código y Visor `index.html` avanzado**:
-  - Resaltado de sintaxis con numeración de líneas, copiar, descargar y contraer/expandir.
-  - Visor lateral con selector de versiones (`v1`, `v2`…), vista **Escritorio / Tablet / Móvil**, recarga, apertura en pestaña nueva y consola en vivo capturando errores del `<iframe>` en sandbox.
+  - Botón **Continuar con Novvin** con paso para crear tu nombre, `@usuario`, enfoque, avatar y vista de sesiones activas para desbloquear conversaciones ilimitadas en el navegador (listo para enlazar OAuth con `novvinapp.com`).
+- **Generación de webs y apps `index.html` ajustadas al tema pedido**:
+  - Sintetiza catálogos/tiendas dinámicas según tema, cantidad, color y moneda (`$`, `S/`, `€`), además de **Gestor de Tareas (To-Do)**, **Pomodoro**, **Quiz/Trivia**, **Generador de Paletas CSS**, pantallas de login, paneles con filtro, portafolios y calculadoras.
+- **Tablas Markdown, bloques de código y Visor `index.html` editable en vivo**:
+  - Renderiza tablas Markdown, resaltado de sintaxis con numeración de líneas, copiar, descargar y contraer/expandir.
+  - Visor lateral con selector de versiones (`v1`, `v2`…), edición de HTML en vivo con vista previa inmediata, modos **Escritorio / Tablet / Móvil**, recarga, apertura en pestaña nueva y consola en vivo capturando errores del `<iframe>` en sandbox.
 - **Seguridad prioritaria**: detección inmediata de mensajes de autolesión/crisis devolviendo líneas gratuitas reales de ayuda (Línea 113 Opción 5, SAMU 106, 988, 024, `findahelpline.com`) en lugar de mensajes genéricos de sistema.
 
 ## Documentación y guías

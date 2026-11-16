@@ -9,23 +9,41 @@ function escapeHtml(text: string): string {
     .replaceAll("'", '&#39;');
 }
 
-function palette(theme: 'dark' | 'light') {
+function pickAccentInk(hex: string): string {
+  const clean = hex.replace('#', '');
+  const full = clean.length === 3 ? clean.split('').map((c) => c + c).join('') : clean;
+  if (!/^[0-9a-fA-F]{6}$/.test(full)) return '#ffffff';
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.62 ? '#061018' : '#ffffff';
+}
+
+export function resolveThemePalette(theme: 'dark' | 'light', accentOverride?: string | null) {
+  const defaultAccent = theme === 'light' ? '#0284c7' : '#38bdf8';
+  const accent = accentOverride || defaultAccent;
+  const accentInk = pickAccentInk(accent);
   return theme === 'light'
     ? {
         bg: '#f8fafc',
         surface: '#ffffff',
+        card: '#ffffff',
         border: '#e2e8f0',
         text: '#0f172a',
         muted: '#475569',
-        accent: '#0284c7',
+        accent,
+        accentInk,
       }
     : {
-        bg: '#0b0e14',
-        surface: '#121826',
-        border: '#232c40',
+        bg: '#090d16',
+        surface: '#111827',
+        card: '#161f31',
+        border: '#253147',
         text: '#f1f5f9',
         muted: '#94a3b8',
-        accent: '#38bdf8',
+        accent,
+        accentInk,
       };
 }
 
@@ -38,7 +56,7 @@ export function buildLandingIndexHtml(params: PromptParams): string {
   const subtitle = subject
     ? escapeHtml(`Página de inicio diseñada para presentar ${subject} de forma clara, moderna y adaptable a cualquier pantalla.`)
     : `Plantilla index.html moderna, adaptable a móviles y lista para personalizar con tu contenido.`;
-  const c = palette(params.preferredTheme);
+  const c = resolveThemePalette(params.preferredTheme, params.accentColor);
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -55,7 +73,7 @@ export function buildLandingIndexHtml(params: PromptParams): string {
     nav { display: flex; gap: 18px; align-items: center; }
     nav a { color: var(--muted); text-decoration: none; font-size: 0.95rem; }
     nav a:hover { color: var(--text); }
-    .btn { background: var(--accent); color: #081018; border: 0; border-radius: 10px; padding: 10px 18px; font-weight: 600; cursor: pointer; }
+    .btn { background: var(--accent); color: ${c.accentInk}; border: 0; border-radius: 10px; padding: 10px 18px; font-weight: 600; cursor: pointer; }
     .hero { padding: 48px 0; display: grid; gap: 20px; max-width: 680px; }
     .hero h1 { font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.15; letter-spacing: -0.02em; }
     .hero p { color: var(--muted); font-size: 1.05rem; }
@@ -124,7 +142,7 @@ export function buildLandingIndexHtml(params: PromptParams): string {
 
 export function buildLoginIndexHtml(params: PromptParams): string {
   const brand = escapeHtml(params.brandName || 'Novvin / Elara');
-  const c = palette(params.preferredTheme);
+  const c = resolveThemePalette(params.preferredTheme, params.accentColor);
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -140,7 +158,7 @@ export function buildLoginIndexHtml(params: PromptParams): string {
     .sub { color: var(--muted); font-size: 0.92rem; }
     label { display: grid; gap: 6px; font-size: 0.88rem; color: var(--muted); }
     input { padding: 11px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.95rem; }
-    .primary { background: var(--accent); color: #061018; border: 0; border-radius: 10px; padding: 11px; font-weight: 600; cursor: pointer; }
+    .primary { background: var(--accent); color: ${c.accentInk}; border: 0; border-radius: 10px; padding: 11px; font-weight: 600; cursor: pointer; }
     .secondary { background: transparent; color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 11px; font-weight: 500; cursor: pointer; }
     .divider { text-align: center; color: var(--muted); font-size: 0.8rem; }
     #feedback { font-size: 0.88rem; color: var(--accent); min-height: 1.3em; }
@@ -186,7 +204,7 @@ export function buildLoginIndexHtml(params: PromptParams): string {
 
 export function buildDashboardIndexHtml(params: PromptParams): string {
   const brand = escapeHtml(params.brandName || 'Elara Panel');
-  const c = palette(params.preferredTheme);
+  const c = resolveThemePalette(params.preferredTheme, params.accentColor);
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -255,7 +273,7 @@ export function buildDashboardIndexHtml(params: PromptParams): string {
 
 export function buildCalculatorIndexHtml(params: PromptParams): string {
   const brand = escapeHtml(params.brandName || 'Calculadora Elara');
-  const c = palette(params.preferredTheme);
+  const c = resolveThemePalette(params.preferredTheme, params.accentColor);
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -271,7 +289,7 @@ export function buildCalculatorIndexHtml(params: PromptParams): string {
     .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
     button { padding: 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 1.05rem; cursor: pointer; }
     button.op { color: var(--accent); font-weight: 600; }
-    button.eq { background: var(--accent); color: #081018; font-weight: 700; grid-column: span 2; }
+    button.eq { background: var(--accent); color: ${c.accentInk}; font-weight: 700; grid-column: span 2; }
   </style>
 </head>
 <body>
@@ -312,7 +330,7 @@ export function buildCalculatorIndexHtml(params: PromptParams): string {
 
 export function buildPortfolioIndexHtml(params: PromptParams): string {
   const brand = escapeHtml(params.brandName || 'Portafolio Web');
-  const c = palette(params.preferredTheme);
+  const c = resolveThemePalette(params.preferredTheme, params.accentColor);
   return `<!DOCTYPE html>
 <html lang="es">
 <head>

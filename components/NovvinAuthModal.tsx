@@ -218,6 +218,24 @@ export function NovvinAuthModal({
               </div>
             </div>
 
+            {existingProfile && (
+              <div className="rounded-xl border border-[#1E2A42] bg-[#0B101A] p-3 text-xs text-[#94A3B8]">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-[#E2E8F0]">Sesiones vinculadas con Novvin</span>
+                  <span className="rounded-full bg-[#22C55E]/15 px-2 py-0.5 text-[10px] font-medium text-[#4ADE80]">
+                    1 activa
+                  </span>
+                </div>
+                <p className="mt-1.5 flex items-center justify-between text-[11px] text-[#CBD5E1]">
+                  <span>ELARA Studio (Este navegador)</span>
+                  <span className="font-mono text-[#7DD3FC]">@{existingProfile.handle}</span>
+                </p>
+                <p className="mt-1 text-[11px] text-[#64748B]">
+                  En la fase móvil con novvinapp.com podrás ver y cerrar sesiones en otros sitios desde tu teléfono.
+                </p>
+              </div>
+            )}
+
             {formError && <p className="text-xs text-[#FCA5A5]">{formError}</p>}
 
             <div className="flex items-center justify-between gap-2 pt-2">

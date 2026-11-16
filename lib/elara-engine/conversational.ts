@@ -61,8 +61,138 @@ function evaluateSafeArithmetic(exprRaw: string): number | null {
   }
 }
 
+function randomHexBytes(count: number): Uint8Array {
+  const bytes = new Uint8Array(count);
+  globalThis.crypto.getRandomValues(bytes);
+  return bytes;
+}
+
+function generateStrongPassword(length: number): string {
+  const safeLen = Math.min(32, Math.max(8, length));
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*-_';
+  const bytes = randomHexBytes(safeLen);
+  let out = '';
+  for (let i = 0; i < safeLen; i += 1) {
+    out += alphabet[bytes[i] % alphabet.length];
+  }
+  return out;
+}
+
+function tryConvertUnits(raw: string, norm: string): { reply: string; intent: string } | null {
+  const m = norm.match(
+    /(?:convierte|convertir|cuanto(?:s)?\s+(?:es|son)|pasa(?:r)?|transforma)?\s*(-?\d+(?:\.\d+)?)\s*(km|kilometros?|mi|millas?|m\b|metros?|pies?|ft\b|kg|kilogramos?|kilos?|lb|libras?|gb|gigabytes?|mb|megabytes?|kb|kilobytes?|horas?|h\b|minutos?|min|°?\s*c\b|celsius|centigrados|°?\s*f\b|fahrenheit)\s+(?:a|en)\s+(km|kilometros?|mi|millas?|m\b|metros?|pies?|ft\b|kg|kilogramos?|kilos?|lb|libras?|gb|gigabytes?|mb|megabytes?|kb|kilobytes?|horas?|h\b|minutos?|min|°?\s*c\b|celsius|centigrados|°?\s*f\b|fahrenheit)\b/,
+  );
+  if (!m) return null;
+  const val = Number(m[1]);
+  if (!Number.isFinite(val)) return null;
+
+  const canonical = (u: string): string => {
+    const x = u.replace(/°|\s+/g, '');
+    if (x === 'km' || x.startsWith('kilometro')) return 'km';
+    if (x === 'mi' || x.startsWith('milla')) return 'mi';
+    if (x === 'm' || x.startsWith('metro')) return 'm';
+    if (x === 'ft' || x.startsWith('pie')) return 'ft';
+    if (x === 'kg' || x.startsWith('kilo')) return 'kg';
+    if (x === 'lb' || x.startsWith('libra')) return 'lb';
+    if (x === 'gb' || x.startsWith('giga')) return 'gb';
+    if (x === 'mb' || x.startsWith('mega')) return 'mb';
+    if (x === 'kb' || x.startsWith('kilobyte')) return 'kb';
+    if (x === 'h' || x.startsWith('hora')) return 'h';
+    if (x === 'min' || x.startsWith('minuto')) return 'min';
+    if (x === 'c' || x.startsWith('celsius') || x.startsWith('centigrado')) return 'c';
+    if (x === 'f' || x.startsWith('fahrenheit')) return 'f';
+    return x;
+  };
+
+  const from = canonical(m[2]);
+  const to = canonical(m[3]);
+  if (from === to) return null;
+
+  const pair = `${from}->${to}`;
+  const factors: Record<string, (v: number) => number> = {
+    'km->mi': (v) => v * 0.621371,
+    'mi->km': (v) => v * 1.60934,
+    'm->ft': (v) => v * 3.28084,
+    'ft->m': (v) => v / 3.28084,
+    'kg->lb': (v) => v * 2.20462,
+    'lb->kg': (v) => v / 2.20462,
+    'gb->mb': (v) => v * 1024,
+    'mb->gb': (v) => v / 1024,
+    'mb->kb': (v) => v * 1024,
+    'kb->mb': (v) => v / 1024,
+    'h->min': (v) => v * 60,
+    'min->h': (v) => v / 60,
+    'c->f': (v) => (v * 9) / 5 + 32,
+    'f->c': (v) => ((v - 32) * 5) / 9,
+  };
+
+  const fn = factors[pair];
+  if (!fn) return null;
+  const res = Number(fn(val).toFixed(4));
+  return {
+    reply: `**${val} ${from.toUpperCase()}** equivalen aproximadamente a **${res} ${to.toUpperCase()}**.`,
+    intent: 'unit_convert',
+  };
+}
+
+function tryColorConvert(raw: string): { reply: string; intent: string } | null {
+  const hexMatch = raw.match(/#([0-9a-fA-F]{6})\b/);
+  if (hexMatch && /\b(rgb|color|hsl|convierte|convertir|pasa)\b/i.test(raw)) {
+    const hex = hexMatch[1];
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    return {
+      reply: `Conversión del color **#${hex.toUpperCase()}**:\n\n| Formato | Valor |\n| --- | --- |\n| HEX | \`#${hex.toUpperCase()}\` |\n| RGB | \`rgb(${r}, ${g}, ${b})\` |\n| CSS Alpha 20% | \`rgba(${r}, ${g}, ${b}, 0.2)\` |`,
+      intent: 'dev_color_convert',
+    };
+  }
+  const rgbMatch = raw.match(/\brgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)/i);
+  if (rgbMatch) {
+    const clamp = (n: number) => Math.max(0, Math.min(255, n));
+    const [r, g, b] = [clamp(Number(rgbMatch[1])), clamp(Number(rgbMatch[2])), clamp(Number(rgbMatch[3]))];
+    const toHex = (n: number) => n.toString(16).padStart(2, '0').toUpperCase();
+    const hex = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    return {
+      reply: `El color \`rgb(${r}, ${g}, ${b})\` equivale a **\`${hex}\`**.`,
+      intent: 'dev_color_convert',
+    };
+  }
+  return null;
+}
+
 export function tryConversationalResponse(raw: string): { reply: string; intent: string } | null {
   const norm = normalizeText(raw);
+
+  // Developer utilities: UUID v4, secure password, color hex/rgb
+  if (/\b(uuid|guid)\b/.test(norm) && /\b(genera|dame|crea|nuevo)\b/.test(norm)) {
+    const countMatch = norm.match(/\b([2-5])\s+(?:uuids?|guids?)/);
+    const count = countMatch ? Number(countMatch[1]) : 1;
+    const ids = Array.from({ length: count }, () => globalThis.crypto.randomUUID());
+    return {
+      reply:
+        count === 1
+          ? `UUID v4 generado:\n\n\`\`\`text\n${ids[0]}\n\`\`\``
+          : `Aquí tienes ${count} UUID v4 listos para usar:\n\n\`\`\`text\n${ids.join('\n')}\n\`\`\``,
+      intent: 'dev_uuid_gen',
+    };
+  }
+
+  if (/\b(contrasena|password|clave)\b/.test(norm) && /\b(genera|dame|crea|segura|aleatoria)\b/.test(norm)) {
+    const lenMatch = norm.match(/\b(\d{1,2})\s*(?:caracteres|digitos|chars?)?\b/);
+    const length = lenMatch ? Number(lenMatch[1]) : 16;
+    const passwords = [generateStrongPassword(length), generateStrongPassword(length)];
+    return {
+      reply: `Opciones de contraseña aleatoria segura:\n\n\`\`\`text\n${passwords.join('\n')}\n\`\`\`\n\n*Generadas con \`crypto.getRandomValues\` sin almacenarse en el servidor.*`,
+      intent: 'dev_password_gen',
+    };
+  }
+
+  const colorConv = tryColorConvert(raw);
+  if (colorConv) return colorConv;
+
+  const unitConv = tryConvertUnits(raw, norm);
+  if (unitConv) return unitConv;
 
   // Percentage queries: "15% de 800" or "15 por ciento de 800"
   const pctMatch = raw.toLowerCase().match(/(\d+(?:[.,]\d+)?)\s*(?:%|por\s*ciento)\s*de\s*(\d+(?:[.,]\d+)?)/);

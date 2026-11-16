@@ -11,6 +11,7 @@ import {
   Maximize2,
   Minimize2,
   Monitor,
+  Pencil,
   RotateCw,
   Smartphone,
   Tablet,
@@ -45,16 +46,19 @@ export function CodePreviewDrawer({
   artifacts,
   selectedHtml,
   onSelectHtml,
+  onUpdateHtml,
   onFixErrorPrompt,
   onClose,
 }: {
   artifacts: HtmlArtifactVersion[];
   selectedHtml: string;
   onSelectHtml: (html: string) => void;
+  onUpdateHtml?: (html: string) => void;
   onFixErrorPrompt?: (errorMsg: string) => void;
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<'preview' | 'code'>('preview');
+  const [editingCode, setEditingCode] = useState(false);
   const [viewport, setViewport] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -256,23 +260,70 @@ export function CodePreviewDrawer({
             </div>
           </div>
         ) : (
-          <div className="h-full overflow-auto bg-[#070A10] p-3 font-mono text-[12.5px] leading-6">
-            <table className="w-full border-collapse">
-              <tbody>
-                {highlightedLines.map((tokens, idx) => (
-                  <tr key={idx} className="hover:bg-[#101624]/60">
-                    <td className="w-10 select-none pr-3 text-right text-[11px] text-[#475569]">{idx + 1}</td>
-                    <td className="whitespace-pre pr-4">
-                      {tokens.map((tok, ti) => (
-                        <span key={ti} className={tokenClassName(tok.kind)}>
-                          {tok.text}
-                        </span>
-                      ))}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="flex h-full flex-col bg-[#070A10]">
+            <div className="flex items-center justify-between border-b border-[#182135] bg-[#0B0F18] px-3.5 py-2 text-xs">
+              <span className="font-mono text-[#64748B]">
+                {highlightedLines.length} líneas · {selectedHtml.length.toLocaleString('es-PE')} caracteres
+              </span>
+              {onUpdateHtml && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setEditingCode((v) => !v)}
+                    className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors ${
+                      editingCode
+                        ? 'border-[#38BDF8]/60 bg-[#172236] text-[#38BDF8]'
+                        : 'border-[#222E46] bg-[#131A29] text-[#CBD5E1] hover:text-white'
+                    }`}
+                  >
+                    <Pencil className="h-3 w-3" />
+                    {editingCode ? 'Ver resaltado' : 'Editar en vivo'}
+                  </button>
+                  {editingCode && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLogs([]);
+                        setTab('preview');
+                      }}
+                      className="inline-flex items-center gap-1 rounded-lg bg-[#38BDF8] px-2.5 py-1 text-xs font-semibold text-[#061018] hover:opacity-90"
+                    >
+                      <Eye className="h-3 w-3" />
+                      Ver resultado
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {editingCode && onUpdateHtml ? (
+              <textarea
+                aria-label="Editor HTML en vivo"
+                spellCheck={false}
+                value={selectedHtml}
+                onChange={(e) => onUpdateHtml(e.target.value)}
+                className="min-h-0 flex-1 resize-none bg-[#070A10] p-4 font-mono text-[12.5px] leading-6 text-[#E2E8F0] focus:outline-none"
+              />
+            ) : (
+              <div className="min-h-0 flex-1 overflow-auto p-3 font-mono text-[12.5px] leading-6">
+                <table className="w-full border-collapse">
+                  <tbody>
+                    {highlightedLines.map((tokens, idx) => (
+                      <tr key={idx} className="hover:bg-[#101624]/60">
+                        <td className="w-10 select-none pr-3 text-right text-[11px] text-[#475569]">{idx + 1}</td>
+                        <td className="whitespace-pre pr-4">
+                          {tokens.map((tok, ti) => (
+                            <span key={ti} className={tokenClassName(tok.kind)}>
+                              {tok.text}
+                            </span>
+                          ))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>

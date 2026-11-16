@@ -9,12 +9,13 @@
 ## 2. Bloques de código y Markdown seguro ([MessageMarkdown.tsx](../components/MessageMarkdown.tsx))
 
 - El parser de Markdown no utiliza `dangerouslySetInnerHTML`, eliminando riesgo de XSS en el chat principal.
-- Soporta formato recursivo en línea (por ejemplo ``**código `index.html`**`` sin fugas de comillas invertidas), citas, divisores horizontales y listas.
+- Soporta formato recursivo en línea (por ejemplo ``**código `index.html`**`` sin fugas de comillas invertidas), **tablas Markdown (`| col | col |`)**, citas, divisores horizontales y listas.
 - El tokenizador propio ([lib/syntax-highlight.ts](../lib/syntax-highlight.ts)) colorea etiquetas HTML, atributos, cadenas, números, palabras clave y comentarios con numeración de líneas y plegado automático en bloques largos (`> 22` líneas).
 
 ## 3. Visor interactivo de `index.html` ([CodePreviewDrawer.tsx](../components/CodePreviewDrawer.tsx))
 
 - **Selector de versiones (`v1`, `v2`, …):** permite navegar entre iteraciones HTML dentro del mismo chat.
+- **Edición de HTML en vivo:** botón **Editar en vivo** en la pestaña `index.html` para ajustar código directamente y pulsar **Ver resultado** para previsualizar el cambio al instante.
 - **Modo responsivo:** conmuta entre **Escritorio**, **Tablet (`768px`)** y **Móvil (`375px`)**.
 - **Aislamiento en sandbox:** el `<iframe>` usa `sandbox="allow-scripts"` sin `allow-same-origin`, protegiendo `localStorage` y cookies de ELARA frente al código generado.
 - **Puente de consola en vivo:** captura `console.log`, `console.warn`, `console.error` y errores de ejecución dentro del `index.html` mostrado, y ofrece un botón directo **Pedir a ELARA revisar** cuando aparece algún error.

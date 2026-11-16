@@ -5,6 +5,8 @@ export interface PromptParams {
   requestedCount: number | null;
   topicSubject: string | null;
   preferredTheme: 'dark' | 'light';
+  accentColor: string | null;
+  currencySymbol: string;
   codeBlocks: Array<{ lang: string; code: string }>;
   wantsCodeOnly: boolean;
 }
@@ -82,11 +84,14 @@ export function extractRequestedCount(raw: string): number | null {
 
 export function extractTopicSubject(raw: string): string | null {
   const match = raw.match(
-    /(?:web|pagina|página|sitio|index(?:\.html)?|tienda|catalogo|catálogo|galeria|galería|landing|app)\s+(?:sobre|acerca de|para|de)\s+(?:\d{1,2}\s+)?([^.,;!?]{3,70})/i,
+    /(?:web|pagina|página|sitio|index(?:\.html)?|tienda|catalogo|catálogo|galeria|galería|landing|app|lista|panel)\s+(?:sobre|acerca de|para|de)\s+(?:\d{1,2}\s+)?([^.,;!?]{3,75})/i,
   );
   if (match?.[1]) {
     return match[1]
-      .replace(/\b(en\s+html.*|con\s+carrito.*|tema\s+(?:claro|oscuro).*|modo\s+(?:claro|oscuro).*)$/i, '')
+      .replace(
+        /\b(en\s+html.*|con\s+carrito.*|tema\s+(?:claro|oscuro).*|modo\s+(?:claro|oscuro).*|en\s+color\s+[a-z0-9#]+.*|color\s+[a-z0-9#]+.*|en\s+(?:soles|euros|dolares|dólares).*)$/i,
+        '',
+      )
       .trim();
   }
   return null;
@@ -110,6 +115,33 @@ export function extractBrandName(raw: string): string | null {
   return null;
 }
 
+const COLOR_KEYWORDS: Array<[RegExp, string]> = [
+  [/\b(morad[oa]|violeta|purpura|púrpura|lila|indigo)\b/, '#a855f7'],
+  [/\b(roj[oa]|carmesi|escarlata)\b/, '#f43f5e'],
+  [/\b(verde|esmeralda|menta|lima)\b/, '#10b981'],
+  [/\b(azul|celeste|cian|cyan|turquesa|sky)\b/, '#38bdf8'],
+  [/\b(naranja|ambar|ámbar|coral)\b/, '#f59e0b'],
+  [/\b(rosa|rosad[oa]|fucsia|magenta)\b/, '#ec4899'],
+  [/\b(dorad[oa]|amarill[oa]|oro)\b/, '#eab308'],
+];
+
+export function extractAccentColor(raw: string): string | null {
+  const hex = raw.match(/#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/);
+  if (hex?.[0]) return hex[0];
+  const norm = normalizeText(raw);
+  for (const [pattern, color] of COLOR_KEYWORDS) {
+    if (pattern.test(norm)) return color;
+  }
+  return null;
+}
+
+export function extractCurrencySymbol(raw: string): string {
+  const norm = normalizeText(raw);
+  if (/\b(soles|sol\s+peruano|pen)\b/.test(norm) || /\bs\/\s*\d?/i.test(raw)) return 'S/';
+  if (/\b(euros?|eur)\b/.test(norm) || raw.includes('€')) return '€';
+  return '$';
+}
+
 export function extractPromptParams(raw: string): PromptParams {
   const normalized = normalizeText(raw);
   const preferredTheme: 'dark' | 'light' =
@@ -122,6 +154,8 @@ export function extractPromptParams(raw: string): PromptParams {
     requestedCount: extractRequestedCount(raw),
     topicSubject: extractTopicSubject(raw),
     preferredTheme,
+    accentColor: extractAccentColor(raw),
+    currencySymbol: extractCurrencySymbol(raw),
     codeBlocks: extractFencedCodeBlocks(raw),
     wantsCodeOnly,
   };

@@ -24,8 +24,8 @@ export function resolveEngineInfo(): {
   }
   return {
     mode: 'elara-core',
-    label: 'Elara Core v0.2',
-    modelName: 'elara-core-v0.2',
+    label: 'Elara Core v0.3',
+    modelName: 'elara-core-v0.3',
   };
 }
 
