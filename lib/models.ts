@@ -1,4 +1,6 @@
 import type { SimpleTurn } from './elara-engine/engine';
+import { activeConversationTurns, conversationFacts, isConversationFollowUp } from './conversation-context';
+import { readWebSpec } from './elara-engine/web-spec';
 
 export type ModelChoice = 'auto' | 'core' | 'conversation';
 export type ResponseDetail = 'brief' | 'explain';
@@ -16,24 +18,53 @@ export function parseModelPreferences(body: unknown): ModelPreferences | null {
 }
 
 export function shouldUseConversationModel(choice: ModelChoice, intent: string): boolean {
-  if (choice === 'core' || intent.startsWith('safety_') || intent.startsWith('math_') || intent.startsWith('code_index') || intent === 'clarify_commerce') return false;
+  if (choice === 'core' || intent.startsWith('safety_') || intent.startsWith('math_') || intent.startsWith('code_index') || intent.startsWith('clarify_')) return false;
   if (intent === '__fallback_honest__') return true;
   // Keep deterministic calculations, conversions and current-conversation facts.
   return choice === 'conversation' && /^(?:greeting_help|kb_|guide_|concept_)/.test(intent);
 }
 
 export function boundedModelContext(turns: SimpleTurn[]): Array<{ role: 'user' | 'assistant'; content: string }> | null {
-  const latest = turns.at(-1);
+  const active = activeConversationTurns(turns);
+  const latest = active.at(-1);
   if (!latest || latest.role !== 'user' || latest.text.length > 6000) return null;
   const selected: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+  const priorAnswer = active.slice(0, -1).reverse().find(turn => turn.role === 'assistant')?.text;
+  let source = priorAnswer?.slice(0, 1600) || '';
+  while (JSON.stringify(source).length > 2000) source = source.slice(0, Math.floor(source.length * 0.75));
+  const rewrite = latest.text.length <= 2000 && isConversationFollowUp(latest.text) && priorAnswer && !/```html\b/i.test(priorAnswer)
+    ? `Reformula este texto según mi petición. Conserva su tema, propósito y datos; no lo sustituyas por consejos nuevos.\nTexto anterior: ${JSON.stringify(source)}${priorAnswer.length > source.length ? '\n[Texto anterior abreviado.]' : ''}\nMi petición: ${latest.text}`
+    : null;
+  const facts = conversationFacts(active.slice(0, -1));
+  const compactFacts: Record<string, string> = {};
+  for (const key of ['nombre','proyecto','oferta','publico','preferencia']) {
+    let value = facts[key];
+    if (!value) continue;
+    while (value && JSON.stringify({...compactFacts,[key]:value}).length > 850) value = value.slice(0, Math.floor(value.length * 0.75));
+    if (value) compactFacts[key] = value;
+  }
+  const memory = Object.keys(compactFacts).length ? `Datos aportados antes por el usuario en este chat (las correcciones posteriores prevalecen):\n${JSON.stringify(compactFacts)}` : '';
+  if (rewrite) {
+    // A rewrite needs its source and the user's facts, not old unrelated topics.
+    return [...(memory ? [{role:'user' as const,content:memory}] : []), {role:'user',content:rewrite}];
+  }
+  const budget = 7500 - memory.length;
   let size = 0;
-  for (const turn of turns.slice(-16).reverse()) {
+  for (const [index, turn] of active.slice(-16).reverse().entries()) {
     if (turn.role !== 'user' && turn.role !== 'assistant') continue;
-    const content = turn.text.replace(/```html[\s\S]*?```/g, '[Prototipo HTML creado en el visor de Elara.]');
-    if (size + content.length > 7500) break;
+    let content = turn.text;
+    if (index > 0) {
+      if (turn.role === 'assistant' && /^(?:ok|vale|anotado|entendido|de acuerdo|gracias|perfecto)[.! ]*$/i.test(content.trim())) continue;
+      content = content.replace(/```html\s*([\s\S]*?)```/gi, (_, html: string) => `[Prototipo HTML creado en el visor de Elara. Configuración: ${JSON.stringify(readWebSpec(html))}]`);
+      const limit = turn.role === 'assistant' ? 1200 : 1000;
+      if (content.length > limit) content = content.slice(0, limit) + '\n[Mensaje anterior abreviado por el límite de contexto.]';
+    }
+    if (size + content.length > budget) break;
     selected.unshift({ role: turn.role, content }); size += content.length;
   }
   while (selected[0]?.role === 'assistant') selected.shift();
+  if (!selected.length) return null;
+  if (memory) selected.unshift({ role: 'user', content: memory });
   return selected.length ? selected : null;
 }
 

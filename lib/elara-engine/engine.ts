@@ -1,4 +1,5 @@
 import { readWebSpec } from './web-spec';
+import { activeConversationTurns, isConversationFollowUp } from '../conversation-context';
 import { commerceRequest, COMMERCE_QUESTION, shortArtifactEdit } from './request';
 import { contextualReply } from './context';
 import { inspectCodeSnippet } from './code-analyzer';
@@ -69,6 +70,12 @@ Pulsa **Vista previa** en el bloque superior (o **Abrir visor index** arriba) pa
 }
 
 function findPreviousHtml(turns: SimpleTurn[]): { prompt: string; html: string } | null {
+  const latest = extractPromptParams(turns.at(-1)?.text || '').normalized;
+  const lastAssistant = turns.slice(0, -1).reverse().find((turn) => turn.role === 'assistant');
+  const explicitReturn = /\b(?:web|pagina|sitio|catalogo|tienda|prototipo|html|codigo)\b.*\b(?:anterior|que creaste|que generaste)\b/.test(latest) || /^(?:retoma|volvamos|vuelve|regresa)\b.*\b(?:web|pagina|sitio|catalogo|tienda|prototipo|html)\b/.test(latest);
+  // A textual answer becomes the current referent. An old artifact is only
+  // resumed explicitly, or after a reply that is still discussing that artifact.
+  if (!explicitReturn && lastAssistant && !extractFencedCodeBlocks(lastAssistant.text).some(block => block.lang === 'html') && !/^(?:Con el motor básico puedo cambiar|El `index\.html` anterior está organizado)/.test(lastAssistant.text)) return null;
   for (let i = turns.length - 2; i >= 0; i -= 1) {
     if (turns[i].role === 'assistant') {
       const htmlBlock = extractFencedCodeBlocks(turns[i].text).find((b) => b.lang === 'html');
@@ -98,9 +105,10 @@ function formatStaticReview(text: string, codeBlocks: Array<{ lang: string; code
 }
 
 function buildContextualFollowUp(userText: string, prevHtml: { prompt: string; html: string }): string | null {
+  userText = userText.replace(/^\s*en (?:la|el) (?:web|p[aá]gina|sitio|cat[aá]logo|tienda|prototipo|html)(?: anterior| que (?:creaste|generaste))?\s*[:,]?\s*/i, '');
   const params = extractPromptParams(userText);
   const norm = params.normalized;
-  if (!/^(?:por favor )?(?:cambia|cambial[oa]|ponle|ponlo|actualiza|modifica|agrega|anade|quita|color|tema|hazl[oa]|explica|corrige)\b/.test(norm)) return null;
+  if (!/^(?:por favor )?(?:cambia|cambial[oa]|ponle|ponlo|actualiza|modifica|agrega|anade|quita|color|tema|hazl[oa]|explica|corrige|retoma|volvamos|vuelve|regresa)\b/.test(norm)) return null;
   if (/\bexplica\b/.test(norm) && !/\b(esto|eso|anterior|codigo|html|pagina|sitio|estructura)\b/.test(norm)) return null;
   if (/\b(crea|genera|construye|disena|hazme)\b/.test(norm)) return null;
   if (/\bexplica\b/.test(norm)) {
@@ -198,6 +206,8 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
     };
   }
 
+  turns = activeConversationTurns(turns);
+
   const contextResponse = contextualReply(turns);
   if (contextResponse) return contextResponse;
 
@@ -245,6 +255,13 @@ export function runElaraCoreEngine(turns: SimpleTurn[]): EngineResult {
     if (followUp) {
       return { reply: followUp, intent: 'code_index_followup', confidence: 0.92 };
     }
+  }
+
+  if (isConversationFollowUp(latestUser)) {
+    const previousAnswer = turns.slice(0, -1).some(turn => turn.role === 'assistant' && turn.text.trim());
+    return previousAnswer
+      ? { reply: 'Te refieres a la respuesta anterior. Para reformularla o ampliarla con flexibilidad, usa Automático o Conversación e inicia sesión con Novvin. Core rápido tiene respuestas y herramientas acotadas.', intent: '__fallback_honest__', confidence: 1 }
+      : { reply: '¿Qué texto o idea quieres que retome? Escríbelo aquí para poder seguir el hilo.', intent: 'clarify_reference', confidence: 1 };
   }
 
 

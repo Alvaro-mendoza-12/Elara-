@@ -21,7 +21,11 @@ export function parseChatInput(body: unknown) {
   const context = [];
   for (const message of all.slice(-40).reverse()) {
     const size = message.parts.reduce((n, part) => n + part.text.length, 0);
-    if (chars + size > 100_000) break;
+    if (chars + size > 100_000) {
+      if (!context.length) return null;
+      // A large old answer must not hide earlier, much smaller user facts.
+      continue;
+    }
     context.unshift(message); chars += size;
   }
   // An upstream model must always see the user's request, never an orphan reply.
